@@ -9,7 +9,7 @@ const footerGroups = [
   },
   {
     title: "고객센터",
-    links: ["공지사항", "자주 묻는 질문", "1:1 문의", "문열기", "제휴/입점/사업문의"],
+    links: ["공지사항", "자주 묻는 질문", "1:1 문의", "제휴/입점/사업문의"],
   },
 ];
 
@@ -22,9 +22,9 @@ function Footer() {
             Nailed
           </a>
           <p>
-            프리미엄 중고 거래 중고 거래, NAILED
+            프리미엄 중고 거래 플랫폼, NAILED
             <br />
-            당신의 가치를 가장 잘 아는 거래
+            당신의 가치를 가장 잘 보여주는 거래
           </p>
           <div className="social-links">
             <a href="/" aria-label="인스타그램">◎</a>

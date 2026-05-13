@@ -1,11 +1,11 @@
-const categories = ["맨즈웨어", "우먼즈웨어", "럭셔리", "악세서리", "라이프", "IT/테크"];
+const categories = ["맨즈웨어", "우먼즈웨어", "럭셔리", "액세서리", "라이프", "IT/테크"];
 
 const menuItems = [
-  { label: "판매", icon: "▣" },
-  { label: "채팅", icon: "○" },
-  { label: "알림", icon: "♢", badge: 2 },
+  { label: "판매", icon: "＋" },
+  { label: "채팅", icon: "⌕" },
+  { label: "알림", icon: "!" , badge: 2 },
   { label: "위시리스트", icon: "♡", badge: 3 },
-  { label: "로그인", icon: "♙" },
+  { label: "로그인", icon: "◎" },
 ];
 
 function Header() {
