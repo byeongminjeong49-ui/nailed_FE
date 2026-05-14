@@ -26,6 +26,7 @@ const authRoutes = {
   "/login": "login",
   "/signup": "signup",
   "/find-password": "find-password",
+  "/password/reset": "find-password",
   "/mypage": "mypage",
 };
 

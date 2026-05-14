@@ -1,5 +1,13 @@
 import { useState } from 'react'
-import { findPassword, login } from '../api/authApi'
+import {
+  checkEmail,
+  checkNickname,
+  confirmEmailVerification,
+  findPassword,
+  login,
+  requestEmailVerification,
+  signUp,
+} from '../api/authApi'
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,16}$/
@@ -52,11 +60,9 @@ export function LoginPage({ onNavigate }) {
 
     try {
       const data = await login({ email: form.email.trim(), password: form.password })
-      localStorage.setItem('nailedAccessToken', data.accessToken)
-      localStorage.setItem('nailedRefreshToken', data.refreshToken)
       localStorage.setItem(
         'nailedMember',
-        JSON.stringify({ memberId: data.memberId, email: data.email }),
+        JSON.stringify({ memberId: data.memberId, email: data.email, nickname: data.nickname }),
       )
       setMessage({ type: 'success', text: '로그인되었습니다. 마이페이지로 이동합니다.' })
       window.setTimeout(() => onNavigate('/mypage'), 500)
@@ -129,7 +135,7 @@ export function LoginPage({ onNavigate }) {
 
 export function SignupPage({ onNavigate }) {
   const [form, setForm] = useState({
-    name: '',
+    nickname: '',
     email: '',
     password: '',
     passwordConfirm: '',
@@ -137,9 +143,11 @@ export function SignupPage({ onNavigate }) {
   })
   const [agreements, setAgreements] = useState({ terms: false, privacy: false, age: false })
   const [emailChecked, setEmailChecked] = useState(false)
+  const [nicknameChecked, setNicknameChecked] = useState(false)
   const [codeRequested, setCodeRequested] = useState(false)
   const [codeConfirmed, setCodeConfirmed] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
+  const [submitting, setSubmitting] = useState(false)
 
   function update(key, value) {
     const nextValue = key === 'verificationCode' ? value.replace(/\D/g, '') : value
@@ -151,35 +159,74 @@ export function SignupPage({ onNavigate }) {
       setCodeConfirmed(false)
     }
 
+    if (key === 'nickname') {
+      setNicknameChecked(false)
+    }
+
     if (key === 'verificationCode') {
       setCodeConfirmed(false)
     }
   }
 
-  function handleEmailCheck() {
+  async function handleEmailCheck() {
     if (!emailPattern.test(form.email.trim())) {
       setMessage({ type: 'error', text: '올바른 이메일을 입력해주세요.' })
       return
     }
 
-    setEmailChecked(true)
-    setMessage({ type: 'success', text: '이메일 형식을 확인했습니다.' })
+    try {
+      const data = await checkEmail(form.email.trim())
+      if (!data.available) {
+        setEmailChecked(false)
+        setMessage({ type: 'error', text: '이미 사용 중인 이메일입니다.' })
+        return
+      }
+
+      setEmailChecked(true)
+      setMessage({ type: 'success', text: '사용 가능한 이메일입니다.' })
+    } catch (error) {
+      setMessage({ type: 'error', text: getReadableError(error.message, '이메일 확인에 실패했습니다.') })
+    }
   }
 
-  function handleRequestCode() {
+  async function handleNicknameCheck() {
+    if (!form.nickname.trim()) {
+      setMessage({ type: 'error', text: '닉네임을 입력해주세요.' })
+      return
+    }
+
+    try {
+      const data = await checkNickname(form.nickname.trim())
+      if (!data.available) {
+        setNicknameChecked(false)
+        setMessage({ type: 'error', text: '이미 사용 중인 닉네임입니다.' })
+        return
+      }
+
+      setNicknameChecked(true)
+      setMessage({ type: 'success', text: '사용 가능한 닉네임입니다.' })
+    } catch (error) {
+      setMessage({ type: 'error', text: getReadableError(error.message, '닉네임 확인에 실패했습니다.') })
+    }
+  }
+
+  async function handleRequestCode() {
     if (!emailChecked) {
       setMessage({ type: 'error', text: '먼저 이메일 확인을 완료해주세요.' })
       return
     }
 
-    setCodeRequested(true)
-    setMessage({
-      type: 'success',
-      text: '인증번호 입력란이 활성화되었습니다. 백엔드 이메일 인증 API 연결이 필요합니다.',
-    })
+    try {
+      await requestEmailVerification({ email: form.email.trim() })
+      setCodeRequested(true)
+      setCodeConfirmed(false)
+      setMessage({ type: 'success', text: '이메일로 인증번호가 발송되었습니다. 인증번호는 3분간 유효합니다.' })
+    } catch (error) {
+      setMessage({ type: 'error', text: getReadableError(error.message, '인증번호 발송에 실패했습니다.') })
+    }
   }
 
-  function handleConfirmCode() {
+  async function handleConfirmCode() {
     if (!codeRequested) {
       setMessage({ type: 'error', text: '먼저 인증번호 요청을 해주세요.' })
       return
@@ -190,24 +237,63 @@ export function SignupPage({ onNavigate }) {
       return
     }
 
-    setCodeConfirmed(true)
-    setMessage({ type: 'success', text: '인증번호 입력을 확인했습니다.' })
+    try {
+      await confirmEmailVerification({
+        email: form.email.trim(),
+        verificationCode: form.verificationCode,
+      })
+      setCodeConfirmed(true)
+      setMessage({ type: 'success', text: '이메일 인증이 완료되었습니다.' })
+    } catch (error) {
+      setMessage({ type: 'error', text: getReadableError(error.message, '인증번호 확인에 실패했습니다.') })
+    }
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
 
-    const validationMessage = validateSignup(form, agreements, emailChecked, codeConfirmed)
+    const validationMessage = validateSignup(
+      form,
+      agreements,
+      emailChecked,
+      nicknameChecked,
+      codeConfirmed,
+    )
     if (validationMessage) {
       setMessage({ type: 'error', text: validationMessage })
       return
     }
 
-    setMessage({
-      type: 'error',
-      text: '현재 백엔드 회원가입 API는 휴대폰 인증과 phoneNumber를 필수로 요구합니다. 이메일 인증 회원가입 API가 추가되면 바로 연결할 수 있습니다.',
-    })
+    setSubmitting(true)
+
+    try {
+      await signUp({
+        email: form.email.trim(),
+        nickname: form.nickname.trim(),
+        password: form.password,
+        verificationCode: form.verificationCode,
+      })
+      setMessage({ type: 'success', text: '회원가입이 완료되었습니다. 로그인 페이지로 이동합니다.' })
+      window.setTimeout(() => onNavigate('/login'), 700)
+    } catch (error) {
+      setMessage({ type: 'error', text: getReadableError(error.message, '회원가입에 실패했습니다.') })
+    } finally {
+      setSubmitting(false)
+    }
   }
+
+  const canSubmit =
+    form.nickname.trim() &&
+    emailPattern.test(form.email.trim()) &&
+    passwordPattern.test(form.password) &&
+    form.password === form.passwordConfirm &&
+    emailChecked &&
+    nicknameChecked &&
+    codeConfirmed &&
+    agreements.terms &&
+    agreements.privacy &&
+    agreements.age &&
+    !submitting
 
   return (
     <AuthLayout>
@@ -222,11 +308,11 @@ export function SignupPage({ onNavigate }) {
         </div>
 
         <form className="signup-form" onSubmit={handleSubmit}>
-          <FormRow label="이름">
+          <FormRow label="닉네임">
             <input
-              placeholder="이름을 입력해주세요."
-              value={form.name}
-              onChange={(event) => update('name', event.target.value)}
+              placeholder="닉네임을 입력해주세요."
+              value={form.nickname}
+              onChange={(event) => update('nickname', event.target.value)}
             />
           </FormRow>
 
@@ -262,6 +348,15 @@ export function SignupPage({ onNavigate }) {
               <input type="email" value={form.email} readOnly />
               <button className="outline-button" type="button" onClick={handleEmailCheck}>
                 이메일 확인
+              </button>
+            </div>
+          </FormRow>
+
+          <FormRow label="닉네임 확인">
+            <div className="email-check-field">
+              <input value={form.nickname} readOnly />
+              <button className="outline-button" type="button" onClick={handleNicknameCheck}>
+                닉네임 확인
               </button>
             </div>
           </FormRow>
@@ -307,10 +402,10 @@ export function SignupPage({ onNavigate }) {
             </div>
           </FormRow>
 
-          <StatusMessage message={message} />
+          <StatusMessage className="signup-status" message={message} />
 
-          <button className="primary-button" type="submit">
-            회원가입 완료
+          <button className="primary-button" type="submit" disabled={!canSubmit}>
+            {submitting ? '가입 중...' : '회원가입 완료'}
           </button>
 
           <p className="bottom-copy">
@@ -328,7 +423,6 @@ export function SignupPage({ onNavigate }) {
 export function FindPasswordPage({ onNavigate }) {
   const [email, setEmail] = useState('')
   const [message, setMessage] = useState({ type: '', text: '' })
-  const [temporaryPassword, setTemporaryPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   async function handleSubmit(event) {
@@ -340,12 +434,10 @@ export function FindPasswordPage({ onNavigate }) {
     }
 
     setSubmitting(true)
-    setTemporaryPassword('')
 
     try {
-      const data = await findPassword({ email: email.trim() })
-      setTemporaryPassword(data?.value || '')
-      setMessage({ type: 'success', text: '임시 비밀번호가 발급되었습니다.' })
+      await findPassword({ email: email.trim() })
+      setMessage({ type: 'success', text: '이메일로 임시 비밀번호가 발송되었습니다.' })
     } catch (error) {
       setMessage({
         type: 'error',
@@ -374,13 +466,6 @@ export function FindPasswordPage({ onNavigate }) {
           </FormRow>
 
           <StatusMessage message={message} />
-
-          {temporaryPassword && (
-            <div className="temporary-password">
-              <span>임시 비밀번호</span>
-              <strong>{temporaryPassword}</strong>
-            </div>
-          )}
 
           <button className="dark-button" type="submit" disabled={submitting}>
             {submitting ? '발급 중...' : '비밀번호 찾기'}
@@ -421,22 +506,23 @@ function Agreement({ checked, label, onChange }) {
   )
 }
 
-function StatusMessage({ message }) {
+function StatusMessage({ className = '', message }) {
   if (!message.text) {
     return null
   }
 
-  return <p className={`status-message ${message.type}`}>{message.text}</p>
+  return <p className={`status-message ${message.type} ${className}`.trim()}>{message.text}</p>
 }
 
-function validateSignup(form, agreements, emailChecked, codeConfirmed) {
-  if (!form.name.trim()) return '이름을 입력해주세요.'
+function validateSignup(form, agreements, emailChecked, nicknameChecked, codeConfirmed) {
+  if (!form.nickname.trim()) return '닉네임을 입력해주세요.'
   if (!emailPattern.test(form.email.trim())) return '올바른 이메일을 입력해주세요.'
   if (!passwordPattern.test(form.password)) {
     return '비밀번호는 영문, 숫자, 특수문자를 포함해 8~16자로 입력해주세요.'
   }
   if (form.password !== form.passwordConfirm) return '비밀번호 확인이 일치하지 않습니다.'
   if (!emailChecked) return '이메일 확인을 완료해주세요.'
+  if (!nicknameChecked) return '닉네임 확인을 완료해주세요.'
   if (!codeConfirmed) return '인증번호 확인을 완료해주세요.'
   if (!agreements.terms || !agreements.privacy || !agreements.age) {
     return '필수 약관에 동의해주세요.'

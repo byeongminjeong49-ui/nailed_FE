@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Header from '../components/common/Header'
 import Footer from '../components/common/Footer'
-import { getMyPage, updateMyProfile, withdrawMember } from '../api/authApi'
+import { getMyPage, logout, updateMyProfile, withdrawMember } from '../api/authApi'
 
 function MyPage({ onNavigate }) {
   const [profile, setProfile] = useState(null)
@@ -11,14 +11,6 @@ function MyPage({ onNavigate }) {
   const [saving, setSaving] = useState(false)
 
   async function loadProfile() {
-    const token = localStorage.getItem('nailedAccessToken')
-
-    if (!token) {
-      setMessage({ type: 'error', text: '로그인이 필요합니다.' })
-      setLoading(false)
-      return
-    }
-
     try {
       const data = await getMyPage()
       setProfile(data)
@@ -72,9 +64,12 @@ function MyPage({ onNavigate }) {
     }
   }
 
-  function handleLogout() {
-    localStorage.removeItem('nailedAccessToken')
-    localStorage.removeItem('nailedRefreshToken')
+  async function handleLogout() {
+    try {
+      await logout()
+    } catch {
+      // 이미 만료된 세션이어도 클라이언트 상태는 정리합니다.
+    }
     localStorage.removeItem('nailedMember')
     onNavigate('/login')
   }
