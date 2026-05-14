@@ -18,10 +18,6 @@ function HomePage() {
               products={section.products}
             />
           ))}
-          <button className="more-button" type="button">
-            더보기
-            <span aria-hidden="true">⌄</span>
-          </button>
         </div>
       </main>
       <Footer />

@@ -8,6 +8,9 @@ import AdminProductsPage from "./pages/admin/AdminProductsPage";
 import AdminReportsPage from "./pages/admin/AdminReportsPage";
 import { FindPasswordPage, LoginPage, SignupPage } from "./pages/AuthPages";
 import MyPage from "./pages/MyPage";
+import ProductListPage from "./pages/ProductListPage";
+import ReadyPage from "./pages/ReadyPage";
+import SearchResultPage from "./pages/SearchResultPage";
 import "./App.css";
 import "./styles/global.css";
 import "./styles/home.css";
@@ -30,8 +33,15 @@ const authRoutes = {
   "/mypage": "mypage",
 };
 
+const readyRoutes = {
+  "/sell": "판매",
+};
+
 function getCurrentPath() {
-  return window.location.pathname;
+  return {
+    pathname: window.location.pathname,
+    search: window.location.search,
+  };
 }
 
 function renderAdminPage(activePage) {
@@ -43,12 +53,14 @@ function renderAdminPage(activePage) {
 }
 
 function App() {
-  const [path, setPath] = useState(getCurrentPath);
+  const [location, setLocation] = useState(getCurrentPath);
+  const path = location.pathname;
   const activePage = adminRoutes[path];
   const activeAuthPage = authRoutes[path];
+  const activeReadyPage = readyRoutes[path];
 
   useEffect(() => {
-    const handlePopState = () => setPath(getCurrentPath());
+    const handlePopState = () => setLocation(getCurrentPath());
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
@@ -56,12 +68,12 @@ function App() {
   const handleAdminNavigate = (event, nextPath) => {
     event.preventDefault();
     window.history.pushState({}, "", nextPath);
-    setPath(nextPath);
+    setLocation(getCurrentPath());
   };
 
   const handleNavigate = (nextPath) => {
     window.history.pushState({}, "", nextPath);
-    setPath(nextPath);
+    setLocation(getCurrentPath());
   };
 
   if (activePage) {
@@ -86,6 +98,18 @@ function App() {
 
   if (activeAuthPage === "mypage") {
     return <MyPage onNavigate={handleNavigate} />;
+  }
+
+  if (activeReadyPage) {
+    return <ReadyPage title={activeReadyPage} />;
+  }
+
+  if (path === "/search") {
+    return <SearchResultPage search={location.search} />;
+  }
+
+  if (path.startsWith("/category/")) {
+    return <ProductListPage path={path} search={location.search} />;
   }
 
   return <HomePage />;
