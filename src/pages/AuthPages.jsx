@@ -1,15 +1,11 @@
 import { useState } from 'react'
 import {
-  checkEmail,
   checkNickname,
-  confirmEmailVerification,
   findPassword,
   login,
-  requestEmailVerification,
   signUp,
 } from '../api/authApi'
 
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,16}$/
 
 function AuthLayout({ children }) {
@@ -34,8 +30,8 @@ function AuthLayout({ children }) {
 }
 
 export function LoginPage({ onNavigate }) {
-  const [form, setForm] = useState({ email: '', password: '' })
-  const [message, setMessage] = useState({ type: '', text: '' })
+  const [form, setForm]             = useState({ userId: '', password: '' })
+  const [message, setMessage]       = useState({ type: '', text: '' })
   const [submitting, setSubmitting] = useState(false)
 
   function update(key, value) {
@@ -45,13 +41,8 @@ export function LoginPage({ onNavigate }) {
   async function handleSubmit(event) {
     event.preventDefault()
 
-    if (!form.email.trim() || !form.password) {
-      setMessage({ type: 'error', text: '이메일과 비밀번호를 입력해주세요.' })
-      return
-    }
-
-    if (!emailPattern.test(form.email.trim())) {
-      setMessage({ type: 'error', text: '이메일 형식이 올바르지 않습니다.' })
+    if (!form.userId.trim() || !form.password) {
+      setMessage({ type: 'error', text: '아이디와 비밀번호를 입력해주세요.' })
       return
     }
 
@@ -59,11 +50,7 @@ export function LoginPage({ onNavigate }) {
     setMessage({ type: '', text: '' })
 
     try {
-      const data = await login({ email: form.email.trim(), password: form.password })
-      localStorage.setItem(
-        'nailedMember',
-        JSON.stringify({ memberId: data.memberId, email: data.email, nickname: data.nickname }),
-      )
+      await login({ email: form.userId.trim(), password: form.password })
       setMessage({ type: 'success', text: '로그인되었습니다. 마이페이지로 이동합니다.' })
       window.setTimeout(() => onNavigate('/mypage'), 500)
     } catch (error) {
@@ -84,13 +71,13 @@ export function LoginPage({ onNavigate }) {
 
           <label className="icon-field">
             <span aria-hidden="true">✉</span>
-            <span className="sr-only">이메일</span>
+            <span className="sr-only">아이디</span>
             <input
-              type="email"
-              placeholder="이메일"
-              autoComplete="email"
-              value={form.email}
-              onChange={(event) => update('email', event.target.value)}
+              type="text"
+              placeholder="아이디"
+              autoComplete="username"
+              value={form.userId}
+              onChange={(event) => update('userId', event.target.value)}
             />
           </label>
 
@@ -135,58 +122,21 @@ export function LoginPage({ onNavigate }) {
 
 export function SignupPage({ onNavigate }) {
   const [form, setForm] = useState({
-    nickname: '',
-    email: '',
-    password: '',
+    nickname:        '',
+    userId:          '',
+    password:        '',
     passwordConfirm: '',
-    verificationCode: '',
   })
-  const [agreements, setAgreements] = useState({ terms: false, privacy: false, age: false })
-  const [emailChecked, setEmailChecked] = useState(false)
+  const [agreements, setAgreements]           = useState({ terms: false, privacy: false, age: false })
   const [nicknameChecked, setNicknameChecked] = useState(false)
-  const [codeRequested, setCodeRequested] = useState(false)
-  const [codeConfirmed, setCodeConfirmed] = useState(false)
-  const [message, setMessage] = useState({ type: '', text: '' })
-  const [submitting, setSubmitting] = useState(false)
+  const [userIdChecked, setUserIdChecked]     = useState(false)
+  const [message, setMessage]                 = useState({ type: '', text: '' })
+  const [submitting, setSubmitting]           = useState(false)
 
   function update(key, value) {
-    const nextValue = key === 'verificationCode' ? value.replace(/\D/g, '') : value
-    setForm((current) => ({ ...current, [key]: nextValue }))
-
-    if (key === 'email') {
-      setEmailChecked(false)
-      setCodeRequested(false)
-      setCodeConfirmed(false)
-    }
-
-    if (key === 'nickname') {
-      setNicknameChecked(false)
-    }
-
-    if (key === 'verificationCode') {
-      setCodeConfirmed(false)
-    }
-  }
-
-  async function handleEmailCheck() {
-    if (!emailPattern.test(form.email.trim())) {
-      setMessage({ type: 'error', text: '올바른 이메일을 입력해주세요.' })
-      return
-    }
-
-    try {
-      const data = await checkEmail(form.email.trim())
-      if (!data.available) {
-        setEmailChecked(false)
-        setMessage({ type: 'error', text: '이미 사용 중인 이메일입니다.' })
-        return
-      }
-
-      setEmailChecked(true)
-      setMessage({ type: 'success', text: '사용 가능한 이메일입니다.' })
-    } catch (error) {
-      setMessage({ type: 'error', text: getReadableError(error.message, '이메일 확인에 실패했습니다.') })
-    }
+    setForm((current) => ({ ...current, [key]: value }))
+    if (key === 'nickname') setNicknameChecked(false)
+    if (key === 'userId')   setUserIdChecked(false)
   }
 
   async function handleNicknameCheck() {
@@ -194,7 +144,6 @@ export function SignupPage({ onNavigate }) {
       setMessage({ type: 'error', text: '닉네임을 입력해주세요.' })
       return
     }
-
     try {
       const data = await checkNickname(form.nickname.trim())
       if (!data.available) {
@@ -202,7 +151,6 @@ export function SignupPage({ onNavigate }) {
         setMessage({ type: 'error', text: '이미 사용 중인 닉네임입니다.' })
         return
       }
-
       setNicknameChecked(true)
       setMessage({ type: 'success', text: '사용 가능한 닉네임입니다.' })
     } catch (error) {
@@ -210,68 +158,39 @@ export function SignupPage({ onNavigate }) {
     }
   }
 
-  async function handleRequestCode() {
-    if (!emailChecked) {
-      setMessage({ type: 'error', text: '먼저 이메일 확인을 완료해주세요.' })
+  async function handleUserIdCheck() {
+    if (!form.userId.trim()) {
+      setMessage({ type: 'error', text: '아이디를 입력해주세요.' })
       return
     }
-
-    try {
-      await requestEmailVerification({ email: form.email.trim() })
-      setCodeRequested(true)
-      setCodeConfirmed(false)
-      setMessage({ type: 'success', text: '이메일로 인증번호가 발송되었습니다. 인증번호는 3분간 유효합니다.' })
-    } catch (error) {
-      setMessage({ type: 'error', text: getReadableError(error.message, '인증번호 발송에 실패했습니다.') })
-    }
-  }
-
-  async function handleConfirmCode() {
-    if (!codeRequested) {
-      setMessage({ type: 'error', text: '먼저 인증번호 요청을 해주세요.' })
-      return
-    }
-
-    if (!form.verificationCode || form.verificationCode.length !== 6) {
-      setMessage({ type: 'error', text: '인증번호 6자리를 입력해주세요.' })
-      return
-    }
-
-    try {
-      await confirmEmailVerification({
-        email: form.email.trim(),
-        verificationCode: form.verificationCode,
-      })
-      setCodeConfirmed(true)
-      setMessage({ type: 'success', text: '이메일 인증이 완료되었습니다.' })
-    } catch (error) {
-      setMessage({ type: 'error', text: getReadableError(error.message, '인증번호 확인에 실패했습니다.') })
+    const members = JSON.parse(localStorage.getItem('nailed_mock_members') || '[]')
+    const isDuplicate = members.some((m) => m.email === form.userId.trim().toLowerCase())
+    if (isDuplicate) {
+      setUserIdChecked(false)
+      setMessage({ type: 'error', text: '이미 사용 중인 아이디입니다.' })
+    } else {
+      setUserIdChecked(true)
+      setMessage({ type: 'success', text: '사용 가능한 아이디입니다.' })
     }
   }
 
   async function handleSubmit(event) {
     event.preventDefault()
 
-    const validationMessage = validateSignup(
-      form,
-      agreements,
-      emailChecked,
-      nicknameChecked,
-      codeConfirmed,
-    )
+    const validationMessage = validateSignup(form, agreements, nicknameChecked, userIdChecked)
     if (validationMessage) {
       setMessage({ type: 'error', text: validationMessage })
       return
     }
 
     setSubmitting(true)
+    setMessage({ type: '', text: '' })
 
     try {
       await signUp({
-        email: form.email.trim(),
+        email:    form.userId.trim(),
         nickname: form.nickname.trim(),
         password: form.password,
-        verificationCode: form.verificationCode,
       })
       setMessage({ type: 'success', text: '회원가입이 완료되었습니다. 로그인 페이지로 이동합니다.' })
       window.setTimeout(() => onNavigate('/login'), 700)
@@ -284,12 +203,11 @@ export function SignupPage({ onNavigate }) {
 
   const canSubmit =
     form.nickname.trim() &&
-    emailPattern.test(form.email.trim()) &&
+    form.userId.trim() &&
     passwordPattern.test(form.password) &&
     form.password === form.passwordConfirm &&
-    emailChecked &&
     nicknameChecked &&
-    codeConfirmed &&
+    userIdChecked &&
     agreements.terms &&
     agreements.privacy &&
     agreements.age &&
@@ -308,21 +226,33 @@ export function SignupPage({ onNavigate }) {
         </div>
 
         <form className="signup-form" onSubmit={handleSubmit}>
+
           <FormRow label="닉네임">
-            <input
-              placeholder="닉네임을 입력해주세요."
-              value={form.nickname}
-              onChange={(event) => update('nickname', event.target.value)}
-            />
+            <div className="email-check-field">
+              <input
+                type="text"
+                placeholder="닉네임을 입력해주세요."
+                value={form.nickname}
+                onChange={(event) => update('nickname', event.target.value)}
+              />
+              <button className="outline-button" type="button" onClick={handleNicknameCheck}>
+                중복 확인
+              </button>
+            </div>
           </FormRow>
 
-          <FormRow label="이메일">
-            <input
-              type="email"
-              placeholder="이메일을 입력해주세요."
-              value={form.email}
-              onChange={(event) => update('email', event.target.value)}
-            />
+          <FormRow label="아이디">
+            <div className="email-check-field">
+              <input
+                type="text"
+                placeholder="아이디를 입력해주세요."
+                value={form.userId}
+                onChange={(event) => update('userId', event.target.value)}
+              />
+              <button className="outline-button" type="button" onClick={handleUserIdCheck}>
+                중복 확인
+              </button>
+            </div>
           </FormRow>
 
           <FormRow label="비밀번호" hint="영문, 숫자, 특수문자 포함 8~16자">
@@ -343,43 +273,6 @@ export function SignupPage({ onNavigate }) {
             />
           </FormRow>
 
-          <FormRow label="이메일 확인">
-            <div className="email-check-field">
-              <input type="email" value={form.email} readOnly />
-              <button className="outline-button" type="button" onClick={handleEmailCheck}>
-                이메일 확인
-              </button>
-            </div>
-          </FormRow>
-
-          <FormRow label="닉네임 확인">
-            <div className="email-check-field">
-              <input value={form.nickname} readOnly />
-              <button className="outline-button" type="button" onClick={handleNicknameCheck}>
-                닉네임 확인
-              </button>
-            </div>
-          </FormRow>
-
-          <FormRow label="인증번호" hint={codeRequested ? '인증번호는 5분간 유효합니다.' : ''}>
-            <div className="verification-field">
-              <input
-                inputMode="numeric"
-                maxLength="6"
-                placeholder="인증번호 6자리"
-                value={form.verificationCode}
-                onChange={(event) => update('verificationCode', event.target.value)}
-                disabled={!codeRequested}
-              />
-              <button className="outline-button" type="button" onClick={handleRequestCode}>
-                인증번호 요청
-              </button>
-              <button className="outline-button muted" type="button" onClick={handleConfirmCode}>
-                확인
-              </button>
-            </div>
-          </FormRow>
-
           <FormRow label="약관 동의">
             <div className="terms-box">
               <Agreement
@@ -390,9 +283,7 @@ export function SignupPage({ onNavigate }) {
               <Agreement
                 checked={agreements.privacy}
                 label="[필수] 개인정보 수집 및 이용 동의"
-                onChange={(checked) =>
-                  setAgreements((current) => ({ ...current, privacy: checked }))
-                }
+                onChange={(checked) => setAgreements((current) => ({ ...current, privacy: checked }))}
               />
               <Agreement
                 checked={agreements.age}
@@ -421,23 +312,23 @@ export function SignupPage({ onNavigate }) {
 }
 
 export function FindPasswordPage({ onNavigate }) {
-  const [email, setEmail] = useState('')
-  const [message, setMessage] = useState({ type: '', text: '' })
+  const [userId, setUserId]         = useState('')
+  const [message, setMessage]       = useState({ type: '', text: '' })
   const [submitting, setSubmitting] = useState(false)
 
   async function handleSubmit(event) {
     event.preventDefault()
 
-    if (!emailPattern.test(email.trim())) {
-      setMessage({ type: 'error', text: '이메일 형식이 올바르지 않습니다.' })
+    if (!userId.trim()) {
+      setMessage({ type: 'error', text: '아이디를 입력해주세요.' })
       return
     }
 
     setSubmitting(true)
 
     try {
-      await findPassword({ email: email.trim() })
-      setMessage({ type: 'success', text: '이메일로 임시 비밀번호가 발송되었습니다.' })
+      await findPassword({ email: userId.trim() })
+      setMessage({ type: 'success', text: '임시 비밀번호가 발급되었습니다.' })
     } catch (error) {
       setMessage({
         type: 'error',
@@ -453,15 +344,15 @@ export function FindPasswordPage({ onNavigate }) {
       <main className="find-page">
         <div className="find-heading">
           <h1>ID/PW 찾기</h1>
-          <p>가입하신 이메일로 임시 비밀번호를 발급받아 로그인해주세요.</p>
+          <p>가입하신 아이디로 임시 비밀번호를 발급받아 로그인해주세요.</p>
         </div>
         <form className="find-card" onSubmit={handleSubmit}>
-          <FormRow label="이메일">
+          <FormRow label="아이디">
             <input
-              type="email"
-              placeholder="이메일을 입력해주세요."
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
+              type="text"
+              placeholder="아이디를 입력해주세요."
+              value={userId}
+              onChange={(event) => setUserId(event.target.value)}
             />
           </FormRow>
 
@@ -507,35 +398,26 @@ function Agreement({ checked, label, onChange }) {
 }
 
 function StatusMessage({ className = '', message }) {
-  if (!message.text) {
-    return null
-  }
-
+  if (!message.text) return null
   return <p className={`status-message ${message.type} ${className}`.trim()}>{message.text}</p>
 }
 
-function validateSignup(form, agreements, emailChecked, nicknameChecked, codeConfirmed) {
-  if (!form.nickname.trim()) return '닉네임을 입력해주세요.'
-  if (!emailPattern.test(form.email.trim())) return '올바른 이메일을 입력해주세요.'
-  if (!passwordPattern.test(form.password)) {
-    return '비밀번호는 영문, 숫자, 특수문자를 포함해 8~16자로 입력해주세요.'
-  }
-  if (form.password !== form.passwordConfirm) return '비밀번호 확인이 일치하지 않습니다.'
-  if (!emailChecked) return '이메일 확인을 완료해주세요.'
-  if (!nicknameChecked) return '닉네임 확인을 완료해주세요.'
-  if (!codeConfirmed) return '인증번호 확인을 완료해주세요.'
-  if (!agreements.terms || !agreements.privacy || !agreements.age) {
-    return '필수 약관에 동의해주세요.'
-  }
+function validateSignup(form, agreements, nicknameChecked, userIdChecked) {
+  if (!form.nickname.trim())                   return '닉네임을 입력해주세요.'
+  if (!nicknameChecked)                        return '닉네임 중복 확인을 완료해주세요.'
+  if (!form.userId.trim())                     return '아이디를 입력해주세요.'
+  if (!userIdChecked)                          return '아이디 중복 확인을 완료해주세요.'
+  if (!passwordPattern.test(form.password))   return '비밀번호는 영문, 숫자, 특수문자를 포함해 8~16자로 입력해주세요.'
+  if (form.password !== form.passwordConfirm)  return '비밀번호 확인이 일치하지 않습니다.'
+  if (!agreements.terms || !agreements.privacy || !agreements.age) return '필수 약관에 동의해주세요.'
   return ''
 }
 
 function getReadableError(message, fallback) {
   if (!message) return fallback
-  if (message.includes('email format')) return '이메일 형식이 올바르지 않습니다.'
-  if (message.includes('M010')) return '이메일 또는 비밀번호가 올바르지 않습니다.'
+  if (message.includes('M010')) return '아이디 또는 비밀번호가 올바르지 않습니다.'
   if (message.includes('M001')) return '가입된 회원 정보를 찾을 수 없습니다.'
-  if (message.includes('M002')) return '이미 가입된 이메일입니다.'
-  if (message.length > 80 || /[�?]/.test(message)) return fallback
+  if (message.includes('M002')) return '이미 가입된 아이디입니다.'
+  if (message.length > 80 || /[ ?]/.test(message)) return fallback
   return message
 }
