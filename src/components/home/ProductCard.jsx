@@ -1,4 +1,16 @@
+function navigate(path) {
+  window.history.pushState({}, "", path);
+  window.dispatchEvent(new PopStateEvent("popstate"));
+}
+
 function ProductCard({ link, product }) {
+  const href = product.id ? `/product/${product.id}` : (link ?? "#");
+
+  const handleClick = (e) => {
+    e.preventDefault();
+    navigate(href);
+  };
+
   const cardContent = (
     <>
       <div className={`product-visual product-${product.type}`} aria-hidden="true">
@@ -28,14 +40,9 @@ function ProductCard({ link, product }) {
       <button className="wish-button" type="button" aria-label={`${product.name} 찜하기`}>
         ♡
       </button>
-      {link ? (
-        // TODO: 상품 상세페이지 구현 후 IA 기준 상세 URL로 교체
-        <a className="product-card-link" href={link}>
-          {cardContent}
-        </a>
-      ) : (
-        cardContent
-      )}
+      <a className="product-card-link" href={href} onClick={handleClick}>
+        {cardContent}
+      </a>
     </article>
   );
 }
