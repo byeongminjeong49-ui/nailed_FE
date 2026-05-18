@@ -351,18 +351,36 @@ function ProductDetailPage({ productId }) {
             </div>
 
             {/* 하단 CTA */}
-            <div className="pd-actions">
-              {isMine ? (
-                <button className="pd-edit-btn" onClick={() => showToast("상품 수정 기능은 준비 중입니다.")}>
-                  수정하기
-                </button>
-              ) : (
-                <button className="pd-buy-btn" onClick={() => showToast("구매하기 기능은 준비 중입니다.")} disabled={isSold}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                  {isSold ? "판매완료" : "Nailed 안전결제"}
-                </button>
-              )}
-            </div>
+<div className="pd-actions">
+  {isMine ? (
+    <button className="pd-edit-btn" onClick={() => showToast("상품 수정 기능은 준비 중입니다.")}>
+      수정하기
+    </button>
+  ) : (
+    <button
+      className="pd-buy-btn"
+      onClick={() => {
+        if (!currentMemberId) { navigate('/login'); return; }
+        sessionStorage.setItem('pendingOrder', JSON.stringify({
+          productId:     product.productId,
+          sellerId:      product.seller.memberId,
+          buyerId:       currentMemberId,
+          productAmount: product.price,
+          finalPrice:    product.price,
+          shippingFee:   0,
+          title:         product.title,
+        }));
+        navigate('/order/form');
+      }}
+      disabled={isSold}
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+      {isSold ? "판매완료" : "Nailed 안전결제"}
+    </button>
+  )}
+</div>
           </div>
         </div>
 

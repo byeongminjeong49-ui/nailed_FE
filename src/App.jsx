@@ -1,19 +1,31 @@
+// src/App.jsx
+
 import { useEffect, useState } from "react";
-import AdminLayout from "./components/admin/AdminLayout";
-import HomePage from "./pages/HomePage";
-import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
-import AdminMembersPage from "./pages/admin/AdminMembersPage";
-import AdminOrdersPage from "./pages/admin/AdminOrdersPage";
-import AdminProductsPage from "./pages/admin/AdminProductsPage";
-import AdminReportsPage from "./pages/admin/AdminReportsPage";
-import { FindPasswordPage, LoginPage, SignupPage } from "./pages/AuthPages";
-import ProductDetailPage from "./pages/ProductDetailPage";
-import ProductListPage from "./pages/ProductListPage";
-import ReadyPage from "./pages/ReadyPage";
-import ReviewWritePage from "./pages/ReviewWritePage";
-import SearchResultPage from "./pages/SearchResultPage";
-import UserProfilePage from "./pages/UserProfilePage";
-import MyPage from "./pages/MyPage";
+import AdminLayout from "./components/admin/AdminLayout.jsx";
+import HomePage from "./pages/HomePage.jsx";
+import AdminDashboardPage from "./pages/admin/AdminDashboardPage.jsx";
+import AdminMembersPage from "./pages/admin/AdminMembersPage.jsx";
+import AdminOrdersPage from "./pages/admin/AdminOrdersPage.jsx";
+import AdminProductsPage from "./pages/admin/AdminProductsPage.jsx";
+import AdminReportsPage from "./pages/admin/AdminReportsPage.jsx";
+import { FindPasswordPage, LoginPage, SignupPage } from "./pages/AuthPages.jsx";
+import MyPage from "./pages/MyPage.jsx";
+import ProductDetailPage from "./pages/ProductDetailPage.jsx";
+import ProductListPage from "./pages/ProductListPage.jsx";
+import ReadyPage from "./pages/ReadyPage.jsx";
+import ReviewWritePage from "./pages/ReviewWritePage.jsx";
+import SearchResultPage from "./pages/SearchResultPage.jsx";
+import UserProfilePage from "./pages/UserProfilePage.jsx";
+
+// 공통 레이아웃 컴포넌트 포함
+import Header from "./components/common/Header.jsx";
+import Footer from "./components/common/Footer.jsx";
+
+// ⭐️ [경로 수정 완료] 스크린샷 파일 위치에 맞게 /order/ 경로를 제거했습니다.
+import OrderForm from "./pages/OrderForm.jsx";
+import PaymentPage from "./pages/PaymentPage.jsx";
+import OrderDetail from "./pages/OrderDetail.jsx";
+
 import "./App.css";
 import "./styles/global.css";
 import "./styles/home.css";
@@ -33,10 +45,16 @@ const authRoutes = {
   "/signup": "signup",
   "/find-password": "find-password",
   "/password/reset": "find-password",
+  "/mypage": "mypage",
 };
 
 const readyRoutes = {
   "/sell": "판매",
+};
+
+const orderRoutes = {
+  "/order/form": "form",
+  "/order/payment": "payment",
 };
 
 function getProductId(pathname) {
@@ -51,6 +69,12 @@ function getUserId(pathname) {
 
 function getReviewOrderId(pathname) {
   const m = pathname.match(/^\/reviews\/write\/([^/]+)$/);
+  return m ? m[1] : null;
+}
+
+// 동적 하위 결제 상세식별키 정규식 추출기
+function getOrderId(pathname) {
+  const m = pathname.match(/^\/order\/detail\/([^/]+)$/);
   return m ? m[1] : null;
 }
 
@@ -75,9 +99,11 @@ function App() {
   const activePage = adminRoutes[path];
   const activeAuthPage = authRoutes[path];
   const activeReadyPage = readyRoutes[path];
+  const activeOrderPage = orderRoutes[path]; 
   const productId = getProductId(path);
   const userId = getUserId(path);
   const reviewOrderId = getReviewOrderId(path);
+  const orderId = getOrderId(path); 
 
   useEffect(() => {
     const handlePopState = () => setLocation(getCurrentPath());
@@ -96,6 +122,7 @@ function App() {
     setLocation(getCurrentPath());
   };
 
+  // 1. 관리자 전용 라우트 우선 처리
   if (activePage) {
     return (
       <AdminLayout activePage={activePage} onNavigate={handleAdminNavigate}>
@@ -104,47 +131,63 @@ function App() {
     );
   }
 
-  if (activeAuthPage === "login") {
-    return <LoginPage onNavigate={handleNavigate} />;
-  }
+  // 2. 인증 및 계정 권한 관련 예외 처리
+  if (activeAuthPage === "login") return <LoginPage onNavigate={handleNavigate} />;
+  if (activeAuthPage === "signup") return <SignupPage onNavigate={handleNavigate} />;
+  if (activeAuthPage === "find-password") return <FindPasswordPage onNavigate={handleNavigate} />;
+  if (activeAuthPage === "mypage") return <MyPage onNavigate={handleNavigate} />;
+  if (activeReadyPage) return <ReadyPage title={activeReadyPage} />;
 
-  if (activeAuthPage === "signup") {
-    return <SignupPage onNavigate={handleNavigate} />;
-  }
-
-  if (activeAuthPage === "find-password") {
-    return <FindPasswordPage onNavigate={handleNavigate} />;
-  }
-
-  if (activeReadyPage) {
-    return <ReadyPage title={activeReadyPage} />;
-  }
-
+  // 3. 상품 코어 도메인 상세 정보 분기
   if (productId) {
     return <ProductDetailPage productId={productId} />;
   }
 
-  if (userId) {
-    return <UserProfilePage memberId={userId} />;
-  }
-
+  // 4. 회원 프로필 및 리뷰 작성 허브
+  if (userId) return <UserProfilePage memberId={userId} />;
   if (reviewOrderId) {
     const params = new URLSearchParams(location.search);
     return <ReviewWritePage orderId={reviewOrderId} sellerId={params.get("sellerId")} />;
   }
 
-  if (path === "/search") {
-    return <SearchResultPage search={location.search} />;
+  // 5. 주문서 / 결제 / 주문상세 내역 통합 처리 분기점
+  if (activeOrderPage === "form") {
+    return (
+      <div className="main-wrapper">
+        <Header />
+        <main className="main-content"><OrderForm /></main>
+        <Footer />
+      </div>
+    );
   }
 
-  if (path === "/mypage") {
-    return <MyPage />;
+  if (activeOrderPage === "payment") {
+    return (
+      <div className="main-wrapper">
+        <Header />
+        <main className="main-content"><PaymentPage /></main>
+        <Footer />
+      </div>
+    );
   }
 
+  if (orderId) {
+    return (
+      <div className="main-wrapper">
+        <Header />
+        <main className="main-content"><OrderDetail orderId={orderId} /></main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // 6. 검색 및 카테고리 인덱싱
+  if (path === "/search") return <SearchResultPage search={location.search} />;
   if (path.startsWith("/category/")) {
     return <ProductListPage path={path} search={location.search} />;
   }
 
+  // 7. 폴백 기본 루트 홈화면
   return <HomePage />;
 }
 
