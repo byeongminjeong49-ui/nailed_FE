@@ -7,7 +7,7 @@ import { getSellerReviews } from "../api/reviewApi";
 import "../styles/product-detail.css";
 
 const GRADE = { BRONZE: "브론즈", SILVER: "실버", GOLD: "골드", DIAMOND: "다이아" };
-const STATUS = { ON_SALE: "판매중", RESERVED: "예약중", SOLD: "판매완료" };
+const STATUS = { ON_SALE: "판매중", SOLD: "판매완료" };
 
 function navigate(path) {
   window.history.pushState({}, "", path);

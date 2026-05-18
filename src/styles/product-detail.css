@@ -23,7 +23,7 @@
   color: #bbb;
 }
 .pd-breadcrumb a { color: #bbb; transition: color 0.15s; }
-.pd-breadcrumb a:hover { color: #151515; }
+.pd-breadcrumb a:hover { color: #151515; }c
 .pd-breadcrumb span:last-child { color: #555; }
 
 /* ── 본문 2단 레이아웃 ── */
@@ -476,7 +476,7 @@
   margin: 40px 0;
 }
 
-.pd-section { margin-bottom: 0; }
+.pd-section { margin-bottom: 0; margin-top: 40px; }
 .pd-section-title {
   font-size: 17px;
   font-weight: 700;
@@ -495,7 +495,7 @@
 .pd-meta-table td:last-child { color: #333; }
 
 /* ── 아코디언 (안심거래·배송·환불) ── */
-.pd-accordion { display: flex; flex-direction: column; }
+.pd-accordion { display: flex; flex-direction: column; margin-top: 48px; }
 .pd-acc-item { border-bottom: 1px solid #e7e7e7; }
 .pd-acc-item:first-child { border-top: 1px solid #e7e7e7; }
 .pd-acc-head {
