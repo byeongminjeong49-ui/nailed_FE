@@ -1,176 +1,190 @@
-// =====================================================
-// Mock Auth API — members 테이블 스키마 기준
-// =====================================================
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+const SESSION_KEY = 'nailed_session'
+const ACCESS_TOKEN_KEY = 'nailed_access_token'
+const REFRESH_TOKEN_KEY = 'nailed_refresh_token'
+const LEGACY_ACCESS_TOKEN_KEY = 'accessToken'
 
-const MEMBERS_KEY = 'nailed_mock_members'  // 회원 목록 (mock DB)
-const SESSION_KEY = 'nailed_session'        // 로그인 세션
-
-function delay(ms = 400) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
+function normalizeEmail(email) {
+  return email.trim().toLowerCase()
 }
 
-function getMembers() {
-  try { return JSON.parse(localStorage.getItem(MEMBERS_KEY) || '[]') }
-  catch { return [] }
+function buildUrl(path) {
+  return `${API_BASE_URL}${path}`
 }
 
-function saveMembers(members) {
-  localStorage.setItem(MEMBERS_KEY, JSON.stringify(members))
-}
-
-function getSession() {
-  try { return JSON.parse(localStorage.getItem(SESSION_KEY)) }
-  catch { return null }
-}
-
-function nextMemberId() {
-  const num = getMembers().length + 1
-  return `MEMBER_${String(num).padStart(3, '0')}`
-}
-
-// ── 닉네임 중복 확인 ────────────────────────────────────
-export async function checkNickname(nickname) {
-  await delay()
-  const available = !getMembers().some((m) => m.nickname === nickname)
-  return { available }
-}
-
-// ── 회원가입 ─────────────────────────────────────────────
-export async function signUp({ userId, nickname, password }) {
-  await delay(600)
-
-  const members = getMembers()
-
-  if (members.some((m) => m.userId === userId.toLowerCase())) {
-    throw new Error('이미 가입된 아이디입니다.')
+function readSession() {
+  try {
+    return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null')
+  } catch {
+    return null
   }
-  if (members.some((m) => m.nickname === nickname)) {
-    throw new Error('이미 사용 중인 닉네임입니다.')
-  }
-
-  const now = new Date().toISOString()
-  const newMember = {
-    member_id:        nextMemberId(),
-    userId:           userId.toLowerCase(),
-    password_hash:    password,        // mock: 평문 저장 (실제 연동 시 해싱 필요)
-    nickname,
-    name:             nickname,        // mock: name 필드는 닉네임으로 대체
-    shop_info:        null,
-    member_status:    'ACTIVE',
-    seller_grade:     'BRONZE',
-    role:             'USER',
-    bank_code:        null,
-    account_number:   null,
-    depositor_name:   null,
-    marketing_agreed: 0,
-    login_fail_count: 0,
-    login_count:      0,
-    last_login_at:    null,
-    locked_until:     null,
-    referrer_id:      null,
-    created_at:       now,
-    updated_at:       now,
-  }
-
-  members.push(newMember)
-  saveMembers(members)
-  return { success: true }
 }
 
-// ── 로그인 ───────────────────────────────────────────────
-export async function login({ userId, password }) {
-  await delay(500)
+function getAccessToken() {
+  return (
+    localStorage.getItem(ACCESS_TOKEN_KEY) ||
+    localStorage.getItem(LEGACY_ACCESS_TOKEN_KEY) ||
+    readSession()?.accessToken ||
+    ''
+  )
+}
 
-  const members = getMembers()
-  const member  = members.find((m) => m.userId === userId.toLowerCase())
-
-  if (!member || member.password_hash !== password) {
-    throw new Error('아이디 또는 비밀번호가 올바르지 않습니다.')
-  }
-
-  const statusMessages = {
-    LOCKED:    '계정이 잠겼습니다. 잠시 후 다시 시도해주세요.',
-    WITHDRAWN: '탈퇴한 계정입니다.',
-    SUSPEND:   '이용이 일시 정지된 계정입니다.',
-    BANNED:    '이용이 영구 제한된 계정입니다.',
-  }
-  if (statusMessages[member.member_status]) {
-    throw new Error(statusMessages[member.member_status])
-  }
-
-  const idx = members.findIndex((m) => m.member_id === member.member_id)
-  members[idx].login_count  += 1
-  members[idx].last_login_at = new Date().toISOString()
-  members[idx].updated_at    = new Date().toISOString()
-  saveMembers(members)
-
+function saveSession(loginData) {
   const session = {
-    member_id:     member.member_id,
-    userId:        member.userId,
-    nickname:      member.nickname,
-    name:          member.name,
-    role:          member.role,
-    seller_grade:  member.seller_grade,
-    member_status: member.member_status,
+    member_id: loginData.memberId,
+    memberId: loginData.memberId,
+    email: loginData.email,
+    userId: loginData.email,
+    nickname: loginData.nickname,
+    name: loginData.nickname,
+    role: loginData.role,
+    member_status: 'ACTIVE',
+    accessToken: loginData.accessToken,
+    refreshToken: loginData.refreshToken,
+    tokenType: loginData.tokenType || 'Bearer',
   }
+
   localStorage.setItem(SESSION_KEY, JSON.stringify(session))
+  if (loginData.accessToken) {
+    localStorage.setItem(ACCESS_TOKEN_KEY, loginData.accessToken)
+    localStorage.setItem(LEGACY_ACCESS_TOKEN_KEY, loginData.accessToken)
+  }
+  if (loginData.refreshToken) {
+    localStorage.setItem(REFRESH_TOKEN_KEY, loginData.refreshToken)
+  }
+
+  window.dispatchEvent(new Event('storage'))
   return session
 }
 
-// ── 비밀번호 찾기 ────────────────────────────────────────
-export async function findPassword({ userId }) {
-  await delay(500)
-  const member = getMembers().find((m) => m.userId === userId.toLowerCase())
-  if (!member) throw new Error('가입된 회원 정보를 찾을 수 없습니다.')
-  console.log(`[Mock] ${userId} 임시 비밀번호: Temp1234!`)
+async function request(path, options = {}) {
+  const shouldAttachToken = options.auth !== false && !path.startsWith('/api/auth/')
+  const token = shouldAttachToken ? getAccessToken() : ''
+  const headers = {
+    ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...options.headers,
+  }
+
+  const { auth, ...fetchOptions } = options
+  const response = await fetch(buildUrl(path), {
+    credentials: 'include',
+    ...fetchOptions,
+    headers,
+  })
+
+  if (response.status === 204) {
+    return null
+  }
+
+  const contentType = response.headers.get('content-type') || ''
+  const payload = contentType.includes('application/json') ? await response.json() : await response.text()
+
+  if (!response.ok || payload?.success === false) {
+    const message =
+      payload?.error?.message ||
+      payload?.message ||
+      (typeof payload === 'string' ? payload : '') ||
+      '요청 처리에 실패했습니다.'
+    throw new Error(message)
+  }
+
+  return payload?.data ?? payload
+}
+
+export async function checkEmail(email) {
+  const normalizedEmail = normalizeEmail(email)
+  const data = await request(`/api/auth/check-email?email=${encodeURIComponent(normalizedEmail)}`)
+  return { available: !data.duplicated }
+}
+
+export async function checkNickname(nickname) {
+  const data = await request(`/api/auth/check-nickname?nickname=${encodeURIComponent(nickname.trim())}`)
+  return { available: !data.duplicated }
+}
+
+export async function requestEmailVerification(email) {
+  await request('/api/auth/email/send-code', {
+    method: 'POST',
+    auth: false,
+    body: JSON.stringify({ email: normalizeEmail(email) }),
+  })
   return { success: true }
 }
 
-// ── 로그아웃 ─────────────────────────────────────────────
-export async function logout() {
-  await delay()
-  localStorage.removeItem(SESSION_KEY)
+export async function verifyEmailCode({ email, code }) {
+  await request('/api/auth/email/verify-code', {
+    method: 'POST',
+    auth: false,
+    body: JSON.stringify({ email: normalizeEmail(email), code: code.trim() }),
+  })
+  return { success: true }
 }
 
-// ── 마이페이지 조회 ──────────────────────────────────────
-export async function getMyPage() {
-  await delay()
-  const session = getSession()
-  if (!session) throw new Error('로그인이 필요합니다.')
-  const member = getMembers().find((m) => m.member_id === session.member_id)
-  if (!member) throw new Error('회원 정보를 찾을 수 없습니다.')
-  const { password_hash, ...safeData } = member
-  return safeData
+export async function signUp({ email, nickname, password, agreements }) {
+  const data = await request('/api/auth/signup', {
+    method: 'POST',
+    auth: false,
+    body: JSON.stringify({
+      email: normalizeEmail(email),
+      nickname: nickname.trim(),
+      password,
+      name: nickname.trim(),
+      serviceTermsAgreed: Boolean(agreements?.terms),
+      privacyPolicyAgreed: Boolean(agreements?.privacy),
+      marketingAgreed: Boolean(agreements?.marketing),
+    }),
+  })
+
+  return { success: true, memberId: data.memberId }
 }
 
-// ── 프로필 수정 ──────────────────────────────────────────
-export async function updateMyProfile({ nickname }) {
-  await delay()
-  const session = getSession()
-  if (!session) throw new Error('로그인이 필요합니다.')
-  const members = getMembers()
-  const idx = members.findIndex((m) => m.member_id === session.member_id)
-  if (idx === -1) throw new Error('회원 정보를 찾을 수 없습니다.')
-  members[idx].nickname   = nickname
-  members[idx].updated_at = new Date().toISOString()
-  saveMembers(members)
-  const updated = { ...session, nickname }
-  localStorage.setItem(SESSION_KEY, JSON.stringify(updated))
-  return members[idx]
+export async function login({ email, password }) {
+  const data = await request('/api/auth/login', {
+    method: 'POST',
+    auth: false,
+    body: JSON.stringify({ email: normalizeEmail(email), password }),
+  })
+
+  return saveSession(data)
 }
 
-// ── 회원 탈퇴 ────────────────────────────────────────────
-export async function withdrawMember() {
-  await delay()
-  const session = getSession()
-  if (!session) throw new Error('로그인이 필요합니다.')
-  const members = getMembers()
-  const idx = members.findIndex((m) => m.member_id === session.member_id)
-  if (idx !== -1) {
-    members[idx].member_status = 'WITHDRAWN'
-    members[idx].updated_at    = new Date().toISOString()
-    saveMembers(members)
+export async function findPassword({ email }) {
+  await request('/api/auth/password/reset-request', {
+    method: 'POST',
+    auth: false,
+    body: JSON.stringify({ email: normalizeEmail(email) }),
+  })
+
+  return {
+    success: true,
+    message: '비밀번호 재설정 안내 메일 발송을 요청했습니다.',
   }
+}
+
+export async function logout() {
   localStorage.removeItem(SESSION_KEY)
+  localStorage.removeItem(ACCESS_TOKEN_KEY)
+  localStorage.removeItem(REFRESH_TOKEN_KEY)
+  localStorage.removeItem(LEGACY_ACCESS_TOKEN_KEY)
+  window.dispatchEvent(new Event('storage'))
+}
+
+export async function getMyPage() {
+  return request('/api/members/me/profile')
+}
+
+export async function updateMyProfile({ nickname }) {
+  return request('/api/members/me/profile', {
+    method: 'PUT',
+    body: JSON.stringify({ nickname }),
+  })
+}
+
+export async function withdrawMember() {
+  await request('/api/members/me', {
+    method: 'DELETE',
+  })
+  await logout()
   return { success: true }
 }
