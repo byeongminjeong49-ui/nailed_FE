@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { logout } from "../../api/authApi";
 import { categories } from "../../data/categories";
 
 const menuItems = [
+  { label: "마이페이지", icon: "◎", href: "/mypage" },
   { label: "판매", icon: "＋", href: "/sell" },
 ];
 
 function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(() =>
-    Boolean(window.localStorage.getItem("nailedMember")),
+    Boolean(window.localStorage.getItem("nailed_session")),
   );
   const [searchKeyword, setSearchKeyword] = useState(() => {
     if (window.location.pathname !== "/search") {
@@ -18,7 +20,6 @@ function Header() {
   });
   const authMenuItems = isLoggedIn
     ? [
-        { label: "마이페이지", icon: "◎", href: "/mypage" },
         { label: "로그아웃", icon: "↪", href: "/" },
       ]
     : [
@@ -28,13 +29,22 @@ function Header() {
   const quickMenuItems = [...menuItems, ...authMenuItems];
   const [activeCategory, setActiveCategory] = useState(null);
 
-  const handleMenuClick = (event, item) => {
+  useEffect(() => {
+    const syncLoginState = () => {
+      setIsLoggedIn(Boolean(window.localStorage.getItem("nailed_session")));
+    };
+
+    window.addEventListener("storage", syncLoginState);
+    return () => window.removeEventListener("storage", syncLoginState);
+  }, []);
+
+  const handleMenuClick = async (event, item) => {
     if (item.label !== "로그아웃") {
       return;
     }
 
     event.preventDefault();
-    window.localStorage.removeItem("nailedMember");
+    await logout();
     setIsLoggedIn(false);
     window.history.pushState({}, "", "/");
     window.dispatchEvent(new PopStateEvent("popstate"));

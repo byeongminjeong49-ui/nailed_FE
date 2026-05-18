@@ -1,32 +1,52 @@
+.auth-page {
+  min-height: 100vh;
+  background: #f5f7fb;
+}
+
 .auth-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 92px;
+  min-height: 78px;
   padding: 0 48px;
-  border-bottom: 1px solid #e7e7e7;
+  border-bottom: 1px solid #e3e7ef;
   background: #fff;
 }
 
 .auth-brand {
+  border: 0;
+  background: none;
   color: #151515;
+  cursor: pointer;
   font-family: Georgia, 'Times New Roman', serif;
-  font-size: 42px;
+  font-size: 40px;
   font-style: italic;
   line-height: 1;
-  text-decoration: none;
 }
 
 .auth-nav {
   display: flex;
-  gap: 20px;
+  gap: 10px;
 }
 
-.auth-nav a {
-  color: #222;
-  font-size: 14px;
+.auth-nav button,
+.auth-actions button {
+  border: 0;
+  background: none;
+  color: #146f66;
+  cursor: pointer;
   font-weight: 800;
-  text-decoration: none;
+}
+
+.auth-nav button {
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  color: #222;
+}
+
+.auth-nav button:hover {
+  background: #edf5f3;
 }
 
 .auth-footer {
@@ -34,14 +54,15 @@
   align-items: center;
   justify-content: center;
   gap: 14px;
-  min-height: 120px;
+  min-height: 104px;
+  padding: 24px;
   background: #111417;
   color: #f6f6f6;
 }
 
 .auth-footer strong {
   font-family: Georgia, 'Times New Roman', serif;
-  font-size: 34px;
+  font-size: 32px;
   font-style: italic;
 }
 
@@ -50,255 +71,199 @@
   font-size: 14px;
 }
 
-.auth-section {
+.auth-shell {
   display: flex;
   justify-content: center;
-  min-height: 680px;
-  padding: 120px 24px;
+  min-height: 720px;
+  padding: 56px 24px 76px;
+}
+
+.auth-shell-narrow {
+  align-items: flex-start;
+}
+
+.auth-panel {
+  width: min(100%, 760px);
+  padding: 42px;
+  border: 1px solid #dfe5ee;
+  border-radius: 8px;
   background: #fff;
+  box-shadow: 0 18px 42px rgba(20, 37, 63, 0.08);
 }
 
-.login-card,
-.find-card,
-.mypage-panel {
-  border: 1px solid #e5e5e5;
-  border-radius: 10px;
-  background: #fff;
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.06);
+.auth-shell-narrow .auth-panel {
+  width: min(100%, 520px);
 }
 
-.login-card {
-  width: min(100%, 470px);
-  padding: 44px 52px;
+.signup-panel {
+  width: min(100%, 860px);
 }
 
-.form-heading {
+.auth-title {
   margin-bottom: 30px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid #edf0f5;
 }
 
-.form-heading h1,
-.signup-copy h1,
-.find-heading h1,
-.mypage-heading h1 {
+.auth-title p {
+  margin: 0 0 10px;
+  color: #2a5d9f;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.auth-title h1 {
   margin: 0;
   color: #151515;
   font-size: 30px;
+  font-weight: 900;
+}
+
+.auth-title span {
+  display: block;
+  margin-top: 10px;
+  color: #6b7280;
+  line-height: 1.55;
+}
+
+.auth-form {
+  display: grid;
+  gap: 18px;
+}
+
+.signup-form {
+  gap: 20px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.form-row > span {
+  padding-top: 13px;
+  color: #202020;
   font-weight: 800;
 }
 
-.form-heading p,
-.signup-copy p,
-.find-heading p,
-.mypage-heading p {
-  margin: 12px 0 0;
-  color: #777;
+.field-control {
+  display: grid;
+  gap: 8px;
 }
 
-.centered {
-  text-align: center;
+.field-control small {
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.45;
 }
 
-.icon-field {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 54px;
-  margin-bottom: 14px;
-  padding: 0 16px;
-  border: 1px solid #d7d9dd;
-  border-radius: 8px;
-}
-
-.icon-field input,
-.form-row input,
-.profile-edit input {
+.field-control input {
   width: 100%;
-  min-height: 52px;
-  border: 1px solid #d7d9dd;
+  min-height: 48px;
+  border: 1px solid #cfd7e3;
   border-radius: 8px;
-  padding: 0 16px;
+  padding: 0 14px;
+  background: #fff;
+  color: #161616;
   outline: 0;
 }
 
-.icon-field input {
-  min-height: auto;
-  border: 0;
-  padding: 0;
+.field-control input:focus {
+  border-color: #1b8f82;
+  box-shadow: 0 0 0 3px rgba(27, 143, 130, 0.12);
 }
 
-.form-links {
-  display: flex;
-  margin: 16px 0 24px;
-}
-
-.form-links.split {
-  justify-content: space-between;
-}
-
-.form-links button,
-.bottom-copy button {
-  border: 0;
-  background: none;
-  color: #0f8f7e;
-  font-weight: 800;
-}
-
-.form-links button:first-child {
-  color: #222;
-  text-decoration: underline;
+.inline-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 118px;
+  gap: 10px;
 }
 
 .primary-button,
-.dark-button,
-.outline-button {
-  min-height: 52px;
+.secondary-button,
+.outline-button,
+.dark-button {
+  min-height: 48px;
   border-radius: 8px;
+  cursor: pointer;
   font-weight: 800;
 }
 
 .primary-button {
   width: 100%;
   border: 0;
-  color: #047c6d;
-  background: linear-gradient(90deg, #a6eee3, #90e2d6);
+  color: #fff;
+  background: #168f88;
+}
+
+.primary-button:hover {
+  background: #0f766e;
+}
+
+.secondary-button {
+  width: fit-content;
+  min-width: 150px;
+  padding: 0 16px;
+  border: 1px solid #d4dde9;
+  background: #f8fafc;
+  color: #263241;
+}
+
+.outline-button {
+  padding: 0 14px;
+  border: 1px solid #168f88;
+  background: #fff;
+  color: #137c74;
 }
 
 .dark-button {
   width: 100%;
   border: 0;
   color: #fff;
-  background: #2c170d;
-}
-
-.outline-button {
-  padding: 0 16px;
-  border: 1px solid #48cdbb;
-  background: #fff;
-  color: #159b8b;
-}
-
-.outline-button.muted {
-  border-color: #d7d9dd;
-  color: #333;
-}
-
-.bottom-copy {
-  margin: 28px 0 0;
-  color: #777;
-  text-align: center;
-}
-
-.bottom-copy button {
-  margin-left: 8px;
-}
-
-.signup-layout {
-  display: grid;
-  grid-template-columns: 250px minmax(360px, 620px);
-  gap: 58px;
-  max-width: 980px;
-  min-height: 720px;
-  margin: 0 auto;
-  padding: 60px 32px 78px;
-}
-
-.signup-form {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: 136px minmax(0, 1fr);
-  gap: 8px 16px;
-  align-items: start;
-}
-
-.form-row > label,
-.profile-edit label {
-  padding-top: 14px;
-  color: #202020;
-  font-weight: 800;
-}
-
-.hint {
-  grid-column: 2;
-  margin: 0;
-  color: #777;
-  font-size: 13px;
-}
-
-.phone-field {
-  display: flex;
-  min-height: 52px;
-  overflow: hidden;
-  border: 1px solid #d7d9dd;
-  border-radius: 8px;
-}
-
-.phone-field select {
-  width: 110px;
-  border: 0;
-  border-right: 1px solid #d7d9dd;
-  padding: 0 14px;
-  background: #fff;
-}
-
-.phone-field input {
-  border: 0;
-  border-radius: 0;
-}
-
-.email-check-field {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 132px;
-  gap: 10px;
-}
-
-.email-check-field input[readonly] {
-  background: #f9fafb;
-  color: #555;
-}
-
-.verification-field {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 132px 76px;
-  gap: 10px;
+  background: #252b33;
 }
 
 .terms-box {
-  padding: 12px 16px;
-  border: 1px solid #e1e1e1;
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 1px solid #dfe5ee;
   border-radius: 8px;
+  background: #fbfcfe;
 }
 
 .agreement {
   display: grid;
-  grid-template-columns: 22px 1fr auto;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
-  min-height: 36px;
+  min-height: 34px;
+  color: #293241;
 }
 
 .agreement input {
   width: 18px;
   height: 18px;
-  accent-color: #51cbbb;
+  accent-color: #168f88;
 }
 
 .agreement button {
   border: 0;
   background: none;
-  color: #555;
+  color: #6b7280;
+  cursor: pointer;
+  font-size: 13px;
   text-decoration: underline;
 }
 
 .status-message {
-  margin: 0 0 16px;
+  margin: 0;
   padding: 12px 14px;
   border-radius: 8px;
   font-size: 14px;
+  line-height: 1.45;
 }
 
 .status-message.error {
@@ -313,60 +278,37 @@
   color: #087f6d;
 }
 
-.signup-status {
-  position: sticky;
-  top: 12px;
-  z-index: 20;
-  margin-bottom: 0;
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.12);
+.auth-actions {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 24px;
+  color: #6b7280;
+  font-size: 14px;
 }
 
 .primary-button:disabled,
+.secondary-button:disabled,
 .dark-button:disabled,
 .outline-button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
 }
 
-.find-page,
 .mypage-main {
   min-height: 680px;
   padding: 70px 24px 90px;
   background: #fafafa;
 }
 
-.find-heading {
-  margin-bottom: 28px;
-  text-align: center;
-}
-
-.find-card {
-  width: min(100%, 560px);
-  margin: 0 auto;
-  padding: 34px 38px;
-}
-
-.temporary-password {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
-  padding: 14px 16px;
-  border-radius: 8px;
-  background: #f6f2ee;
-  color: #2b170e;
-}
-
-.temporary-password strong {
-  font-size: 20px;
-  letter-spacing: 1px;
-}
-
 .mypage-panel {
   max-width: 920px;
   margin: 0 auto;
   padding: 36px;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.06);
 }
 
 .mypage-heading {
@@ -375,6 +317,18 @@
   justify-content: space-between;
   gap: 20px;
   margin-bottom: 26px;
+}
+
+.mypage-heading h1 {
+  margin: 0;
+  color: #151515;
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.mypage-heading p {
+  margin: 12px 0 0;
+  color: #777;
 }
 
 .profile-grid {
@@ -412,6 +366,21 @@
   align-items: center;
   padding-top: 24px;
   border-top: 1px solid #eeeeee;
+}
+
+.profile-edit label {
+  padding-top: 14px;
+  color: #202020;
+  font-weight: 800;
+}
+
+.profile-edit input {
+  width: 100%;
+  min-height: 52px;
+  border: 1px solid #d7d9dd;
+  border-radius: 8px;
+  padding: 0 16px;
+  outline: 0;
 }
 
 .profile-edit div {
@@ -457,42 +426,33 @@
     text-align: center;
   }
 
-  .login-card,
-  .find-card,
-  .mypage-panel {
-    padding: 28px 20px;
+  .auth-shell {
+    padding: 32px 16px 58px;
   }
 
-  .signup-layout,
+  .auth-panel,
+  .mypage-panel {
+    padding: 26px 18px;
+  }
+
   .form-row,
+  .inline-field,
   .profile-edit,
   .profile-edit div,
   .profile-grid {
     grid-template-columns: 1fr;
   }
 
-  .signup-layout {
-    gap: 28px;
-    padding: 42px 18px 64px;
-  }
-
-  .form-row > label,
+  .form-row > span,
   .profile-edit label {
     padding-top: 0;
   }
 
-  .hint {
-    grid-column: 1;
+  .secondary-button {
+    width: 100%;
   }
 
-  .verification-field {
-    grid-template-columns: 1fr;
-  }
-
-  .email-check-field {
-    grid-template-columns: 1fr;
-  }
-
+  .auth-actions,
   .mypage-heading {
     display: grid;
   }

@@ -7,13 +7,13 @@ import AdminOrdersPage from "./pages/admin/AdminOrdersPage";
 import AdminProductsPage from "./pages/admin/AdminProductsPage";
 import AdminReportsPage from "./pages/admin/AdminReportsPage";
 import { FindPasswordPage, LoginPage, SignupPage } from "./pages/AuthPages";
-import MyPage from "./pages/MyPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
 import ProductListPage from "./pages/ProductListPage";
 import ReadyPage from "./pages/ReadyPage";
 import ReviewWritePage from "./pages/ReviewWritePage";
 import SearchResultPage from "./pages/SearchResultPage";
 import UserProfilePage from "./pages/UserProfilePage";
+import MyPage from "./pages/MyPage";
 import "./App.css";
 import "./styles/global.css";
 import "./styles/home.css";
@@ -33,7 +33,6 @@ const authRoutes = {
   "/signup": "signup",
   "/find-password": "find-password",
   "/password/reset": "find-password",
-  "/mypage": "mypage",
 };
 
 const readyRoutes = {
@@ -117,10 +116,6 @@ function App() {
     return <FindPasswordPage onNavigate={handleNavigate} />;
   }
 
-  if (activeAuthPage === "mypage") {
-    return <MyPage onNavigate={handleNavigate} />;
-  }
-
   if (activeReadyPage) {
     return <ReadyPage title={activeReadyPage} />;
   }
@@ -140,6 +135,10 @@ function App() {
 
   if (path === "/search") {
     return <SearchResultPage search={location.search} />;
+  }
+
+  if (path === "/mypage") {
+    return <MyPage />;
   }
 
   if (path.startsWith("/category/")) {

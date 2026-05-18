@@ -30,6 +30,15 @@ const PRICE_PRESETS = [
   { label: "50만원 이하", max: 500000 },
 ];
 
+const PROFILE_TABS = [
+  { key: "products", label: "상품" },
+  { key: "orders", label: "주문 내역" },
+  { key: "wishlist", label: "찜 목록" },
+  { key: "selling", label: "내가 판매한 상품" },
+  { key: "settlements", label: "정산 내역" },
+  { key: "reviews", label: "리뷰" },
+];
+
 /* ── 사이드바 필터 ── */
 function FilterSidebar({ excludeSold, setExcludeSold, selectedCats, setSelectedCats, onPriceApply }) {
   const [catOpen, setCatOpen] = useState(true);
@@ -268,8 +277,16 @@ function ReviewsTab({ reviews, avgRating, totalElements, totalPages, page, setPa
   );
 }
 
+function EmptyProfileTab({ label }) {
+  return (
+    <p className="up-empty">
+      {label} 정보가 없습니다.
+    </p>
+  );
+}
+
 /* ── 메인 페이지 ── */
-function UserProfilePage({ memberId }) {
+function UserProfilePage({ memberId, hideFooter = false }) {
   const [seller, setSeller] = useState(null);
   const [sellerProducts, setSellerProducts] = useState([]);
   const [reviews, setReviews] = useState([]);
@@ -361,17 +378,13 @@ function UserProfilePage({ memberId }) {
       {/* 탭 바 */}
       <div className="up-tabs-bar">
         <div className="up-tabs-inner">
-          {[
-            { key: "products",  label: "상품" },
-            { key: "wishlist",  label: "위시리스트" },
-            { key: "reviews",   label: `리뷰${totalElements > 0 ? ` ${totalElements}` : ""}` },
-          ].map(({ key, label }) => (
+          {PROFILE_TABS.map(({ key, label }) => (
             <button
               key={key}
               className={`up-tab ${activeTab === key ? "active" : ""}`}
               onClick={() => setActiveTab(key)}
             >
-              {label}
+              {key === "reviews" && totalElements > 0 ? `${label} ${totalElements}` : label}
             </button>
           ))}
         </div>
@@ -380,7 +393,6 @@ function UserProfilePage({ memberId }) {
       {/* 탭 콘텐츠 */}
       <div className="up-inner">
         {activeTab === "products" && <ProductsTab products={sellerProducts} />}
-        {activeTab === "wishlist" && <p className="up-empty">위시리스트는 준비 중입니다.</p>}
         {activeTab === "reviews" && (
           <ReviewsTab
             reviews={reviews}
@@ -392,9 +404,12 @@ function UserProfilePage({ memberId }) {
             rvLoading={rvLoading}
           />
         )}
+        {activeTab !== "products" && activeTab !== "reviews" && (
+          <EmptyProfileTab label={PROFILE_TABS.find((tab) => tab.key === activeTab)?.label ?? "선택한 탭"} />
+        )}
       </div>
 
-      <Footer />
+      {!hideFooter && <Footer />}
 
       {toast && <div className="pd-toast">{toast}</div>}
     </div>
