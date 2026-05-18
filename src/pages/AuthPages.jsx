@@ -50,7 +50,7 @@ export function LoginPage({ onNavigate }) {
     setMessage({ type: '', text: '' })
 
     try {
-      await login({ email: form.userId.trim(), password: form.password })
+      await login({ userId: form.userId.trim(), password: form.password })
       setMessage({ type: 'success', text: '로그인되었습니다. 마이페이지로 이동합니다.' })
       window.setTimeout(() => onNavigate('/mypage'), 500)
     } catch (error) {
@@ -164,7 +164,7 @@ export function SignupPage({ onNavigate }) {
       return
     }
     const members = JSON.parse(localStorage.getItem('nailed_mock_members') || '[]')
-    const isDuplicate = members.some((m) => m.email === form.userId.trim().toLowerCase())
+    const isDuplicate = members.some((m) => m.userId === form.userId.trim().toLowerCase())
     if (isDuplicate) {
       setUserIdChecked(false)
       setMessage({ type: 'error', text: '이미 사용 중인 아이디입니다.' })
@@ -188,7 +188,7 @@ export function SignupPage({ onNavigate }) {
 
     try {
       await signUp({
-        email:    form.userId.trim(),
+        userId:   form.userId.trim(),
         nickname: form.nickname.trim(),
         password: form.password,
       })
@@ -327,7 +327,7 @@ export function FindPasswordPage({ onNavigate }) {
     setSubmitting(true)
 
     try {
-      await findPassword({ email: userId.trim() })
+      await findPassword({ userId: userId.trim() })
       setMessage({ type: 'success', text: '임시 비밀번호가 발급되었습니다.' })
     } catch (error) {
       setMessage({

@@ -8,9 +8,12 @@ import AdminProductsPage from "./pages/admin/AdminProductsPage";
 import AdminReportsPage from "./pages/admin/AdminReportsPage";
 import { FindPasswordPage, LoginPage, SignupPage } from "./pages/AuthPages";
 import MyPage from "./pages/MyPage";
+import ProductDetailPage from "./pages/ProductDetailPage";
 import ProductListPage from "./pages/ProductListPage";
 import ReadyPage from "./pages/ReadyPage";
+import ReviewWritePage from "./pages/ReviewWritePage";
 import SearchResultPage from "./pages/SearchResultPage";
+import UserProfilePage from "./pages/UserProfilePage";
 import "./App.css";
 import "./styles/global.css";
 import "./styles/home.css";
@@ -37,6 +40,21 @@ const readyRoutes = {
   "/sell": "판매",
 };
 
+function getProductId(pathname) {
+  const m = pathname.match(/^\/product\/([^/]+)$/);
+  return m ? m[1] : null;
+}
+
+function getUserId(pathname) {
+  const m = pathname.match(/^\/user\/([^/]+)$/);
+  return m ? m[1] : null;
+}
+
+function getReviewOrderId(pathname) {
+  const m = pathname.match(/^\/reviews\/write\/([^/]+)$/);
+  return m ? m[1] : null;
+}
+
 function getCurrentPath() {
   return {
     pathname: window.location.pathname,
@@ -58,6 +76,9 @@ function App() {
   const activePage = adminRoutes[path];
   const activeAuthPage = authRoutes[path];
   const activeReadyPage = readyRoutes[path];
+  const productId = getProductId(path);
+  const userId = getUserId(path);
+  const reviewOrderId = getReviewOrderId(path);
 
   useEffect(() => {
     const handlePopState = () => setLocation(getCurrentPath());
@@ -102,6 +123,19 @@ function App() {
 
   if (activeReadyPage) {
     return <ReadyPage title={activeReadyPage} />;
+  }
+
+  if (productId) {
+    return <ProductDetailPage productId={productId} />;
+  }
+
+  if (userId) {
+    return <UserProfilePage memberId={userId} />;
+  }
+
+  if (reviewOrderId) {
+    const params = new URLSearchParams(location.search);
+    return <ReviewWritePage orderId={reviewOrderId} sellerId={params.get("sellerId")} />;
   }
 
   if (path === "/search") {
