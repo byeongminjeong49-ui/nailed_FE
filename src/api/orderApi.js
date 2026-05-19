@@ -25,3 +25,6 @@ export const registerTracking  = (orderId, body) =>
 
 export const confirmDelivery   = (orderId) =>
   req(`${BASE}/${orderId}/delivered`, { method: 'PATCH' });
+
+export const mockPay           = (orderId) =>
+  req(`${BASE}/${orderId}/pay`, { method: 'PATCH' });
