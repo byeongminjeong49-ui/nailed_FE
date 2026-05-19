@@ -1,6 +1,15 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+const ACCESS_TOKEN_KEY = "nailed_access_token";
 const SESSION_KEY = "nailed_session";
 const RECENTLY_VIEWED_KEY = "nailed_recently_viewed";
+
+function clearAuthStorage() {
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem("nailedAccessToken");
+  localStorage.removeItem("nailedRefreshToken");
+  window.dispatchEvent(new Event("storage"));
+}
 
 function readSession() {
   try {
@@ -20,8 +29,10 @@ function buildUrl(path) {
 }
 
 async function request(path, options = {}) {
+  const token = localStorage.getItem(ACCESS_TOKEN_KEY);
   const headers = {
     ...(options.body ? { "Content-Type": "application/json" } : {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...options.headers,
   };
 
@@ -33,6 +44,11 @@ async function request(path, options = {}) {
 
   if (response.status === 204) {
     return null;
+  }
+
+  if (response.status === 401 || response.status === 403) {
+    clearAuthStorage();
+    throw new Error("로그인이 만료되었습니다. 다시 로그인해주세요.");
   }
 
   const contentType = response.headers.get("content-type") || "";
@@ -54,12 +70,8 @@ export function getCurrentMemberId() {
 }
 
 export async function fetchMyProfile() {
-  const memberId = getMemberId();
-  if (!memberId) {
-    throw new Error("로그인이 필요합니다.");
-  }
-
-  return request(`/api/users/${encodeURIComponent(memberId)}`);
+  const data = await request("/api/members/me/profile");
+  return data?.data ?? data;
 }
 
 export async function updateMyProfile(payload) {

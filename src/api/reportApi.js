@@ -1,4 +1,6 @@
-const KEY = "nailed_mock_reports";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+const ACCESS_TOKEN_KEY = "nailed_access_token";
+const SESSION_KEY = "nailed_session";
 
 export const REPORT_REASONS = [
   { code: "FRAUD", label: "사기" },
@@ -7,24 +9,67 @@ export const REPORT_REASONS = [
   { code: "ETC", label: "기타" },
 ];
 
-const LABEL_MAP = Object.fromEntries(REPORT_REASONS.map((r) => [r.code, r.label]));
-
-function load() { try { return JSON.parse(localStorage.getItem(KEY) ?? "[]"); } catch { return []; } }
-function save(list) { localStorage.setItem(KEY, JSON.stringify(list)); }
-function genId(list) {
-  const max = list.reduce((m, r) => { const n = parseInt(r.reportId.replace("RPT_", ""), 10); return n > m ? n : m; }, 0);
-  return `RPT_${String(max + 1).padStart(3, "0")}`;
+function clearAuthStorage() {
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem("nailedAccessToken");
+  localStorage.removeItem("nailedRefreshToken");
+  window.dispatchEvent(new Event("storage"));
 }
-function currentMemberId() {
-  try { return JSON.parse(localStorage.getItem("nailed_session") ?? "null")?.member_id ?? null; } catch { return null; }
+
+function buildUrl(path) {
+  return `${API_BASE_URL}${path}`;
+}
+
+function getAccessToken() {
+  return localStorage.getItem(ACCESS_TOKEN_KEY);
+}
+
+async function requestWithAuth(path, options = {}) {
+  const token = getAccessToken();
+  if (!token) throw new Error("로그인이 필요합니다.");
+
+  const response = await fetch(buildUrl(path), {
+    ...options,
+    headers: {
+      ...(options.body ? { "Content-Type": "application/json" } : {}),
+      Authorization: `Bearer ${token}`,
+      ...options.headers,
+    },
+  });
+
+  if (response.status === 204) {
+    return null;
+  }
+
+  if (response.status === 401 || response.status === 403) {
+    clearAuthStorage();
+    throw new Error("로그인이 만료되었습니다. 다시 로그인해주세요.");
+  }
+
+  const contentType = response.headers.get("content-type") || "";
+  const data = contentType.includes("application/json")
+    ? await response.json()
+    : await response.text();
+
+  if (!response.ok) {
+    const message =
+      typeof data === "string"
+        ? data
+        : data?.error?.message || data?.message || "요청 처리에 실패했습니다.";
+    throw new Error(message);
+  }
+
+  return data?.data ?? data;
 }
 
 export async function submitReport({ targetMemberId, reasonCode, detail }) {
-  await new Promise((r) => setTimeout(r, 450));
-  const reporterId = currentMemberId();
-  if (!reporterId) throw new Error("로그인이 필요합니다.");
-  const list = load();
-  const report = { reportId: genId(list), reporterId, targetMemberId, reasonCode, reasonLabel: LABEL_MAP[reasonCode] ?? reasonCode, detail: detail || null, reportStatus: "PENDING", createdAt: new Date().toISOString() };
-  save([report, ...list]);
-  return report;
+  return requestWithAuth("/api/reports", {
+    method: "POST",
+    body: JSON.stringify({
+      targetMemberId,
+      reasonCode,
+      detail: detail || null,
+    }),
+  });
 }

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import Footer from "../components/common/Footer";
 import Header from "../components/common/Header";
+import { fetchMyProfile } from "../api/myPageApi";
 import { getProducts } from "../api/productApi";
 import { getSellerReviews } from "../api/reviewApi";
 import "../styles/review.css";
@@ -32,6 +33,19 @@ function getProductImageUrl(product) {
   }
 
   return "";
+}
+
+function mapProfileToSeller(profile, fallbackMemberId) {
+  const memberId = profile?.memberId || fallbackMemberId || "";
+  return {
+    memberId,
+    userid: profile?.userid || "",
+    nickname: profile?.nickname || profile?.userid || memberId || "회원",
+    name: profile?.name || "",
+    sellerGrade: profile?.sellerGrade || "BRONZE",
+    completedOrderCount: 0,
+    averageRating: null,
+  };
 }
 
 const PRICE_PRESETS = [
@@ -317,10 +331,31 @@ function UserProfilePage({ memberId, hideFooter = false }) {
   }
 
   useEffect(() => {
+    if (hideFooter) {
+      let ignore = false;
+      setSeller(null);
+      setSellerProducts([]);
+      fetchMyProfile()
+        .then((profile) => {
+          if (ignore) return;
+          setSeller(mapProfileToSeller(profile, memberId));
+        })
+        .catch((error) => {
+          if (ignore) return;
+          showToast(error.message || "프로필 정보를 불러올 수 없습니다.");
+          setSeller(mapProfileToSeller(null, memberId));
+        });
+
+      return () => {
+        ignore = true;
+        clearTimeout(timerRef.current);
+      };
+    }
+
     setSeller({ memberId, nickname: memberId, sellerGrade: "BRONZE", completedOrderCount: 0, averageRating: null });
     setSellerProducts(getProducts().filter((p) => p.seller?.memberId === memberId));
     return () => clearTimeout(timerRef.current);
-  }, [memberId]);
+  }, [hideFooter, memberId]);
 
   useEffect(() => {
     setRvLoading(true);

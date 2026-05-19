@@ -112,6 +112,7 @@ export function LoginPage({ onNavigate }) {
 
 export function SignupPage({ onNavigate }) {
   const [form, setForm] = useState({
+    name: "",
     nickname: "",
     userId: "",
     password: "",
@@ -134,6 +135,7 @@ export function SignupPage({ onNavigate }) {
     return (
       checks.nickname &&
       checks.userId &&
+      Boolean(form.name.trim()) &&
       passwordPattern.test(form.password) &&
       form.password === form.passwordConfirm &&
       agreements.age &&
@@ -183,7 +185,7 @@ export function SignupPage({ onNavigate }) {
     }
 
     try {
-      const result = await checkUserId(form.userId);
+      const result = await checkUserId(form.userId.trim());
       if (!result.available) {
         setChecks((current) => ({ ...current, userId: false }));
         setMessage({ type: "error", text: "이미 사용 중인 아이디입니다." });
@@ -211,9 +213,13 @@ export function SignupPage({ onNavigate }) {
 
     try {
       await signUp({
-        userId: form.userId,
+        name: form.name,
+        userId: form.userId.trim(),
         nickname: form.nickname,
         password: form.password,
+        serviceTermsAgreed: agreements.terms,
+        privacyPolicyAgreed: agreements.privacy,
+        marketingAgreed: agreements.marketing,
       });
       setMessage({ type: "success", text: "회원가입이 완료되었습니다. 로그인 화면으로 이동합니다." });
       window.setTimeout(() => onNavigate("/login"), 700);
@@ -233,6 +239,16 @@ export function SignupPage({ onNavigate }) {
           </div>
 
           <form className="auth-form signup-form" onSubmit={handleSubmit}>
+            <Field label="이름">
+              <input
+                type="text"
+                placeholder="이름을 입력해주세요"
+                autoComplete="name"
+                value={form.name}
+                onChange={(event) => update("name", event.target.value)}
+              />
+            </Field>
+
             <Field label="닉네임">
               <div className="inline-field">
                 <input
@@ -416,6 +432,7 @@ function StatusMessage({ message }) {
 }
 
 function validateSignup(form, agreements, checks) {
+  if (!form.name.trim()) return "이름을 입력해주세요.";
   if (!form.nickname.trim()) return "닉네임을 입력해주세요.";
   if (!checks.nickname) return "닉네임 중복 확인을 완료해주세요.";
   if (!userIdPattern.test(form.userId.trim())) {

@@ -1,23 +1,63 @@
-const KEYS = {
-  wishlists: "nailed_mock_wishlists",
-};
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+const ACCESS_TOKEN_KEY = "nailed_access_token";
+const SESSION_KEY = "nailed_session";
 
 function getProducts() {
   return [];
 }
 
-function getWishlists() {
-  const raw = localStorage.getItem(KEYS.wishlists);
-  return raw ? JSON.parse(raw) : [];
+function clearAuthStorage() {
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem("nailedAccessToken");
+  localStorage.removeItem("nailedRefreshToken");
+  window.dispatchEvent(new Event("storage"));
 }
 
-function saveWishlists(list) {
-  localStorage.setItem(KEYS.wishlists, JSON.stringify(list));
+function buildUrl(path) {
+  return `${API_BASE_URL}${path}`;
 }
 
-function currentMemberId() {
-  try { return JSON.parse(localStorage.getItem("nailed_session") ?? "null")?.member_id ?? null; }
-  catch { return null; }
+function getAccessToken() {
+  return localStorage.getItem(ACCESS_TOKEN_KEY);
+}
+
+async function requestWithAuth(path, options = {}) {
+  const token = getAccessToken();
+  if (!token) throw new Error("로그인이 필요합니다.");
+
+  const response = await fetch(buildUrl(path), {
+    ...options,
+    headers: {
+      ...(options.body ? { "Content-Type": "application/json" } : {}),
+      Authorization: `Bearer ${token}`,
+      ...options.headers,
+    },
+  });
+
+  if (response.status === 204) {
+    return null;
+  }
+
+  if (response.status === 401 || response.status === 403) {
+    clearAuthStorage();
+    throw new Error("로그인이 만료되었습니다. 다시 로그인해주세요.");
+  }
+
+  const contentType = response.headers.get("content-type") || "";
+  const data = contentType.includes("application/json")
+    ? await response.json()
+    : await response.text();
+
+  if (!response.ok) {
+    const message =
+      typeof data === "string"
+        ? data
+        : data?.error?.message || data?.message || "요청 처리에 실패했습니다.";
+    throw new Error(message);
+  }
+
+  return data?.data ?? data;
 }
 
 const delay = (ms = 350) => new Promise((r) => setTimeout(r, ms));
@@ -32,22 +72,15 @@ export async function incrementViewCount() {
 }
 
 export async function addWishlist(productId) {
-  await delay(250);
-  const memberId = currentMemberId();
-  if (!memberId) throw new Error("로그인이 필요합니다.");
-
-  const list = getWishlists();
-  if (list.some((w) => w.memberId === memberId && w.productId === Number(productId))) return;
-  list.push({ memberId, productId: Number(productId), createdAt: new Date().toISOString() });
-  saveWishlists(list);
+  return requestWithAuth(`/api/products/${encodeURIComponent(productId)}/wishlist`, {
+    method: "POST",
+  });
 }
 
 export async function removeWishlist(productId) {
-  await delay(250);
-  const memberId = currentMemberId();
-  if (!memberId) throw new Error("로그인이 필요합니다.");
-
-  saveWishlists(getWishlists().filter((w) => !(w.memberId === memberId && w.productId === Number(productId))));
+  return requestWithAuth(`/api/products/${encodeURIComponent(productId)}/wishlist`, {
+    method: "DELETE",
+  });
 }
 
 export { getProducts };

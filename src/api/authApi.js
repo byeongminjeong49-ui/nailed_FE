@@ -1,33 +1,45 @@
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+const ACCESS_TOKEN_KEY = "nailed_access_token";
 const SESSION_KEY = "nailed_session";
-const USERS_KEY = "nailed_mock_users";
-
-const delay = (ms = 250) => new Promise((resolve) => setTimeout(resolve, ms));
-
-const DEFAULT_USERS = [
-  {
-    memberId: "MEMBER_002",
-    userId: "demo",
-    nickname: "데모회원",
-    password: "Demo123!",
-    role: "USER",
-  },
+const UNUSED_MOCK_KEYS = [
+  "nailed_mock_users",
+  "nailed_mock_email_verifications",
+  "nailed_mock_members",
+  "nailed_mock_products",
+  "nailed_mock_wishlists",
 ];
 
-function normalizeUserId(userId) {
-  return userId.trim().toLowerCase();
+function buildUrl(path) {
+  return `${API_BASE_URL}${path}`;
 }
 
-function readUsers() {
-  try {
-    const users = JSON.parse(localStorage.getItem(USERS_KEY) || "null");
-    return Array.isArray(users) && users.length > 0 ? users : DEFAULT_USERS;
-  } catch {
-    return DEFAULT_USERS;
+async function request(path, options = {}) {
+  const response = await fetch(buildUrl(path), {
+    ...options,
+    headers: {
+      ...(options.body ? { "Content-Type": "application/json" } : {}),
+      ...options.headers,
+    },
+  });
+
+  const contentType = response.headers.get("content-type") || "";
+  const data = contentType.includes("application/json")
+    ? await response.json()
+    : await response.text();
+
+  if (!response.ok) {
+    const message =
+      typeof data === "string"
+        ? data
+        : data?.error?.message || data?.message || "요청 처리에 실패했습니다.";
+    throw new Error(message);
   }
+
+  return data?.data ?? data;
 }
 
-function saveUsers(users) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+function normalizeUserId(userId) {
+  return userId.trim();
 }
 
 function saveSession(user) {
@@ -35,99 +47,92 @@ function saveSession(user) {
     member_id: user.memberId,
     memberId: user.memberId,
     id: user.memberId,
-    userId: user.userId,
+    userId: user.userid,
+    userid: user.userid,
     nickname: user.nickname,
-    name: user.nickname,
+    name: user.name,
     role: user.role || "USER",
     member_status: "ACTIVE",
   };
 
   localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-  window.dispatchEvent(new Event("storage"));
   return session;
 }
 
-function createMemberId() {
-  return `MEMBER_${Date.now().toString().slice(-6)}`;
-}
+function saveLoginResult(data) {
+  if (!data?.accessToken) {
+    throw new Error("로그인 응답에 accessToken이 없습니다.");
+  }
 
-function createTemporaryPassword() {
-  return `Temp${Math.floor(100000 + Math.random() * 900000)}!`;
+  localStorage.setItem(ACCESS_TOKEN_KEY, data.accessToken);
+
+  const hasMemberInfo = data.memberId || data.userid || data.nickname || data.name || data.role;
+  const session = hasMemberInfo ? saveSession(data) : null;
+
+  window.dispatchEvent(new Event("storage"));
+  return session || data;
 }
 
 export async function checkUserId(userId) {
-  await delay();
-  const normalizedUserId = normalizeUserId(userId);
-  const duplicated = readUsers().some((user) => user.userId === normalizedUserId);
-  return { available: !duplicated };
+  const userid = normalizeUserId(userId);
+  const params = new URLSearchParams({ userid });
+  const data = await request(`/api/auth/check-userid?${params.toString()}`);
+  return { available: !data.duplicated };
 }
 
 export async function checkNickname(nickname) {
-  await delay();
-  const normalizedNickname = nickname.trim();
-  const duplicated = readUsers().some((user) => user.nickname === normalizedNickname);
-  return { available: !duplicated };
+  const params = new URLSearchParams({ nickname: nickname.trim() });
+  const data = await request(`/api/auth/check-nickname?${params.toString()}`);
+  return { available: !data.duplicated };
 }
 
-export async function signUp({ userId, nickname, password }) {
-  await delay();
-  const normalizedUserId = normalizeUserId(userId);
-  const users = readUsers();
-
-  if (users.some((user) => user.userId === normalizedUserId)) {
-    throw new Error("이미 사용 중인 아이디입니다.");
-  }
-
-  const nextUser = {
-    memberId: createMemberId(),
-    userId: normalizedUserId,
-    nickname: nickname.trim(),
-    password,
-    role: "USER",
-  };
-
-  saveUsers([...users, nextUser]);
-  return { success: true, memberId: nextUser.memberId };
+export async function signUp({
+  name,
+  userId,
+  nickname,
+  password,
+  serviceTermsAgreed,
+  privacyPolicyAgreed,
+  marketingAgreed,
+}) {
+  return request("/api/auth/signup", {
+    method: "POST",
+    body: JSON.stringify({
+      name: name.trim(),
+      userid: normalizeUserId(userId),
+      nickname: nickname.trim(),
+      password,
+      serviceTermsAgreed,
+      privacyPolicyAgreed,
+      marketingAgreed,
+    }),
+  });
 }
 
 export async function login({ userId, password }) {
-  await delay();
-  const normalizedUserId = normalizeUserId(userId);
-  const user = readUsers().find(
-    (item) => item.userId === normalizedUserId && item.password === password,
-  );
+  const data = await request("/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify({
+      userid: normalizeUserId(userId),
+      password,
+    }),
+  });
 
-  if (!user) {
-    throw new Error("아이디 또는 비밀번호가 일치하지 않습니다.");
-  }
-
-  return saveSession(user);
+  return saveLoginResult(data);
 }
 
 export async function findPassword({ userId }) {
-  await delay();
-  const normalizedUserId = normalizeUserId(userId);
-  const users = readUsers();
-  const userIndex = users.findIndex((item) => item.userId === normalizedUserId);
-
-  if (userIndex === -1) {
-    throw new Error("등록된 아이디를 찾을 수 없습니다.");
-  }
-
-  const temporaryPassword = createTemporaryPassword();
-  const nextUsers = users.map((user, index) =>
-    index === userIndex ? { ...user, password: temporaryPassword } : user,
-  );
-  saveUsers(nextUsers);
-
-  return {
-    success: true,
-    temporaryPassword,
-    message: "임시 비밀번호가 mock 방식으로 발급되었습니다.",
-  };
+  return request("/api/auth/password/reset-request", {
+    method: "POST",
+    body: JSON.stringify({
+      userid: normalizeUserId(userId),
+    }),
+  });
 }
 
 export async function logout() {
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
   localStorage.removeItem(SESSION_KEY);
+  UNUSED_MOCK_KEYS.forEach((key) => localStorage.removeItem(key));
   window.dispatchEvent(new Event("storage"));
 }
