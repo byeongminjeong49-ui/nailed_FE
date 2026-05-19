@@ -10,15 +10,6 @@ function readSession() {
   }
 }
 
-function getAccessToken() {
-  return (
-    localStorage.getItem("accessToken") ||
-    localStorage.getItem("nailed_access_token") ||
-    readSession()?.accessToken ||
-    ""
-  );
-}
-
 function getMemberId() {
   const session = readSession();
   return session?.member_id || session?.memberId || session?.id || null;
@@ -29,10 +20,8 @@ function buildUrl(path) {
 }
 
 async function request(path, options = {}) {
-  const token = getAccessToken();
   const headers = {
     ...(options.body ? { "Content-Type": "application/json" } : {}),
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...options.headers,
   };
 

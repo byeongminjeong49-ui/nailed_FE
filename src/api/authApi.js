@@ -1,190 +1,133 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
-const SESSION_KEY = 'nailed_session'
-const ACCESS_TOKEN_KEY = 'nailed_access_token'
-const REFRESH_TOKEN_KEY = 'nailed_refresh_token'
-const LEGACY_ACCESS_TOKEN_KEY = 'accessToken'
+const SESSION_KEY = "nailed_session";
+const USERS_KEY = "nailed_mock_users";
 
-function normalizeEmail(email) {
-  return email.trim().toLowerCase()
+const delay = (ms = 250) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const DEFAULT_USERS = [
+  {
+    memberId: "MEMBER_002",
+    userId: "demo",
+    nickname: "데모회원",
+    password: "Demo123!",
+    role: "USER",
+  },
+];
+
+function normalizeUserId(userId) {
+  return userId.trim().toLowerCase();
 }
 
-function buildUrl(path) {
-  return `${API_BASE_URL}${path}`
-}
-
-function readSession() {
+function readUsers() {
   try {
-    return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null')
+    const users = JSON.parse(localStorage.getItem(USERS_KEY) || "null");
+    return Array.isArray(users) && users.length > 0 ? users : DEFAULT_USERS;
   } catch {
-    return null
+    return DEFAULT_USERS;
   }
 }
 
-function getAccessToken() {
-  return (
-    localStorage.getItem(ACCESS_TOKEN_KEY) ||
-    localStorage.getItem(LEGACY_ACCESS_TOKEN_KEY) ||
-    readSession()?.accessToken ||
-    ''
-  )
+function saveUsers(users) {
+  localStorage.setItem(USERS_KEY, JSON.stringify(users));
 }
 
-function saveSession(loginData) {
+function saveSession(user) {
   const session = {
-    member_id: loginData.memberId,
-    memberId: loginData.memberId,
-    email: loginData.email,
-    userId: loginData.email,
-    nickname: loginData.nickname,
-    name: loginData.nickname,
-    role: loginData.role,
-    member_status: 'ACTIVE',
-    accessToken: loginData.accessToken,
-    refreshToken: loginData.refreshToken,
-    tokenType: loginData.tokenType || 'Bearer',
-  }
+    member_id: user.memberId,
+    memberId: user.memberId,
+    id: user.memberId,
+    userId: user.userId,
+    nickname: user.nickname,
+    name: user.nickname,
+    role: user.role || "USER",
+    member_status: "ACTIVE",
+  };
 
-  localStorage.setItem(SESSION_KEY, JSON.stringify(session))
-  if (loginData.accessToken) {
-    localStorage.setItem(ACCESS_TOKEN_KEY, loginData.accessToken)
-    localStorage.setItem(LEGACY_ACCESS_TOKEN_KEY, loginData.accessToken)
-  }
-  if (loginData.refreshToken) {
-    localStorage.setItem(REFRESH_TOKEN_KEY, loginData.refreshToken)
-  }
-
-  window.dispatchEvent(new Event('storage'))
-  return session
+  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  window.dispatchEvent(new Event("storage"));
+  return session;
 }
 
-async function request(path, options = {}) {
-  const shouldAttachToken = options.auth !== false && !path.startsWith('/api/auth/')
-  const token = shouldAttachToken ? getAccessToken() : ''
-  const headers = {
-    ...(options.body ? { 'Content-Type': 'application/json' } : {}),
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...options.headers,
-  }
-
-  const { auth, ...fetchOptions } = options
-  const response = await fetch(buildUrl(path), {
-    credentials: 'include',
-    ...fetchOptions,
-    headers,
-  })
-
-  if (response.status === 204) {
-    return null
-  }
-
-  const contentType = response.headers.get('content-type') || ''
-  const payload = contentType.includes('application/json') ? await response.json() : await response.text()
-
-  if (!response.ok || payload?.success === false) {
-    const message =
-      payload?.error?.message ||
-      payload?.message ||
-      (typeof payload === 'string' ? payload : '') ||
-      '요청 처리에 실패했습니다.'
-    throw new Error(message)
-  }
-
-  return payload?.data ?? payload
+function createMemberId() {
+  return `MEMBER_${Date.now().toString().slice(-6)}`;
 }
 
-export async function checkEmail(email) {
-  const normalizedEmail = normalizeEmail(email)
-  const data = await request(`/api/auth/check-email?email=${encodeURIComponent(normalizedEmail)}`)
-  return { available: !data.duplicated }
+function createTemporaryPassword() {
+  return `Temp${Math.floor(100000 + Math.random() * 900000)}!`;
+}
+
+export async function checkUserId(userId) {
+  await delay();
+  const normalizedUserId = normalizeUserId(userId);
+  const duplicated = readUsers().some((user) => user.userId === normalizedUserId);
+  return { available: !duplicated };
 }
 
 export async function checkNickname(nickname) {
-  const data = await request(`/api/auth/check-nickname?nickname=${encodeURIComponent(nickname.trim())}`)
-  return { available: !data.duplicated }
+  await delay();
+  const normalizedNickname = nickname.trim();
+  const duplicated = readUsers().some((user) => user.nickname === normalizedNickname);
+  return { available: !duplicated };
 }
 
-export async function requestEmailVerification(email) {
-  await request('/api/auth/email/send-code', {
-    method: 'POST',
-    auth: false,
-    body: JSON.stringify({ email: normalizeEmail(email) }),
-  })
-  return { success: true }
+export async function signUp({ userId, nickname, password }) {
+  await delay();
+  const normalizedUserId = normalizeUserId(userId);
+  const users = readUsers();
+
+  if (users.some((user) => user.userId === normalizedUserId)) {
+    throw new Error("이미 사용 중인 아이디입니다.");
+  }
+
+  const nextUser = {
+    memberId: createMemberId(),
+    userId: normalizedUserId,
+    nickname: nickname.trim(),
+    password,
+    role: "USER",
+  };
+
+  saveUsers([...users, nextUser]);
+  return { success: true, memberId: nextUser.memberId };
 }
 
-export async function verifyEmailCode({ email, code }) {
-  await request('/api/auth/email/verify-code', {
-    method: 'POST',
-    auth: false,
-    body: JSON.stringify({ email: normalizeEmail(email), code: code.trim() }),
-  })
-  return { success: true }
+export async function login({ userId, password }) {
+  await delay();
+  const normalizedUserId = normalizeUserId(userId);
+  const user = readUsers().find(
+    (item) => item.userId === normalizedUserId && item.password === password,
+  );
+
+  if (!user) {
+    throw new Error("아이디 또는 비밀번호가 일치하지 않습니다.");
+  }
+
+  return saveSession(user);
 }
 
-export async function signUp({ email, nickname, password, agreements }) {
-  const data = await request('/api/auth/signup', {
-    method: 'POST',
-    auth: false,
-    body: JSON.stringify({
-      email: normalizeEmail(email),
-      nickname: nickname.trim(),
-      password,
-      name: nickname.trim(),
-      serviceTermsAgreed: Boolean(agreements?.terms),
-      privacyPolicyAgreed: Boolean(agreements?.privacy),
-      marketingAgreed: Boolean(agreements?.marketing),
-    }),
-  })
+export async function findPassword({ userId }) {
+  await delay();
+  const normalizedUserId = normalizeUserId(userId);
+  const users = readUsers();
+  const userIndex = users.findIndex((item) => item.userId === normalizedUserId);
 
-  return { success: true, memberId: data.memberId }
-}
+  if (userIndex === -1) {
+    throw new Error("등록된 아이디를 찾을 수 없습니다.");
+  }
 
-export async function login({ email, password }) {
-  const data = await request('/api/auth/login', {
-    method: 'POST',
-    auth: false,
-    body: JSON.stringify({ email: normalizeEmail(email), password }),
-  })
-
-  return saveSession(data)
-}
-
-export async function findPassword({ email }) {
-  await request('/api/auth/password/reset-request', {
-    method: 'POST',
-    auth: false,
-    body: JSON.stringify({ email: normalizeEmail(email) }),
-  })
+  const temporaryPassword = createTemporaryPassword();
+  const nextUsers = users.map((user, index) =>
+    index === userIndex ? { ...user, password: temporaryPassword } : user,
+  );
+  saveUsers(nextUsers);
 
   return {
     success: true,
-    message: '비밀번호 재설정 안내 메일 발송을 요청했습니다.',
-  }
+    temporaryPassword,
+    message: "임시 비밀번호가 mock 방식으로 발급되었습니다.",
+  };
 }
 
 export async function logout() {
-  localStorage.removeItem(SESSION_KEY)
-  localStorage.removeItem(ACCESS_TOKEN_KEY)
-  localStorage.removeItem(REFRESH_TOKEN_KEY)
-  localStorage.removeItem(LEGACY_ACCESS_TOKEN_KEY)
-  window.dispatchEvent(new Event('storage'))
-}
-
-export async function getMyPage() {
-  return request('/api/members/me/profile')
-}
-
-export async function updateMyProfile({ nickname }) {
-  return request('/api/members/me/profile', {
-    method: 'PUT',
-    body: JSON.stringify({ nickname }),
-  })
-}
-
-export async function withdrawMember() {
-  await request('/api/members/me', {
-    method: 'DELETE',
-  })
-  await logout()
-  return { success: true }
+  localStorage.removeItem(SESSION_KEY);
+  window.dispatchEvent(new Event("storage"));
 }
