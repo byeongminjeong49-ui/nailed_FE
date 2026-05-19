@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 
-import { mockPay } from '../api/orderApi';
-
 const s = {
   page: { minHeight: '100vh', background: '#f5f6f7', padding: '40px 20px 80px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' },
   inner: { maxWidth: '560px', margin: '0 auto' },
@@ -69,18 +67,14 @@ export default function PaymentPage() {
 
   const { orderId, finalPrice, title } = pendingPayment;
 
-const onPay = async () => {
+  const onPay = async () => {
     setPaying(true);
-    try {
-        await mockPay(orderId);  
-        sessionStorage.setItem('completedOrder', JSON.stringify({ orderId, finalPrice, title, method: selectedMethod }));
-        sessionStorage.removeItem('pendingPayment');
-        setDone(true);
-    } catch (e) {
-        setError(e.message);
-    } finally {
-        setPaying(false);
-    }
+    await new Promise((res) => setTimeout(res, 1500));
+    alert('결제가 완료되었습니다.');
+    sessionStorage.setItem('completedOrder', JSON.stringify({ orderId, finalPrice, title, method: selectedMethod }));
+    sessionStorage.removeItem('pendingPayment');
+    setDone(true);
+    setPaying(false);
   };
 
   return (

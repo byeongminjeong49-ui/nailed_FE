@@ -49,12 +49,6 @@ export default function OrderForm() {
 
   const handlePayment = async () => {
     if (!canPay) return;
-     const session = JSON.parse(localStorage.getItem('nailed_session') || '{}');
-    const sellerId = pendingOrder.sellerId || 'MEMBER_001';
-
-      console.log('session:', session);        
-    console.log('buyerId:', session.memberId); 
-    console.log('sellerId:', sellerId);      
     try {
       const orderData = {
         productId:             pendingOrder.productId,
@@ -67,10 +61,10 @@ export default function OrderForm() {
         receiverAddressDetail: form.addressDetail,
         deliveryRequest:       form.deliveryRequest,
       };
-    const response = await axios.post(
-  `/api/orders?buyerId=${session.memberId}&sellerId=${pendingOrder.sellerId}`,
-  orderData
-);
+      const response = await axios.post(
+        `/api/orders?buyerId=${pendingOrder.buyerId}&sellerId=${pendingOrder.sellerId}`,
+        orderData
+      );
       if (response.status === 200 || response.status === 201) {
         sessionStorage.removeItem('pendingOrder');
         sessionStorage.setItem('pendingPayment', JSON.stringify({

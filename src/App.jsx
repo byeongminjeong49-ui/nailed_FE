@@ -1,3 +1,4 @@
+// src/App.jsx
 
 import { useEffect, useState } from "react";
 import AdminLayout from "./components/admin/AdminLayout.jsx";
@@ -18,13 +19,14 @@ import SearchResultPage from "./pages/SearchResultPage.jsx";
 import ServiceGuidePage from "./pages/ServiceGuidePage.jsx";
 import UserProfilePage from "./pages/UserProfilePage.jsx";
 
-
+// 공통 레이아웃 컴포넌트 포함
 import Header from "./components/common/Header.jsx";
 import Footer from "./components/common/Footer.jsx";
 
-import OrderForm from "./pages/OrderFormPage.jsx";
+// ⭐️ [경로 수정 완료] 스크린샷 파일 위치에 맞게 /order/ 경로를 제거했습니다.
+import OrderForm from "./pages/OrderForm.jsx";
 import PaymentPage from "./pages/PaymentPage.jsx";
-import OrderDetail from "./pages/OrderDetailPage.jsx";
+import OrderDetail from "./pages/OrderDetail.jsx";
 
 import "./App.css";
 import "./styles/global.css";
