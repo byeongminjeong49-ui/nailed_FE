@@ -310,7 +310,7 @@
 }
 
 .stat-icon,
-.quick-icon {
+.quick-list .quick-icon {
   flex: 0 0 auto;
   width: 76px;
   height: 76px;

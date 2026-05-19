@@ -695,9 +695,9 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   max-width: 1210px;
-  min-height: 330px;
+  min-height: 250px;
   margin: 0 auto;
-  padding: 30px 20px 36px;
+  padding: 24px 20px 26px;
 }
 
 .mega-menu-title {
@@ -736,6 +736,15 @@
 .mega-menu-links {
   display: grid;
   gap: 11px;
+}
+
+.mega-menu-column-luxury-brand {
+  grid-column: span 4;
+}
+
+.mega-menu-links-luxury-brand {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  column-gap: 32px;
 }
 
 .mega-menu-links a {
@@ -801,6 +810,11 @@
   font-weight: 800;
 }
 
+.social-links a svg {
+  width: 24px;
+  height: 24px;
+}
+
 .footer-links,
 .footer-contact {
   display: flex;
@@ -857,8 +871,8 @@
   }
 
   .mega-menu-inner {
-    min-height: 260px;
-    padding: 26px 28px 30px;
+    min-height: 220px;
+    padding: 22px 28px 24px;
   }
 
   .mega-menu-columns {

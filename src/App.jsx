@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import AdminLayout from "./components/admin/AdminLayout.jsx";
 import HomePage from "./pages/HomePage.jsx";
+import CustomerCenterPage from "./pages/CustomerCenterPage.jsx";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage.jsx";
 import AdminMembersPage from "./pages/admin/AdminMembersPage.jsx";
 import AdminOrdersPage from "./pages/admin/AdminOrdersPage.jsx";
@@ -15,6 +16,7 @@ import ProductListPage from "./pages/ProductListPage.jsx";
 import ReadyPage from "./pages/ReadyPage.jsx";
 import ReviewWritePage from "./pages/ReviewWritePage.jsx";
 import SearchResultPage from "./pages/SearchResultPage.jsx";
+import ServiceGuidePage from "./pages/ServiceGuidePage.jsx";
 import UserProfilePage from "./pages/UserProfilePage.jsx";
 
 // 공통 레이아웃 컴포넌트 포함
@@ -30,6 +32,8 @@ import "./App.css";
 import "./styles/global.css";
 import "./styles/home.css";
 import "./styles/admin.css";
+import "./styles/customer-center.css";
+import "./styles/service-guide.css";
 
 const adminRoutes = {
   "/admin": "dashboard",
@@ -50,6 +54,12 @@ const authRoutes = {
 
 const readyRoutes = {
   "/sell": "판매",
+};
+
+const guideRoutes = {
+  "/guide": "guide",
+  "/fees": "fees",
+  "/shipping": "shipping",
 };
 
 const orderRoutes = {
@@ -99,6 +109,7 @@ function App() {
   const activePage = adminRoutes[path];
   const activeAuthPage = authRoutes[path];
   const activeReadyPage = readyRoutes[path];
+  const activeGuidePage = guideRoutes[path];
   const activeOrderPage = orderRoutes[path]; 
   const productId = getProductId(path);
   const userId = getUserId(path);
@@ -136,6 +147,7 @@ function App() {
   if (activeAuthPage === "signup") return <SignupPage onNavigate={handleNavigate} />;
   if (activeAuthPage === "find-password") return <FindPasswordPage onNavigate={handleNavigate} />;
   if (activeAuthPage === "mypage") return <MyPage onNavigate={handleNavigate} />;
+  if (activeGuidePage) return <ServiceGuidePage type={activeGuidePage} />;
   if (activeReadyPage) return <ReadyPage title={activeReadyPage} />;
 
   // 3. 상품 코어 도메인 상세 정보 분기
@@ -182,6 +194,7 @@ function App() {
   }
 
   // 6. 검색 및 카테고리 인덱싱
+  if (path === "/customer-center") return <CustomerCenterPage />;
   if (path === "/search") return <SearchResultPage search={location.search} />;
   if (path.startsWith("/category/")) {
     return <ProductListPage path={path} search={location.search} />;

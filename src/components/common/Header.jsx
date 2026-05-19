@@ -3,9 +3,63 @@ import { logout } from "../../api/authApi";
 import { categories } from "../../data/categories";
 
 const menuItems = [
-  { label: "마이페이지", icon: "◎", href: "/mypage" },
-  { label: "판매", icon: "＋", href: "/sell" },
+  { label: "마이페이지", icon: "userCircle", href: "/mypage" },
+  { label: "판매", icon: "shoppingBag", href: "/sell" },
+  { label: "고객센터", icon: "headphones", href: "/customer-center" },
 ];
+
+const iconProps = {
+  width: 24,
+  height: 24,
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 1.8,
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+};
+
+const quickIcons = {
+  shoppingBag: (
+    <svg viewBox="0 0 24 24" role="img" focusable="false" {...iconProps}>
+      <path d="M6.5 8.5h11l1 11h-13l1-11Z" />
+      <path d="M9 8.5V7a3 3 0 0 1 6 0v1.5" />
+    </svg>
+  ),
+  logIn: (
+    <svg viewBox="0 0 24 24" role="img" focusable="false" {...iconProps}>
+      <path d="M10 7V5.5A2.5 2.5 0 0 1 12.5 3h5A2.5 2.5 0 0 1 20 5.5v13a2.5 2.5 0 0 1-2.5 2.5h-5A2.5 2.5 0 0 1 10 18.5V17" />
+      <path d="M4 12h10" />
+      <path d="m11 8 4 4-4 4" />
+    </svg>
+  ),
+  userPlus: (
+    <svg viewBox="0 0 24 24" role="img" focusable="false" {...iconProps}>
+      <path d="M15 20a6 6 0 0 0-12 0" />
+      <path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
+      <path d="M19 8v6" />
+      <path d="M16 11h6" />
+    </svg>
+  ),
+  userCircle: (
+    <svg viewBox="0 0 24 24" role="img" focusable="false" {...iconProps}>
+      <path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z" />
+      <path d="M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+      <path d="M6.4 18a6 6 0 0 1 11.2 0" />
+    </svg>
+  ),
+  headphones: (
+    <svg viewBox="0 0 24 24" role="img" focusable="false" {...iconProps}>
+      <path d="M4 13a8 8 0 0 1 16 0" />
+      <path d="M4 13v4a2 2 0 0 0 2 2h1v-6H6a2 2 0 0 0-2 2" />
+      <path d="M20 13v4a2 2 0 0 1-2 2h-1v-6h1a2 2 0 0 1 2 2" />
+      <path d="M18 19a4 4 0 0 1-4 2h-2" />
+    </svg>
+  ),
+};
+
+function QuickIcon({ name }) {
+  return quickIcons[name] || name;
+}
 
 function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(() =>
@@ -23,8 +77,8 @@ function Header() {
         { label: "로그아웃", icon: "↪", href: "/" },
       ]
     : [
-        { label: "회원가입", icon: "◎", href: "/signup" },
-        { label: "로그인", icon: "◎", href: "/login" },
+        { label: "회원가입", icon: "userPlus", href: "/signup" },
+        { label: "로그인", icon: "logIn", href: "/login" },
       ];
   const quickMenuItems = [...menuItems, ...authMenuItems];
   const [activeCategory, setActiveCategory] = useState(null);
@@ -129,7 +183,7 @@ function Header() {
               onClick={(event) => handleMenuClick(event, item)}
             >
               <span className="quick-icon" aria-hidden="true">
-                {item.icon}
+                <QuickIcon name={item.icon} />
                 {item.badge && <b>{item.badge}</b>}
               </span>
               <span>{item.label}</span>
@@ -164,38 +218,52 @@ function Header() {
                 </a>
               </div>
               <div className="mega-menu-columns">
-                {activeCategory.groups.map((group) => (
-                  <div className="mega-menu-column" key={group.title}>
-                    <h2>
-                      <a
-                        href={`/category/${encodeURIComponent(
-                          activeCategory.value,
-                        )}?subcategory=${encodeURIComponent(group.value)}`}
-                        onClick={(event) =>
-                          handleCategoryClick(event, activeCategory, {
-                            label: group.title,
-                            value: group.value,
-                          })
-                        }
-                      >
-                        {group.title}
-                      </a>
-                    </h2>
-                    <div className="mega-menu-links">
-                      {group.items.map((subcategory) => (
+                {activeCategory.groups.map((group) => {
+                  const isLuxuryBrandGroup =
+                    activeCategory.value === "luxury" && group.value === "brand";
+
+                  return (
+                    <div
+                      className={`mega-menu-column${
+                        isLuxuryBrandGroup ? " mega-menu-column-luxury-brand" : ""
+                      }`}
+                      key={group.title}
+                    >
+                      <h2>
                         <a
                           href={`/category/${encodeURIComponent(
                             activeCategory.value,
-                          )}?subcategory=${encodeURIComponent(subcategory.value)}`}
-                          key={subcategory.value}
-                          onClick={(event) => handleCategoryClick(event, activeCategory, subcategory)}
+                          )}?subcategory=${encodeURIComponent(group.value)}`}
+                          onClick={(event) =>
+                            handleCategoryClick(event, activeCategory, {
+                              label: group.title,
+                              value: group.value,
+                            })
+                          }
                         >
-                          {subcategory.label}
+                          {group.title}
                         </a>
-                      ))}
+                      </h2>
+                      <div
+                        className={`mega-menu-links${
+                          isLuxuryBrandGroup ? " mega-menu-links-luxury-brand" : ""
+                        }`}
+                      >
+                        {group.items.map((subcategory) => (
+                          <a
+                            href={`/category/${encodeURIComponent(
+                              activeCategory.value,
+                            )}?subcategory=${encodeURIComponent(subcategory.value)}`}
+                            key={subcategory.value}
+                            onClick={(event) => handleCategoryClick(event, activeCategory, subcategory)}
+                          >
+                            {subcategory.label}
+                          </a>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>

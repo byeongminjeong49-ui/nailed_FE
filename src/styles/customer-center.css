@@ -1,0 +1,380 @@
+.customer-center-page {
+  min-height: 100vh;
+  background: #fff;
+}
+
+.customer-hero {
+  min-height: 270px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 22% 42%, rgba(173, 238, 213, 0.35), transparent 13%),
+    radial-gradient(circle at 78% 42%, rgba(223, 178, 103, 0.3), transparent 15%),
+    linear-gradient(120deg, #07110f 0%, #123b32 44%, #07110f 100%);
+}
+
+.customer-hero-inner {
+  max-width: 1210px;
+  margin: 0 auto;
+  padding: 20px 20px 48px;
+  text-align: center;
+}
+
+.customer-hero-inner span {
+  display: block;
+  margin-bottom: 38px;
+  text-align: left;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.customer-hero-inner h1 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 58px;
+  line-height: 1.1;
+  text-shadow: 0 8px 20px rgba(0, 0, 0, 0.42);
+}
+
+.customer-hero-inner p {
+  margin: 24px 0 0;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.customer-center-content {
+  max-width: 1210px;
+  margin: 0 auto;
+  padding: 34px 20px 86px;
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 38px;
+}
+
+.customer-tabs {
+  height: fit-content;
+  padding: 18px 8px;
+  border: 1px solid #e2e5e4;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.customer-tabs h2 {
+  margin: 0 10px 16px;
+  font-size: 18px;
+}
+
+.customer-tabs button {
+  width: 100%;
+  min-height: 54px;
+  padding: 0 14px;
+  display: grid;
+  grid-template-columns: 28px 1fr 14px;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 6px;
+  color: #181818;
+  background: transparent;
+  font-size: 15px;
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+}
+
+.customer-tabs button + button {
+  margin-top: 8px;
+}
+
+.customer-tabs button.active {
+  color: #fff;
+  background: linear-gradient(135deg, #0c4c3c, #0a332b);
+}
+
+.customer-tabs button span {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-size: 13px;
+}
+
+.customer-tabs button b {
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.customer-panel-head {
+  margin-bottom: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.customer-panel-head h2 {
+  margin: 0;
+  font-size: 25px;
+}
+
+.notice-tools {
+  display: flex;
+  height: 38px;
+  border: 1px solid #e0e3e2;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.notice-tools select,
+.notice-tools input {
+  border: 0;
+  outline: 0;
+  background: #fff;
+  font-size: 13px;
+}
+
+.notice-tools select {
+  width: 86px;
+  padding: 0 12px;
+  border-right: 1px solid #e0e3e2;
+}
+
+.notice-tools input {
+  width: 260px;
+  padding: 0 14px;
+}
+
+.notice-table {
+  overflow: hidden;
+  border: 1px solid #e1e4e3;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.notice-row {
+  min-height: 53px;
+  padding: 0 30px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 160px 140px;
+  align-items: center;
+  gap: 24px;
+  border-top: 1px solid #eceeed;
+  color: #333;
+  font-size: 14px;
+}
+
+.notice-row:first-child {
+  border-top: 0;
+}
+
+.notice-head {
+  min-height: 44px;
+  background: #fafafa;
+  color: #171717;
+  font-weight: 800;
+  text-align: center;
+}
+
+.notice-row strong {
+  font-size: 14px;
+}
+
+.notice-badge {
+  width: fit-content;
+  min-width: 70px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  color: #155342;
+  background: #e8f2ed;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.faq-categories {
+  margin-bottom: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.faq-categories button {
+  min-height: 36px;
+  padding: 0 15px;
+  border: 1px solid #dfe4e2;
+  border-radius: 999px;
+  color: #333;
+  background: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.faq-categories button.active {
+  color: #fff;
+  border-color: #0c4c3c;
+  background: #0c4c3c;
+}
+
+.faq-list,
+.inquiry-form,
+.service-card-list {
+  display: grid;
+  gap: 12px;
+}
+
+.faq-item {
+  border: 1px solid #e1e4e3;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.faq-item button {
+  width: 100%;
+  min-height: 56px;
+  padding: 0 20px;
+  display: grid;
+  grid-template-columns: 70px 1fr 24px;
+  align-items: center;
+  gap: 12px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.faq-item button span {
+  color: #0c4c3c;
+  font-size: 13px;
+}
+
+.faq-item p {
+  margin: 0;
+  padding: 0 20px 18px 102px;
+  color: #555;
+  line-height: 1.7;
+}
+
+.inquiry-form {
+  max-width: 680px;
+}
+
+.inquiry-form label {
+  display: grid;
+  gap: 8px;
+  color: #222;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.inquiry-form input,
+.inquiry-form select,
+.inquiry-form textarea {
+  width: 100%;
+  border: 1px solid #dfe3e2;
+  border-radius: 8px;
+  padding: 0 14px;
+  color: #222;
+  background: #fff;
+  font: inherit;
+}
+
+.inquiry-form input,
+.inquiry-form select {
+  height: 46px;
+}
+
+.inquiry-form textarea {
+  padding-top: 13px;
+  resize: vertical;
+}
+
+.inquiry-form > button {
+  width: 150px;
+  height: 46px;
+  border: 0;
+  border-radius: 8px;
+  color: #fff;
+  background: #0c4c3c;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.inquiry-message {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  color: #0c4c3c;
+  background: #edf7f2;
+  font-weight: 800;
+}
+
+.service-card-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.service-card {
+  min-height: 220px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e0e4e3;
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(232, 242, 237, 0.82), rgba(255, 255, 255, 0) 48%),
+    #fff;
+}
+
+.service-card-icon {
+  width: 52px;
+  height: 52px;
+  margin-bottom: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #0c4c3c;
+  background: #e3f0ea;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.service-card strong {
+  color: #111;
+  font-size: 21px;
+}
+
+.service-card p {
+  margin: 16px 0 26px;
+  color: #555;
+  line-height: 1.7;
+}
+
+.service-card-button {
+  width: fit-content;
+  margin-top: auto;
+  padding: 10px 16px;
+  border-radius: 999px;
+  color: #fff;
+  background: #0c4c3c;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+@media (max-width: 900px) {
+  .customer-center-content {
+    grid-template-columns: 1fr;
+  }
+
+  .notice-row {
+    grid-template-columns: minmax(0, 1fr) 110px 100px;
+    padding: 0 16px;
+  }
+
+  .service-card-list {
+    grid-template-columns: 1fr;
+  }
+}

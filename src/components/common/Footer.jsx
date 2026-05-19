@@ -5,13 +5,58 @@ const footerGroups = [
   },
   {
     title: "마이페이지",
-    links: ["주문 내역", "찜 목록", "내가 판매한 상품", "정산 내역"],
+    links: ["구매/판매 내역", "취소/환불 내역", "최근 본 상품", "위시리스트"],
   },
   {
     title: "고객센터",
-    links: ["공지사항", "자주 묻는 질문", "1:1 문의", "제휴/입점/사업문의"],
+    links: ["공지사항", "자주 묻는 질문", "1:1 문의", "서비스"],
   },
 ];
+
+const footerLinkMap = {
+  판매하기: "/sell",
+  이용안내: "/guide",
+  "수수료 안내": "/fees",
+  "배송 안내": "/shipping",
+  공지사항: "/customer-center?tab=notice",
+  "자주 묻는 질문": "/customer-center?tab=faq",
+  "1:1 문의": "/customer-center?tab=inquiry",
+  서비스: "/customer-center?tab=service",
+};
+
+const socialIcons = {
+  instagram: (
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+      <rect x="4" y="4" width="16" height="16" rx="5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="16.7" cy="7.3" r="1" fill="currentColor" />
+    </svg>
+  ),
+  facebook: (
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+      <path
+        d="M14 8.2h2V5h-2.6C10.7 5 9 6.7 9 9.4V12H7v3.2h2V21h3.4v-5.8h2.8l.5-3.2h-3.3V9.7c0-1 .4-1.5 1.6-1.5Z"
+        fill="currentColor"
+      />
+    </svg>
+  ),
+  twitter: (
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+      <path
+        d="M5 5h3.3l3.9 5 4.4-5H19l-5.7 6.5L19 19h-3.3l-4.2-5.4L6.8 19H4.4l6-6.9L5 5Zm2.2 1.4 9.2 11.2h.4L7.6 6.4h-.4Z"
+        fill="currentColor"
+      />
+    </svg>
+  ),
+  youtube: (
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+      <path
+        d="M20.3 8.1a2.5 2.5 0 0 0-1.8-1.8C17 6 12 6 12 6s-5 0-6.5.3a2.5 2.5 0 0 0-1.8 1.8A25 25 0 0 0 3.4 12a25 25 0 0 0 .3 3.9 2.5 2.5 0 0 0 1.8 1.8C7 18 12 18 12 18s5 0 6.5-.3a2.5 2.5 0 0 0 1.8-1.8 25 25 0 0 0 .3-3.9 25 25 0 0 0-.3-3.9ZM10.4 14.5v-5l4.4 2.5-4.4 2.5Z"
+        fill="currentColor"
+      />
+    </svg>
+  ),
+};
 
 function Footer() {
   return (
@@ -27,17 +72,25 @@ function Footer() {
             당신의 가치를 가장 잘 보여주는 거래
           </p>
           <div className="social-links">
-            <a href="/" aria-label="인스타그램">◎</a>
-            <a href="/" aria-label="페이스북">f</a>
-            <a href="/" aria-label="트위터">t</a>
-            <a href="/" aria-label="유튜브">▶</a>
+            <a href="https://www.instagram.com/" aria-label="인스타그램" style={{ color: "#E4405F" }}>
+              {socialIcons.instagram}
+            </a>
+            <a href="https://www.facebook.com/" aria-label="페이스북" style={{ color: "#1877F2" }}>
+              {socialIcons.facebook}
+            </a>
+            <a href="https://twitter.com/" aria-label="트위터" style={{ color: "#1DA1F2" }}>
+              {socialIcons.twitter}
+            </a>
+            <a href="https://www.youtube.com/" aria-label="유튜브" style={{ color: "#FF0000" }}>
+              {socialIcons.youtube}
+            </a>
           </div>
         </div>
         {footerGroups.map((group) => (
           <div className="footer-links" key={group.title}>
             <h2>{group.title}</h2>
             {group.links.map((link) => (
-              <a href="/" key={link}>
+              <a href={footerLinkMap[link] || "/"} key={link}>
                 {link}
               </a>
             ))}
@@ -46,9 +99,9 @@ function Footer() {
         <div className="footer-contact">
           <h2>고객센터</h2>
           <strong>02-1234-5678</strong>
-          <p>평일 10:00 - 18:00 (주말/공휴일 휴무)</p>
-          <span>이메일</span>
-          <a href="mailto:help@nailed.co.kr">help@nailed.co.kr</a>
+          <h2>평일 10:00 - 18:00 <br></br>(주말/공휴일 휴무)</h2> 
+          <h2>이메일</h2>
+          <strong>Nailed@support.com</strong>
         </div>
       </div>
       <p className="copyright">© 2026 NAILED, Inc. All rights reserved.</p>
