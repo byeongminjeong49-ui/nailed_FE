@@ -23,9 +23,23 @@ function timeAgo(iso) {
 }
 
 /* ── 갤러리 ── */
+function getProductImageUrls(product) {
+  if (Array.isArray(product?.imageUrls)) {
+    return product.imageUrls.filter(Boolean);
+  }
+
+  return product?.imageUrl ? [product.imageUrl] : [];
+}
+
+function getProductImageUrl(product) {
+  return getProductImageUrls(product)[0] ?? "";
+}
+
 function Gallery({ imageUrls, title, brandName }) {
   const [cur, setCur] = useState(0);
   const hasImages = imageUrls && imageUrls.length > 0;
+  if (!hasImages) return null;
+
   const count = hasImages ? imageUrls.length : 1;
   const prev = () => setCur((c) => (c - 1 + count) % count);
   const next = () => setCur((c) => (c + 1) % count);
@@ -33,13 +47,7 @@ function Gallery({ imageUrls, title, brandName }) {
   return (
     <div className="pd-gallery">
       <div className="pd-gallery-main">
-        {hasImages ? (
-          <img src={imageUrls[cur]} alt={`${title} ${cur + 1}`} />
-        ) : (
-          <div className="pd-gallery-placeholder">
-            <span className="pd-gallery-placeholder-initial">{(brandName || title || "N").charAt(0)}</span>
-          </div>
-        )}
+        <img src={imageUrls[cur]} alt={`${title} ${cur + 1}`} />
         {hasImages && count > 1 && (
           <>
             <button className="pd-gallery-arrow pd-gallery-arrow-l" onClick={prev} aria-label="이전">‹</button>
@@ -236,6 +244,7 @@ function ProductDetailPage({ productId }) {
   const isSold = product.productStatus === "SOLD";
   const tags = product.hashtags ? product.hashtags.split(",").map((t) => t.trim()).filter(Boolean) : [];
   const gradeClass = product.seller.sellerGrade?.toLowerCase() ?? "bronze";
+  const productImageUrls = getProductImageUrls(product);
   const ratingDist = [5, 4, 3, 2, 1].map((star) => ({
     star, count: reviews.filter((r) => r.rating === star).length,
   }));
@@ -259,7 +268,7 @@ function ProductDetailPage({ productId }) {
 
           {/* 왼쪽: 갤러리 + 판매자 카드 */}
           <div className="pd-left-col">
-            <Gallery imageUrls={product.imageUrls} title={product.title} brandName={product.brandName} />
+            <Gallery imageUrls={productImageUrls} title={product.title} brandName={product.brandName} />
 
             <div className="pd-seller-card">
               <div className="pd-seller-avatar">{product.seller.nickname.charAt(0)}</div>
@@ -475,12 +484,11 @@ function ProductDetailPage({ productId }) {
               <div className="pd-related-grid">
                 {product.related.map((r) => (
                   <button key={r.productId} className="pd-related-card" onClick={() => navigate(`/product/${r.productId}`)}>
-                    <div className="pd-related-img">
-                      {r.imageUrls?.[0]
-                        ? <img src={r.imageUrls[0]} alt={r.title} />
-                        : <span className="pd-related-placeholder">{(r.brandName || r.title || "N").charAt(0)}</span>
-                      }
-                    </div>
+                    {getProductImageUrl(r) && (
+                      <div className="pd-related-img">
+                        <img src={getProductImageUrl(r)} alt={r.title} />
+                      </div>
+                    )}
                     <div className="pd-related-body">
                       {r.brandName && <p className="pd-related-brand">{r.brandName}</p>}
                       <p className="pd-related-name">{r.title}</p>

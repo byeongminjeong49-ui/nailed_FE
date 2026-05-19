@@ -55,7 +55,6 @@ function buildProducts() {
       description: p.description,
       hashtags: `${p.brand},${p.type},중고거래`,
       createdAt: new Date(Date.now() - i * 86400000 * 3).toISOString(),
-      imageUrls: [],
       seller,
       type: p.type,
     };

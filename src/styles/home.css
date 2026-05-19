@@ -1,4 +1,4 @@
-.home-page {
+﻿.home-page {
   min-height: 100vh;
   background: #fff;
 }
@@ -123,104 +123,25 @@
   margin: 34px auto 0;
   overflow: hidden;
   border-radius: 10px;
-  background:
-    linear-gradient(90deg, rgba(0, 0, 0, 0.86) 0%, rgba(20, 18, 16, 0.72) 45%, rgba(52, 43, 35, 0.88) 100%),
-    radial-gradient(circle at 35% 8%, rgba(230, 190, 140, 0.4), transparent 25%),
-    #1d1916;
 }
 
-.hero-banner-green {
-  background:
-    linear-gradient(90deg, rgba(3, 25, 22, 0.9) 0%, rgba(18, 70, 62, 0.74) 45%, rgba(21, 112, 101, 0.86) 100%),
-    radial-gradient(circle at 35% 8%, rgba(165, 238, 227, 0.36), transparent 25%),
-    #103c36;
+.hero-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
-.hero-banner-navy {
-  background:
-    linear-gradient(90deg, rgba(8, 12, 22, 0.9) 0%, rgba(29, 35, 57, 0.75) 45%, rgba(66, 71, 91, 0.88) 100%),
-    radial-gradient(circle at 35% 8%, rgba(180, 196, 230, 0.32), transparent 25%),
-    #131722;
-}
-
-.hero-banner-black {
-  background:
-    linear-gradient(90deg, rgba(0, 0, 0, 0.9) 0%, rgba(28, 26, 25, 0.78) 45%, rgba(74, 57, 44, 0.88) 100%),
-    radial-gradient(circle at 35% 8%, rgba(230, 190, 140, 0.34), transparent 25%),
-    #111;
-}
-
-.hero-banner-gray {
-  background:
-    linear-gradient(90deg, rgba(19, 21, 23, 0.9) 0%, rgba(70, 73, 77, 0.74) 45%, rgba(114, 116, 118, 0.88) 100%),
-    radial-gradient(circle at 35% 8%, rgba(255, 255, 255, 0.26), transparent 25%),
-    #33373a;
-}
-
-.hero-banner::before {
-  content: "";
-  position: absolute;
-  left: 82px;
-  top: 72px;
-  width: 680px;
-  height: 18px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #111, #8c6042 38%, #2b2420 70%);
-  box-shadow: 0 14px 20px rgba(0, 0, 0, 0.5);
-}
-
-.hero-product {
-  position: absolute;
-  left: 130px;
-  top: 72px;
-  width: 520px;
-  height: 420px;
-}
-
-.hanger {
-  position: absolute;
-  top: 0;
-  left: 160px;
-  width: 220px;
-  height: 92px;
-  border: 8px solid rgba(85, 60, 42, 0.75);
-  border-bottom: 0;
-  border-radius: 150px 150px 0 0;
-  transform: rotate(-7deg);
-}
-
-.coat {
-  position: absolute;
-  bottom: 0;
-  width: 270px;
-  height: 355px;
-  border-radius: 44px 48px 16px 18px;
-  background: linear-gradient(115deg, #050607 0%, #181b20 48%, #050506 100%);
-  box-shadow: inset -24px 0 46px rgba(255, 255, 255, 0.07), 0 22px 30px rgba(0, 0, 0, 0.45);
-}
-
-.coat-back {
-  left: 10px;
-  transform: rotate(-8deg);
-  opacity: 0.82;
-}
-
-.coat-front {
-  left: 220px;
-  width: 250px;
-  transform: rotate(7deg);
-}
-
-.coat-front i {
-  position: absolute;
-  top: 128px;
-  right: 34px;
-  width: 52px;
-  height: 42px;
-  border-radius: 50%;
-  border: 4px solid #6f603a;
-  background: rgba(8, 9, 10, 0.8);
-}
+
+
+
+
+
+
+
+
+
+
 
 .hero-copy {
   position: absolute;
@@ -385,218 +306,15 @@
   height: 190px;
   display: grid;
   place-items: center;
-  background: linear-gradient(135deg, #fafafa, #f3f3f3);
 }
-
-.product-visual span,
-.product-visual i {
-  display: block;
-  position: absolute;
-}
+
 
 .product-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-
-.product-jacket span,
-.product-parka span,
-.product-hoodie span,
-.product-knit span {
-  width: 94px;
-  height: 134px;
-  border-radius: 28px 28px 10px 10px;
-  background: linear-gradient(90deg, #151a1d, #4e5558);
-}
-
-.product-jacket i,
-.product-parka i,
-.product-hoodie i,
-.product-knit i {
-  top: 42px;
-  width: 34px;
-  height: 22px;
-  border-radius: 0 0 18px 18px;
-  background: #101112;
-}
-
-.product-parka span {
-  background: linear-gradient(90deg, #31402e, #73805b);
-}
-
-.product-hoodie span {
-  background: linear-gradient(90deg, #070707, #202020);
-}
-
-.product-knit span {
-  background: #e8dfd1;
-}
-
-.product-knit i {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #9b1f22;
-}
-
-.product-bag span,
-.product-backpack span {
-  width: 116px;
-  height: 86px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #090909, #2b2b2b);
-  transform: rotate(-11deg);
-}
-
-.product-bag i {
-  width: 120px;
-  height: 64px;
-  border: 3px solid #9f743d;
-  border-top: 0;
-  border-radius: 0 0 70px 70px;
-  transform: translate(18px, 24px) rotate(-18deg);
-}
-
-.product-backpack span {
-  height: 118px;
-  border-radius: 22px 22px 12px 12px;
-}
-
-.product-backpack i {
-  width: 72px;
-  height: 36px;
-  border-radius: 20px 20px 0 0;
-  border: 5px solid #111;
-  border-bottom: 0;
-  transform: translateY(-58px);
-}
-
-.product-sneaker span,
-.product-dunk span,
-.product-loafer span {
-  width: 126px;
-  height: 52px;
-  border-radius: 50px 28px 18px 18px;
-  background: linear-gradient(180deg, #eee, #aeb1b3);
-  transform: rotate(7deg);
-}
-
-.product-sneaker i,
-.product-dunk i,
-.product-loafer i {
-  width: 116px;
-  height: 44px;
-  border-radius: 42px 24px 14px 14px;
-  background: linear-gradient(180deg, #fbfbfb, #777);
-  transform: translate(16px, 26px) rotate(-5deg);
-}
-
-.product-dunk span,
-.product-dunk i,
-.product-loafer span,
-.product-loafer i {
-  background: linear-gradient(180deg, #111, #efefef 45%, #0b0b0b 48%);
-}
-
-.product-loafer span,
-.product-loafer i {
-  background: linear-gradient(180deg, #161616, #050505);
-}
-
-.product-chair span {
-  width: 102px;
-  height: 118px;
-  border-radius: 24px 24px 32px 32px;
-  background: linear-gradient(90deg, #202326, #606466);
-}
-
-.product-chair i {
-  width: 140px;
-  height: 74px;
-  border-left: 7px solid #111;
-  border-right: 7px solid #111;
-  border-bottom: 7px solid #111;
-  transform: translateY(62px);
-}
-
-.product-watch span {
-  width: 82px;
-  height: 82px;
-  border: 9px solid #c7c7c7;
-  border-radius: 50%;
-  background: #070707;
-}
-
-.product-watch i {
-  width: 54px;
-  height: 150px;
-  border-left: 22px solid #b8b8b8;
-  border-right: 22px solid #d0d0d0;
-}
-
-.product-cap span {
-  width: 112px;
-  height: 64px;
-  border-radius: 70px 70px 20px 20px;
-  background: #181818;
-  transform: rotate(8deg);
-}
-
-.product-cap i {
-  width: 88px;
-  height: 26px;
-  border-radius: 50%;
-  background: #191919;
-  transform: translate(45px, 34px) rotate(16deg);
-}
-
-.product-wallet span {
-  width: 78px;
-  height: 106px;
-  border-radius: 6px;
-  background: linear-gradient(135deg, #4a2e1d, #23160f);
-}
-
-.product-wallet i {
-  width: 24px;
-  height: 28px;
-  border-left: 2px solid #8d6d4f;
-  border-bottom: 2px solid #8d6d4f;
-  transform: translate(2px, 24px) rotate(-40deg);
-}
-
-.product-airpods span {
-  width: 112px;
-  height: 82px;
-  border: 1px solid #ddd;
-  border-radius: 28px;
-  background: #fff;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
-}
-
-.product-airpods i {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 48% 42%, #1f1f1f 0 7%, #fff 8% 100%);
-  box-shadow: 54px 0 0 #fff, 54px 0 0 1px #e3e3e3;
-  transform: translate(-26px, -14px);
-}
-
-.product-rugby span {
-  width: 112px;
-  height: 112px;
-  border-radius: 16px 16px 8px 8px;
-  background: repeating-linear-gradient(0deg, #121212 0 22px, #5d2620 22px 34px, #25313b 34px 48px);
-}
-
-.product-rugby i {
-  width: 44px;
-  height: 26px;
-  background: #efefef;
-  transform: translateY(-48px);
-}
+
 
 .product-info {
   padding: 14px 14px 16px;
@@ -947,13 +665,6 @@
     margin: 18px 12px 0;
   }
 
-  .hero-banner::before,
-  .hero-product {
-    left: 26px;
-    transform: scale(0.68);
-    transform-origin: left top;
-  }
-
   .hero-copy {
     left: 28px;
     right: 24px;
@@ -1018,3 +729,5 @@
     gap: 28px;
   }
 }
+
+

@@ -45,7 +45,6 @@ const s = {
   },
   productRow: { display: 'flex', gap: '14px', alignItems: 'center' },
   productImg: { width: '64px', height: '64px', borderRadius: '8px', background: '#f0f0f0', objectFit: 'cover', flexShrink: 0 },
-  productImgPlaceholder: { width: '64px', height: '64px', borderRadius: '8px', background: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px', flexShrink: 0 },
 };
 
 const fmt = (v) => v ? new Date(v).toLocaleString('ko-KR') : '-';
@@ -54,6 +53,18 @@ const won = (v) => v != null ? `${Number(v).toLocaleString()}원` : '-';
 function navigate(path) {
   window.history.pushState({}, '', path);
   window.dispatchEvent(new PopStateEvent('popstate'));
+}
+
+function getProductImageUrl(product) {
+  if (product?.imageUrl) {
+    return product.imageUrl;
+  }
+
+  if (Array.isArray(product?.imageUrls)) {
+    return product.imageUrls.find(Boolean) ?? '';
+  }
+
+  return '';
 }
 
 export default function OrderDetail({ orderId }) {
@@ -98,7 +109,7 @@ export default function OrderDetail({ orderId }) {
   );
 
   const currentStep = STATUS_STEPS.findIndex((s) => s.key === order.orderStatus);
-  const imageUrl = product?.imageUrls?.[0];
+  const imageUrl = getProductImageUrl(product);
   const title = completed?.title || product?.title || '-';
 
   return (
@@ -133,10 +144,7 @@ export default function OrderDetail({ orderId }) {
         <div style={s.card}>
           <div style={s.cardTitle}>상품 정보</div>
           <div style={s.productRow}>
-            {imageUrl
-              ? <img src={imageUrl} alt={title} style={s.productImg} />
-              : <div style={s.productImgPlaceholder}>🛍️</div>
-            }
+            {imageUrl && <img src={imageUrl} alt={title} style={s.productImg} />}
             <div>
               <div style={{ fontSize: '15px', fontWeight: '600', color: '#111', marginBottom: '4px' }}>{title}</div>
               <div style={{ fontSize: '17px', fontWeight: '700', color: '#168f88' }}>{won(order.finalPrice)}</div>

@@ -4,10 +4,9 @@ export const banners = [
     id: 1,
     brand: "STONE ISLAND",
     title: "24FW COLLECTION",
-    description: "아이코닉한 디자인, 혁신적인 소재",
+    description: "아이코닉한 디자인과 실용적인 소재",
     cta: "컬렉션 보러가기",
     link: "/",
-    theme: "brown",
   },
   {
     id: 2,
@@ -16,7 +15,6 @@ export const banners = [
     description: "지금 주목받는 프리미엄 중고 상품",
     cta: "추천 상품 보기",
     link: "/",
-    theme: "green",
   },
   {
     id: 3,
@@ -25,7 +23,6 @@ export const banners = [
     description: "개성 있는 빈티지 아이템을 만나보세요",
     cta: "빈티지 둘러보기",
     link: "/",
-    theme: "navy",
   },
   {
     id: 4,
@@ -34,7 +31,6 @@ export const banners = [
     description: "가치를 오래 간직하는 럭셔리 거래",
     cta: "럭셔리 보기",
     link: "/",
-    theme: "black",
   },
   {
     id: 5,
@@ -43,6 +39,5 @@ export const banners = [
     description: "일상에 필요한 라이프 아이템 추천",
     cta: "라이프 보기",
     link: "/",
-    theme: "gray",
   },
 ];

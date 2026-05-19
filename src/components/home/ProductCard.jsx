@@ -3,8 +3,21 @@ function navigate(path) {
   window.dispatchEvent(new PopStateEvent("popstate"));
 }
 
+function getProductImageUrl(product) {
+  if (product?.imageUrl) {
+    return product.imageUrl;
+  }
+
+  if (Array.isArray(product?.imageUrls)) {
+    return product.imageUrls.find(Boolean) ?? "";
+  }
+
+  return "";
+}
+
 function ProductCard({ link, product }) {
   const href = product.id ? `/product/${product.id}` : (link ?? "#");
+  const imageUrl = getProductImageUrl(product);
 
   const handleClick = (e) => {
     e.preventDefault();
@@ -13,16 +26,11 @@ function ProductCard({ link, product }) {
 
   const cardContent = (
     <>
-      <div className={`product-visual product-${product.type}`} aria-hidden="true">
-        {product.imageUrl ? (
-          <img className="product-image" src={product.imageUrl} alt="" />
-        ) : (
-          <>
-            <span />
-            <i />
-          </>
-        )}
-      </div>
+      {imageUrl && (
+        <div className="product-visual">
+          <img className="product-image" src={imageUrl} alt="" />
+        </div>
+      )}
       <div className="product-info">
         <h3>{product.name}</h3>
         <strong>{product.price}</strong>

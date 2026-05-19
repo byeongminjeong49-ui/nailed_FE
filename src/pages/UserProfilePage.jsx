@@ -22,6 +22,18 @@ function navigate(path) {
   window.dispatchEvent(new PopStateEvent("popstate"));
 }
 
+function getProductImageUrl(product) {
+  if (product?.imageUrl) {
+    return product.imageUrl;
+  }
+
+  if (Array.isArray(product?.imageUrls)) {
+    return product.imageUrls.find(Boolean) ?? "";
+  }
+
+  return "";
+}
+
 const PRICE_PRESETS = [
   { label: "5만원 이하",  max: 50000 },
   { label: "10만원 이하", max: 100000 },
@@ -183,12 +195,11 @@ function ProductsTab({ products }) {
                   onClick={() => navigate(`/product/${p.productId}`)}
                 >
                   <div className="up-card-img-wrap">
-                    <div className={`product-visual product-${p.type ?? "jacket"}`} aria-hidden="true">
-                      {p.imageUrls?.[0]
-                        ? <img className="product-image" src={p.imageUrls[0]} alt={p.title} />
-                        : <><span /><i /></>
-                      }
-                    </div>
+                    {getProductImageUrl(p) && (
+                      <div className="product-visual">
+                        <img className="product-image" src={getProductImageUrl(p)} alt={p.title} />
+                      </div>
+                    )}
                     {p.productStatus === "SOLD" && <div className="up-card-sold">SOLD</div>}
                     <button className="up-card-wish" aria-label="찜하기" onClick={(e) => e.stopPropagation()}>
                       ♡ {p.wishlistCount}

@@ -1,6 +1,6 @@
-/* ════════════════════════════════
-   상품 상세 페이지
-   ════════════════════════════════ */
+﻿/* ?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧
+   ?곹뭹 ?곸꽭 ?섏씠吏
+   ?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧 */
 
 .pd-page {
   background: #fff;
@@ -13,7 +13,7 @@
   padding: 0 24px 120px;
 }
 
-/* ── 빵가루 ── */
+/* ?? 鍮듦?猷??? */
 .pd-breadcrumb {
   display: flex;
   align-items: center;
@@ -26,7 +26,7 @@
 .pd-breadcrumb a:hover { color: #151515; }c
 .pd-breadcrumb span:last-child { color: #555; }
 
-/* ── 본문 2단 레이아웃 ── */
+/* ?? 蹂몃Ц 2???덉씠?꾩썐 ?? */
 .pd-body {
   display: grid;
   grid-template-columns: minmax(0, 500px) 1fr;
@@ -34,14 +34,14 @@
   align-items: start;
 }
 
-/* ── 왼쪽 컬럼 ── */
+/* ?? ?쇱そ 而щ읆 ?? */
 .pd-left-col {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-/* ── 갤러리 ── */
+/* ?? 媛ㅻ윭由??? */
 .pd-gallery {
   display: flex;
   flex-direction: column;
@@ -52,7 +52,6 @@
   position: relative;
   width: 100%;
   aspect-ratio: 1 / 1;
-  background: #f2f2f2;
   border-radius: 12px;
   overflow: hidden;
 }
@@ -61,24 +60,6 @@
   height: 100%;
   object-fit: cover;
   display: block;
-}
-
-/* 이미지 없을 때 플레이스홀더 */
-.pd-gallery-placeholder {
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(145deg, #ebebeb, #d8d8d8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.pd-gallery-placeholder-initial {
-  font-size: 96px;
-  font-weight: 900;
-  color: rgba(0,0,0,0.12);
-  letter-spacing: -4px;
-  user-select: none;
-  text-transform: uppercase;
 }
 
 .pd-gallery-arrow {
@@ -150,14 +131,13 @@
   border-radius: 8px;
   overflow: hidden;
   cursor: pointer;
-  background: #f2f2f2;
   padding: 0;
   transition: border-color 0.15s;
 }
 .pd-thumb.active { border-color: #151515; }
 .pd-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-/* ── 판매자 카드 ── */
+/* ?? ?먮ℓ??移대뱶 ?? */
 .pd-seller-card {
   padding: 16px 18px;
   border: 1px solid #e8e8e8;
@@ -211,7 +191,7 @@
 }
 .pd-seller-link:hover { border-color: #151515; color: #151515; }
 
-/* ── 오른쪽 패널 ── */
+/* ?? ?ㅻⅨ履??⑤꼸 ?? */
 .pd-info {
   display: flex;
   flex-direction: column;
@@ -242,7 +222,7 @@
 .pd-icon-btn.on { color: #e53935; border-color: #ffcfcf; background: #fff7f7; }
 .pd-icon-btn span { font-size: 14px; line-height: 1; font-weight: 700; }
 
-/* 카테고리 + 시간 (설명/해시 아래) */
+/* 移댄뀒怨좊━ + ?쒓컙 (?ㅻ챸/?댁떆 ?꾨옒) */
 .pd-info-footer {
   display: flex;
   align-items: center;
@@ -312,7 +292,7 @@
   letter-spacing: 0;
 }
 
-/* ── 메타 행 ── */
+/* ?? 硫뷀? ???? */
 .pd-meta-row {
   display: flex;
   align-items: center;
@@ -339,14 +319,14 @@
 .pd-meta-item svg { opacity: 0.7; }
 .pd-meta-dot { color: #ddd; font-size: 12px; }
 
-/* ── 패널 내부 구분선 ── */
+/* ?? ?⑤꼸 ?대? 援щ텇???? */
 .pd-info-divider {
   border: 0;
   border-top: 1px solid #f0f0f0;
   margin: 22px 0;
 }
 
-/* ── 상품 설명 ── */
+/* ?? ?곹뭹 ?ㅻ챸 ?? */
 .pd-desc-wrap { margin-bottom: 4px; }
 .pd-desc {
   font-size: 14px;
@@ -377,7 +357,7 @@
 }
 .pd-desc-toggle-arrow.up { transform: rotate(270deg); }
 
-/* ── 해시태그 ── */
+/* ?? ?댁떆?쒓렇 ?? */
 .pd-hashtags {
   display: flex;
   flex-wrap: wrap;
@@ -393,7 +373,7 @@
   font-weight: 500;
 }
 
-/* ── 스펙 인라인 (설명 아래) ── */
+/* ?? ?ㅽ럺 ?몃씪??(?ㅻ챸 ?꾨옒) ?? */
 .pd-spec-list {
   margin: 18px 0 0;
   padding: 0;
@@ -413,7 +393,7 @@
 .pd-spec-item dt { width: 60px; flex-shrink: 0; color: #aaa; font-weight: 500; }
 .pd-spec-item dd { margin: 0; color: #333; font-weight: 500; }
 
-/* ── 안전결제 인라인 배너 ── */
+/* ?? ?덉쟾寃곗젣 ?몃씪??諛곕꼫 ?? */
 .pd-safe-inline {
   display: flex;
   align-items: center;
@@ -428,7 +408,7 @@
 }
 .pd-safe-inline svg { flex-shrink: 0; }
 
-/* ── CTA 버튼 ── */
+/* ?? CTA 踰꾪듉 ?? */
 .pd-actions {
   display: flex;
   align-items: stretch;
@@ -469,7 +449,7 @@
 }
 .pd-edit-btn:hover { background: #f7f7f7; }
 
-/* ── 하단 섹션 공통 ── */
+/* ?? ?섎떒 ?뱀뀡 怨듯넻 ?? */
 .pd-divider {
   border: 0;
   border-top: 1px solid #efefef;
@@ -487,14 +467,14 @@
   letter-spacing: -0.3px;
 }
 
-/* ── 상품 정보 테이블 ── */
+/* ?? ?곹뭹 ?뺣낫 ?뚯씠釉??? */
 .pd-meta-table { width: 100%; border-collapse: collapse; font-size: 14px; }
 .pd-meta-table tr { border-bottom: 1px solid #f5f5f5; }
 .pd-meta-table td { padding: 12px 0; vertical-align: top; }
 .pd-meta-table td:first-child { width: 90px; color: #aaa; font-weight: 500; }
 .pd-meta-table td:last-child { color: #333; }
 
-/* ── 아코디언 (안심거래·배송·환불) ── */
+/* ?? ?꾩퐫?붿뼵 (?덉떖嫄곕옒쨌諛곗넚쨌?섎텋) ?? */
 .pd-accordion { display: flex; flex-direction: column; margin-top: 48px; }
 .pd-acc-item { border-bottom: 1px solid #e7e7e7; }
 .pd-acc-item:first-child { border-top: 1px solid #e7e7e7; }
@@ -563,7 +543,7 @@
   line-height: 1.6;
 }
 .pd-safe-bullets li::before {
-  content: "·";
+  content: "쨌";
   position: absolute;
   left: 0;
   color: var(--accent, #168f88);
@@ -571,7 +551,7 @@
   line-height: 1.1;
 }
 
-/* ── 섹션 타이틀 행 ── */
+/* ?? ?뱀뀡 ??댄? ???? */
 .pd-section-title-row {
   display: flex;
   align-items: baseline;
@@ -592,7 +572,7 @@
 }
 .pd-section-link:hover { color: #151515; }
 
-/* ── 판매자 리뷰 ── */
+/* ?? ?먮ℓ??由щ럭 ?? */
 .pd-rv-summary {
   display: flex;
   gap: 32px;
@@ -651,7 +631,7 @@
 }
 .pd-rv-more:hover { border-color: #151515; color: #151515; }
 
-/* ── 비슷한 상품 ── */
+/* ?? 鍮꾩듂???곹뭹 ?? */
 .pd-related-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
@@ -670,25 +650,17 @@
 .pd-related-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.09); transform: translateY(-2px); }
 .pd-related-img {
   aspect-ratio: 1;
-  background: #f2f2f2;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
 }
-.pd-related-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.pd-related-placeholder {
-  font-size: 28px;
-  font-weight: 900;
-  color: rgba(0,0,0,0.1);
-  text-transform: uppercase;
-}
-.pd-related-body { padding: 10px 10px 12px; }
+.pd-related-img img { width: 100%; height: 100%; object-fit: cover; display: block; }.pd-related-body { padding: 10px 10px 12px; }
 .pd-related-brand { font-size: 10px; color: #bbb; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 3px; font-weight: 600; }
 .pd-related-name { font-size: 12px; font-weight: 500; color: #444; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0 0 5px; }
 .pd-related-price { font-size: 13px; font-weight: 700; color: #0f0f0f; margin: 0; }
 
-/* ── 토스트 ── */
+/* ?? ?좎뒪???? */
 .pd-toast {
   position: fixed;
   bottom: 36px;
@@ -707,7 +679,7 @@
 }
 @keyframes toastFade { from { opacity: 0; transform: translateX(-50%) translateY(8px); } }
 
-/* ── 로딩 / 에러 ── */
+/* ?? 濡쒕뵫 / ?먮윭 ?? */
 .pd-loading, .pd-error {
   min-height: 60vh;
   display: flex;
@@ -727,7 +699,7 @@
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ── 신고 모달 ── */
+/* ?? ?좉퀬 紐⑤떖 ?? */
 .report-overlay {
   position: fixed;
   inset: 0;
@@ -831,7 +803,7 @@
 }
 .report-done-btn:hover { border-color: #151515; }
 
-/* ── 반응형 ── */
+/* ?? 諛섏쓳???? */
 @media (max-width: 1024px) {
   .pd-body { grid-template-columns: 1fr; gap: 32px; }
   .pd-related-grid { grid-template-columns: repeat(4, 1fr); }
@@ -842,3 +814,5 @@
   .pd-related-grid { grid-template-columns: repeat(2, 1fr); }
   .pd-safe-icons { gap: 20px; }
 }
+
+
