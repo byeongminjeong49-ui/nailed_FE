@@ -122,12 +122,17 @@ export async function login({ userId, password }) {
 }
 
 export async function findPassword({ userId }) {
-  return request("/api/auth/password/reset-request", {
+  const data = await request("/api/auth/password/reset-request", {
     method: "POST",
     body: JSON.stringify({
       userid: normalizeUserId(userId),
     }),
   });
+
+  return {
+    temporaryPassword:
+      data?.temporaryPassword ?? data?.data?.temporaryPassword ?? data?.data?.data?.temporaryPassword ?? "",
+  };
 }
 
 export async function logout() {

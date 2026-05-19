@@ -358,6 +358,11 @@ export function FindPasswordPage({ onNavigate }) {
 
     try {
       const result = await findPassword({ userId });
+      if (!result.temporaryPassword) {
+        setMessage({ type: "error", text: "임시 비밀번호를 응답에서 확인할 수 없습니다." });
+        return;
+      }
+
       alert(`임시 비밀번호: ${result.temporaryPassword}`);
       setMessage({ type: "success", text: "임시 비밀번호가 발급되었습니다. 발급된 비밀번호로 로그인해주세요." });
     } catch (error) {
