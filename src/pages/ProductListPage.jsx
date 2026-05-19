@@ -2,8 +2,6 @@ import Header from "../components/common/Header";
 import Footer from "../components/common/Footer";
 import ProductCard from "../components/home/ProductCard";
 import { findCategory, findSubcategory } from "../data/categories";
-import { mockProducts } from "../data/productData";
-import { filterProductsByCategory } from "../utils/category";
 
 function ProductListPage({ path, search }) {
   const params = new URLSearchParams(search);
@@ -11,10 +9,7 @@ function ProductListPage({ path, search }) {
   const subcategoryValue = params.get("subcategory") || "";
   const category = findCategory(categoryValue);
   const subcategory = findSubcategory(category, subcategoryValue);
-  // TODO: IA 문서 기준 API 확정 후 카테고리 상품 목록 mock data를 실제 API 응답으로 교체
-  const products = category
-    ? filterProductsByCategory(mockProducts, category.value, subcategory?.value || "")
-    : [];
+  const products = [];
   const title = getPageTitle(category, subcategory);
 
   return (
@@ -29,13 +24,13 @@ function ProductListPage({ path, search }) {
           {!category && <p className="empty-result">카테고리를 선택해주세요.</p>}
 
           {category && products.length === 0 && (
-            <p className="empty-result">해당 카테고리에 상품이 없습니다.</p>
+            <p className="empty-result">상품 데이터가 없습니다.</p>
           )}
 
           {products.length > 0 && (
             <div className="product-grid">
               {products.map((product) => (
-                <ProductCard key={product.id} product={product} />
+                <ProductCard key={product.id ?? product.productId} product={product} />
               ))}
             </div>
           )}

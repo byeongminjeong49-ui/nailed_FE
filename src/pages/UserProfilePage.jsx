@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import Footer from "../components/common/Footer";
 import Header from "../components/common/Header";
-import { MOCK_SELLERS, getProducts } from "../api/productApi";
+import { getProducts } from "../api/productApi";
 import { getSellerReviews } from "../api/reviewApi";
 import "../styles/review.css";
 import "../styles/product-detail.css";
@@ -317,9 +317,8 @@ function UserProfilePage({ memberId, hideFooter = false }) {
   }
 
   useEffect(() => {
-    const found = MOCK_SELLERS.find((s) => s.memberId === memberId);
-    setSeller(found ?? { memberId, nickname: memberId, sellerGrade: "BRONZE", completedOrderCount: 0, averageRating: null });
-    setSellerProducts(getProducts().filter((p) => p.seller.memberId === memberId));
+    setSeller({ memberId, nickname: memberId, sellerGrade: "BRONZE", completedOrderCount: 0, averageRating: null });
+    setSellerProducts(getProducts().filter((p) => p.seller?.memberId === memberId));
     return () => clearTimeout(timerRef.current);
   }, [memberId]);
 

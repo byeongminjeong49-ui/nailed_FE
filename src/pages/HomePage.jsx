@@ -1,8 +1,6 @@
 import Header from "../components/common/Header";
 import Footer from "../components/common/Footer";
 import HeroBanner from "../components/home/HeroBanner";
-import ProductSection from "../components/home/ProductSection";
-import { productSections } from "../data/productData";
 
 function HomePage() {
   return (
@@ -11,13 +9,6 @@ function HomePage() {
       <main>
         <HeroBanner />
         <div className="home-content">
-          {productSections.map((section) => (
-            <ProductSection
-              key={section.title}
-              title={section.title}
-              products={section.products}
-            />
-          ))}
         </div>
       </main>
       <Footer />

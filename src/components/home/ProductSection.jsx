@@ -11,7 +11,6 @@ function ProductSection({ title, products }) {
   const hasMore = visibleCount < safeProducts.length;
 
   const handleLoadMore = () => {
-    // TODO: IA 문서 기준 API 확정 후 추천/인기 상품 mock data를 pagination API 응답으로 교체
     setVisibleCount((currentCount) =>
       Math.min(currentCount + INCREMENT_COUNT, safeProducts.length),
     );

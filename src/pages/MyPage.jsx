@@ -1,7 +1,5 @@
-import { MOCK_SELLERS } from "../api/productApi";
 import UserProfilePage from "./UserProfilePage";
 
-const DEMO_MEMBER_ID = "MEMBER_002";
 const SESSION_KEY = "nailed_session";
 
 function getCurrentMemberId() {
@@ -14,10 +12,7 @@ function getCurrentMemberId() {
 }
 
 function getMyPageMemberId() {
-  const currentMemberId = getCurrentMemberId();
-  const hasSellerProfile = MOCK_SELLERS.some((seller) => seller.memberId === currentMemberId);
-
-  return hasSellerProfile ? currentMemberId : DEMO_MEMBER_ID;
+  return getCurrentMemberId();
 }
 
 function MyPage() {
