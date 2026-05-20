@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { logout } from "../../api/authApi";
 import { categories } from "../../data/categories";
 
-const ACCESS_TOKEN_KEY = "nailed_access_token";
+const ACCESS_TOKEN_KEY = "accessToken";
+const SESSION_KEY = "nailed_session";
 
 const menuItems = [
   { label: "마이페이지", icon: "userCircle", href: "/mypage" },
@@ -63,10 +64,15 @@ function QuickIcon({ name }) {
   return quickIcons[name] || name;
 }
 
-function Header() {
-  const [isLoggedIn, setIsLoggedIn] = useState(() =>
-    Boolean(window.localStorage.getItem(ACCESS_TOKEN_KEY)),
+function hasAuthSession() {
+  return Boolean(
+    window.sessionStorage.getItem(ACCESS_TOKEN_KEY) &&
+      window.sessionStorage.getItem(SESSION_KEY),
   );
+}
+
+function Header() {
+  const [isLoggedIn, setIsLoggedIn] = useState(hasAuthSession);
   const [searchKeyword, setSearchKeyword] = useState(() => {
     if (window.location.pathname !== "/search") {
       return "";
@@ -87,7 +93,7 @@ function Header() {
 
   useEffect(() => {
     const syncLoginState = () => {
-      setIsLoggedIn(Boolean(window.localStorage.getItem(ACCESS_TOKEN_KEY)));
+      setIsLoggedIn(hasAuthSession());
     };
 
     window.addEventListener("storage", syncLoginState);
@@ -101,8 +107,6 @@ function Header() {
 
     event.preventDefault();
     await logout();
-    window.localStorage.removeItem("nailedAccessToken");
-    window.localStorage.removeItem("nailedRefreshToken");
     setIsLoggedIn(false);
     window.history.pushState({}, "", "/");
     window.dispatchEvent(new PopStateEvent("popstate"));

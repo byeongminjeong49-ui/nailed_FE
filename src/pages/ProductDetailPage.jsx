@@ -174,8 +174,8 @@ function ProductDetailPage({ productId }) {
   const [toast, setToast] = useState("");
   const timerRef = useRef(null);
 
-  const session = (() => { try { return JSON.parse(localStorage.getItem("nailed_session") ?? "null"); } catch { return null; } })();
-  const currentMemberId = session?.member_id ?? null;
+  const session = (() => { try { return JSON.parse(sessionStorage.getItem("nailed_session") ?? "null"); } catch { return null; } })();
+  const currentMemberId = session?.member_id ?? session?.memberId ?? null;
 
   function showToast(msg) {
     setToast(msg);

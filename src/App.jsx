@@ -18,6 +18,7 @@ import ReviewWritePage from "./pages/ReviewWritePage.jsx";
 import SearchResultPage from "./pages/SearchResultPage.jsx";
 import ServiceGuidePage from "./pages/ServiceGuidePage.jsx";
 import UserProfilePage from "./pages/UserProfilePage.jsx";
+import { clearLegacyAuthLocalStorage } from "./api/authApi";
 
 // 공통 레이아웃 컴포넌트 포함
 import Header from "./components/common/Header.jsx";
@@ -66,6 +67,43 @@ const orderRoutes = {
   "/order/form": "form",
   "/order/payment": "payment",
 };
+
+const ACCESS_TOKEN_KEY = "accessToken";
+const SESSION_KEY = "nailed_session";
+
+function readSession() {
+  try {
+    return JSON.parse(window.sessionStorage.getItem(SESSION_KEY) || "null");
+  } catch {
+    return null;
+  }
+}
+
+function hasAccessToken() {
+  return Boolean(window.sessionStorage.getItem(ACCESS_TOKEN_KEY) && readSession());
+}
+
+function getCurrentRole() {
+  const session = readSession();
+  return session?.role || "";
+}
+
+function moveTo(path) {
+  window.history.replaceState({}, "", path);
+  window.dispatchEvent(new PopStateEvent("popstate"));
+}
+
+function requireLogin() {
+  window.alert("로그인이 필요한 페이지입니다.");
+  moveTo("/login");
+  return null;
+}
+
+function requireAdmin() {
+  window.alert("관리자 권한이 필요한 페이지입니다.");
+  moveTo("/");
+  return null;
+}
 
 function getProductId(pathname) {
   const m = pathname.match(/^\/product\/([^/]+)$/);
@@ -117,6 +155,7 @@ function App() {
   const orderId = getOrderId(path); 
 
   useEffect(() => {
+    clearLegacyAuthLocalStorage();
     const handlePopState = () => setLocation(getCurrentPath());
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
@@ -135,6 +174,9 @@ function App() {
 
   // 1. 관리자 전용 라우트 우선 처리
   if (activePage) {
+    if (!hasAccessToken()) return requireLogin();
+    if (getCurrentRole() !== "ADMIN") return requireAdmin();
+
     return (
       <AdminLayout activePage={activePage} onNavigate={handleAdminNavigate}>
         {renderAdminPage(activePage)}
@@ -146,9 +188,15 @@ function App() {
   if (activeAuthPage === "login") return <LoginPage onNavigate={handleNavigate} />;
   if (activeAuthPage === "signup") return <SignupPage onNavigate={handleNavigate} />;
   if (activeAuthPage === "find-password") return <FindPasswordPage onNavigate={handleNavigate} />;
-  if (activeAuthPage === "mypage") return <MyPage onNavigate={handleNavigate} />;
+  if (activeAuthPage === "mypage") {
+    if (!hasAccessToken()) return requireLogin();
+    return <MyPage onNavigate={handleNavigate} />;
+  }
   if (activeGuidePage) return <ServiceGuidePage type={activeGuidePage} />;
-  if (activeReadyPage) return <ReadyPage title={activeReadyPage} />;
+  if (activeReadyPage) {
+    if (!hasAccessToken()) return requireLogin();
+    return <ReadyPage title={activeReadyPage} />;
+  }
 
   // 3. 상품 코어 도메인 상세 정보 분기
   if (productId) {
@@ -158,12 +206,15 @@ function App() {
   // 4. 회원 프로필 및 리뷰 작성 허브
   if (userId) return <UserProfilePage memberId={userId} />;
   if (reviewOrderId) {
+    if (!hasAccessToken()) return requireLogin();
     const params = new URLSearchParams(location.search);
     return <ReviewWritePage orderId={reviewOrderId} sellerId={params.get("sellerId")} />;
   }
 
   // 5. 주문서 / 결제 / 주문상세 내역 통합 처리 분기점
   if (activeOrderPage === "form") {
+    if (!hasAccessToken()) return requireLogin();
+
     return (
       <div className="main-wrapper">
         <Header />
@@ -174,6 +225,8 @@ function App() {
   }
 
   if (activeOrderPage === "payment") {
+    if (!hasAccessToken()) return requireLogin();
+
     return (
       <div className="main-wrapper">
         <Header />
@@ -184,6 +237,8 @@ function App() {
   }
 
   if (orderId) {
+    if (!hasAccessToken()) return requireLogin();
+
     return (
       <div className="main-wrapper">
         <Header />

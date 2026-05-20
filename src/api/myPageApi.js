@@ -1,19 +1,11 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
-const ACCESS_TOKEN_KEY = "nailed_access_token";
+import { authRequest } from "./authApi";
+
 const SESSION_KEY = "nailed_session";
 const RECENTLY_VIEWED_KEY = "nailed_recently_viewed";
 
-function clearAuthStorage() {
-  localStorage.removeItem(ACCESS_TOKEN_KEY);
-  localStorage.removeItem(SESSION_KEY);
-  localStorage.removeItem("nailedAccessToken");
-  localStorage.removeItem("nailedRefreshToken");
-  window.dispatchEvent(new Event("storage"));
-}
-
 function readSession() {
   try {
-    return JSON.parse(localStorage.getItem(SESSION_KEY) || "null");
+    return JSON.parse(sessionStorage.getItem(SESSION_KEY) || "null");
   } catch {
     return null;
   }
@@ -24,45 +16,8 @@ function getMemberId() {
   return session?.member_id || session?.memberId || session?.id || null;
 }
 
-function buildUrl(path) {
-  return `${API_BASE_URL}${path}`;
-}
-
 async function request(path, options = {}) {
-  const token = localStorage.getItem(ACCESS_TOKEN_KEY);
-  const headers = {
-    ...(options.body ? { "Content-Type": "application/json" } : {}),
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...options.headers,
-  };
-
-  const response = await fetch(buildUrl(path), {
-    credentials: "include",
-    ...options,
-    headers,
-  });
-
-  if (response.status === 204) {
-    return null;
-  }
-
-  if (response.status === 401 || response.status === 403) {
-    clearAuthStorage();
-    throw new Error("로그인이 만료되었습니다. 다시 로그인해주세요.");
-  }
-
-  const contentType = response.headers.get("content-type") || "";
-  const data = contentType.includes("application/json")
-    ? await response.json()
-    : await response.text();
-
-  if (!response.ok) {
-    const message =
-      typeof data === "string" ? data : data?.message || data?.error || "요청 처리에 실패했습니다.";
-    throw new Error(message);
-  }
-
-  return data;
+  return authRequest(path, options);
 }
 
 export function getCurrentMemberId() {

@@ -172,8 +172,8 @@ function CustomerCenterPage() {
                     <textarea placeholder="문의 내용을 입력해주세요." rows="7" required />
                   </label>
                   <label>
-                    이메일
-                    <input type="email" placeholder="답변 받을 이메일을 입력해주세요." required />
+                    연락처
+                    <input type="text" placeholder="답변 받을 연락처를 입력해주세요." required />
                   </label>
                   {message && <p className="inquiry-message">{message}</p>}
                   <button type="submit">문의 접수</button>

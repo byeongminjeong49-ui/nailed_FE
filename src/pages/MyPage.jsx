@@ -4,7 +4,7 @@ const SESSION_KEY = "nailed_session";
 
 function getCurrentMemberId() {
   try {
-    const session = JSON.parse(localStorage.getItem(SESSION_KEY) || "null");
+    const session = JSON.parse(sessionStorage.getItem(SESSION_KEY) || "null");
     return session?.member_id || session?.memberId || session?.id || null;
   } catch {
     return null;
