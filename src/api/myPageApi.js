@@ -68,7 +68,7 @@ export async function fetchOrders() {
 }
 
 export async function fetchSettlements() {
-  return request("/api/members/me/settlements");
+  return request("/api/members/mypage/settlements?page=0&size=20");
 }
 
 export async function withdrawMe() {

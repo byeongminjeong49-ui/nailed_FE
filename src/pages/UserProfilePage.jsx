@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import Footer from "../components/common/Footer";
 import Header from "../components/common/Header";
-import { fetchMyProfile } from "../api/myPageApi";
+import { fetchMyProfile, fetchSettlements } from "../api/myPageApi";
 import { getProducts } from "../api/productApi";
 import { getSellerReviews } from "../api/reviewApi";
 import "../styles/review.css";
@@ -244,6 +244,42 @@ function ProductsTab({ products }) {
   );
 }
 
+/* ── 정산 내역 탭 ── */
+function SettlementTab() {
+  const [settlements, setSettlements] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchSettlements()
+      .then((data) => {
+        setSettlements(data.content ?? []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  if (loading) return <p className="up-empty">불러오는 중...</p>;
+  if (settlements.length === 0) return <p className="up-empty">정산 내역 정보가 없습니다.</p>;
+
+  return (
+    <div className="up-order-list">
+      {settlements.map((s) => (
+        <div key={s.orderId} className="up-order-item">
+          <div className="up-order-info">
+            <p className="up-order-title">{s.title}</p>
+            <p className="up-order-meta">주문번호: {s.orderId}</p>
+          </div>
+          <div className="up-order-right">
+            <p className="up-order-price">정산 예정액 {s.sellerSettlementAmount?.toLocaleString()}원</p>
+            <p className="up-order-meta">수수료 {s.commission}% · 결제금액 {s.finalPrice?.toLocaleString()}원</p>
+            <p className="up-order-status">{s.orderStatus}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /* ── 리뷰 탭 ── */
 function ReviewsTab({ reviews, avgRating, totalElements, totalPages, page, setPage, rvLoading }) {
   const ratingDist = [5, 4, 3, 2, 1].map((star) => ({
@@ -438,6 +474,7 @@ function UserProfilePage({ memberId, hideFooter = false }) {
       {/* 탭 콘텐츠 */}
       <div className="up-inner">
         {activeTab === "products" && <ProductsTab products={sellerProducts} />}
+        {activeTab === "settlements" && <SettlementTab />}
         {activeTab === "reviews" && (
           <ReviewsTab
             reviews={reviews}
@@ -449,7 +486,7 @@ function UserProfilePage({ memberId, hideFooter = false }) {
             rvLoading={rvLoading}
           />
         )}
-        {activeTab !== "products" && activeTab !== "reviews" && (
+        {activeTab !== "products" && activeTab !== "reviews" && activeTab !== "settlements" && (
           <EmptyProfileTab label={PROFILE_TABS.find((tab) => tab.key === activeTab)?.label ?? "선택한 탭"} />
         )}
       </div>
