@@ -363,8 +363,7 @@ export function FindPasswordPage({ onNavigate }) {
         return;
       }
 
-      alert(`임시 비밀번호: ${result.temporaryPassword}`);
-      setMessage({ type: "success", text: "임시 비밀번호가 발급되었습니다. 발급된 비밀번호로 로그인해주세요." });
+setMessage({ type: "success", text: `비밀번호: ${result.temporaryPassword} ` });
     } catch (error) {
       setMessage({ type: "error", text: error.message || "비밀번호 찾기에 실패했습니다." });
     } finally {
