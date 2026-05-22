@@ -26,9 +26,9 @@ import Header from "./components/common/Header.jsx";
 import Footer from "./components/common/Footer.jsx";
 
 // ⭐️ [경로 수정 완료] 스크린샷 파일 위치에 맞게 /order/ 경로를 제거했습니다.
-import OrderForm from "./pages/OrderForm.jsx";
+import OrderForm from "./pages/OrderFormPage.jsx";
 import PaymentPage from "./pages/PaymentPage.jsx";
-import OrderDetail from "./pages/OrderDetail.jsx";
+import OrderDetail from "./pages/OrderDetailPage.jsx";
 
 import "./App.css";
 import "./styles/global.css";

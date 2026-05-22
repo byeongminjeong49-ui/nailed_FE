@@ -391,7 +391,8 @@ function OrdersTab({ orders }) {
             <div className="up-order-info">
               <p className="up-order-title">{title}</p>
               <p className="up-order-meta">주문번호: {order.orderId || "-"}</p>
-              <p className="up-order-meta">{order.createdAt || ""}</p>
+              
+            {order.shippedAt && <p className="up-order-meta">배송중: {order.shippedAt}</p>}
             </div>
             <div className="up-order-right">
               <p className="up-order-price">{formatWon(order.finalPrice)}</p>

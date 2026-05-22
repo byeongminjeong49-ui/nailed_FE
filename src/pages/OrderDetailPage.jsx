@@ -22,6 +22,14 @@ const METHOD_LABEL = {
   phone: '휴대폰 결제', bank: '무통장 입금',
 };
 
+const CARRIERS = [
+  { value: 'CJ',         label: 'CJ대한통운' },
+  { value: 'LOGEN',      label: '로젠택배' },
+  { value: 'HANJIN',     label: '한진택배' },
+  { value: 'KOREA_POST', label: '우체국택배' },
+  { value: 'LOTTE',      label: '롯데택배' },
+];
+
 const s = {
   page: { minHeight: '100vh', background: '#f5f6f7', padding: '40px 20px 80px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' },
   inner: { maxWidth: '560px', margin: '0 auto' },
@@ -43,6 +51,11 @@ const s = {
   },
   productRow: { display: 'flex', gap: '14px', alignItems: 'center' },
   productImg: { width: '64px', height: '64px', borderRadius: '8px', background: '#f0f0f0', objectFit: 'cover', flexShrink: 0 },
+  input: { width: '100%', padding: '10px 14px', border: '1px solid #ddd', borderRadius: '8px', fontSize: '14px', color: '#111', background: '#fafafa', outline: 'none', boxSizing: 'border-box' },
+  select: { width: '100%', padding: '10px 14px', border: '1px solid #ddd', borderRadius: '8px', fontSize: '14px', color: '#111', background: '#fafafa', outline: 'none', boxSizing: 'border-box', marginBottom: '12px' },
+  shipBtn: { display: 'block', width: '100%', padding: '13px', background: '#168f88', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '700', cursor: 'pointer' },
+  shipBtnDisabled: { display: 'block', width: '100%', padding: '13px', background: '#ccc', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '700', cursor: 'not-allowed' },
+  label: { display: 'block', fontSize: '12px', color: '#888', marginBottom: '6px', fontWeight: '500' },
 };
 
 const fmt = (v) => v ? new Date(v).toLocaleString('ko-KR') : '-';
@@ -54,45 +67,67 @@ function navigate(path) {
 }
 
 function getProductImageUrl(product) {
-  if (product?.imageUrl) {
-    return product.imageUrl;
-  }
-
-  if (Array.isArray(product?.imageUrls)) {
-    return product.imageUrls.find(Boolean) ?? '';
-  }
-
+  if (product?.imageUrl) return product.imageUrl;
+  if (Array.isArray(product?.imageUrls)) return product.imageUrls.find(Boolean) ?? '';
   return '';
 }
 
 export default function OrderDetail({ orderId }) {
-  const [order,      setOrder]      = useState(null);
-  const [product,    setProduct]    = useState(null);
-  const [loading,    setLoading]    = useState(true);
-  const [error,      setError]      = useState('');
+  const [order,          setOrder]          = useState(null);
+  const [product,        setProduct]        = useState(null);
+  const [loading,        setLoading]        = useState(true);
+  const [error,          setError]          = useState('');
+  const [carrierCode,    setCarrierCode]    = useState('CJ');
+  const [trackingNumber, setTrackingNumber] = useState('');
+  const [submitting,     setSubmitting]     = useState(false);
+  const [showShipForm,   setShowShipForm]   = useState(false);
+
+  const session = (() => { try { return JSON.parse(sessionStorage.getItem('nailed_session') ?? 'null'); } catch { return null; } })();
+  const currentMemberId = session?.member_id ?? session?.memberId ?? null;
 
   const completed = (() => { try { return JSON.parse(sessionStorage.getItem('completedOrder') || 'null'); } catch { return null; } })();
   const productId = completed?.productId;
 
   useEffect(() => {
     if (!orderId) { setError('주문 번호가 없습니다.'); setLoading(false); return; }
-
     const fetchOrder   = axios.get(`/api/orders/${orderId}`);
     const fetchProduct = productId ? axios.get(`/api/products/${productId}`) : Promise.resolve(null);
-
     Promise.all([fetchOrder, fetchProduct])
       .then(([orderRes, productRes]) => {
         setOrder(orderRes.data);
         if (productRes) setProduct(productRes.data);
       })
       .catch(() => {
-        // 상품 조회 실패는 무시, 주문만 표시
         axios.get(`/api/orders/${orderId}`)
           .then((res) => setOrder(res.data))
           .catch(() => setError('주문 정보를 불러오지 못했습니다.'));
       })
       .finally(() => setLoading(false));
   }, [orderId]);
+
+  const handleShip = async () => {
+    if (!carrierCode || !trackingNumber) return;
+    setSubmitting(true);
+    try {
+      await axios.patch(`/api/orders/${orderId}/shipping`, {
+        carrierCode,
+        trackingNumber,
+      });
+      setOrder((prev) => ({
+        ...prev,
+        orderStatus:   'SHIPPING',
+        carrierCode,
+        trackingNumber,
+        shippedAt:     new Date().toISOString(),
+      }));
+      alert('운송장이 등록되었습니다.');
+      window.location.reload();
+    } catch (e) {
+      alert('운송장 등록에 실패했습니다.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   if (loading) return <div style={s.page}><div style={{ textAlign: 'center', padding: '80px', color: '#888' }}>로딩 중...</div></div>;
 
@@ -109,6 +144,8 @@ export default function OrderDetail({ orderId }) {
   const currentStep = STATUS_STEPS.findIndex((s) => s.key === order.orderStatus);
   const imageUrl = getProductImageUrl(product);
   const title = completed?.title || product?.title || '-';
+  const isSeller = currentMemberId && currentMemberId === order.sellerId;
+const canShip = isSeller && (order.orderStatus === 'PAID' || order.orderStatus === 'REQUESTED');
 
   return (
     <div style={s.page}>
@@ -176,6 +213,46 @@ export default function OrderDetail({ orderId }) {
           {order.deliveryRequest && <div style={{ ...s.row, borderBottom: 'none' }}><span style={s.rowLabel}>배송 요청</span><span style={s.rowValue}>{order.deliveryRequest}</span></div>}
         </div>
 
+        {/* 운송장 입력 - 판매자 + PAID 상태일 때만 */}
+       {canShip && (
+  <div style={{ ...s.card, border: '1.5px solid #168f88' }}>
+    <div style={s.cardTitle}>운송장 등록</div>
+    <div style={{ marginBottom: '12px' }}>
+      <label style={s.label}>택배사 선택 *</label>
+      <select style={s.select} value={carrierCode} onChange={(e) => setCarrierCode(e.target.value)}>
+        {CARRIERS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+      </select>
+    </div>
+    <div style={{ marginBottom: '16px' }}>
+      <label style={s.label}>운송장 번호 *</label>
+      <input
+        style={s.input}
+        type="text"
+        placeholder="숫자만 입력하세요"
+        value={trackingNumber}
+        onChange={(e) => setTrackingNumber(e.target.value.replace(/[^0-9]/g, ''))}
+        onFocus={(e) => e.target.style.borderColor = '#168f88'}
+        onBlur={(e) => e.target.style.borderColor = '#ddd'}
+      />
+    </div>
+    <button
+      style={carrierCode && trackingNumber ? s.shipBtn : s.shipBtnDisabled}
+      onClick={handleShip}
+      disabled={!carrierCode || !trackingNumber || submitting}
+    >
+      {submitting ? '등록 중...' : '운송장 등록'}
+    </button>
+  </div>
+)}
+        {/* 운송장 조회 - 등록된 경우 */}
+        {order.carrierCode && order.trackingNumber && (
+          <div style={s.card}>
+            <div style={s.cardTitle}>배송 추적</div>
+            <div style={s.row}><span style={s.rowLabel}>택배사</span><span style={s.rowValue}>{CARRIERS.find((c) => c.value === order.carrierCode)?.label || order.carrierCode}</span></div>
+            <div style={{ ...s.row, borderBottom: 'none' }}><span style={s.rowLabel}>운송장 번호</span><span style={{ ...s.rowValue, fontFamily: 'monospace' }}>{order.trackingNumber}</span></div>
+          </div>
+        )}
+
         {/* 타임라인 */}
         <div style={s.card}>
           <div style={s.cardTitle}>주문 타임라인</div>
@@ -194,7 +271,6 @@ export default function OrderDetail({ orderId }) {
           {!order.createdAt && <div style={{ color: '#bbb', fontSize: '13px', textAlign: 'center' }}>타임라인 정보가 없습니다.</div>}
         </div>
 
-        {/* 뒤로가기 — ProductDetailPage로 이동 */}
         <button
           style={s.backBtn}
           onClick={() => productId ? navigate(`/product/${productId}`) : navigate('/')}
