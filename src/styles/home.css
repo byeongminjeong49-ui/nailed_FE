@@ -303,10 +303,11 @@
 
 .product-visual {
   position: relative;
-  height: 190px;
+  aspect-ratio: 1 / 1;
   display: grid;
   place-items: center;
   overflow: hidden;
+  background: #f5f5f5;
 }
 
 
@@ -714,7 +715,7 @@
   }
 
   .product-visual {
-    height: 150px;
+    aspect-ratio: 1 / 1;
   }
 
   .product-info {

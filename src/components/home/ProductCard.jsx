@@ -35,7 +35,6 @@ function ProductCard({ link, product }) {
         <h3>{product.name}</h3>
         <strong>{product.price}</strong>
         <div className="product-meta">
-          <span className="seller-icon" aria-hidden="true" />
           <span>{product.seller}</span>
           <span className="like-count">♡ {product.likes}</span>
         </div>
