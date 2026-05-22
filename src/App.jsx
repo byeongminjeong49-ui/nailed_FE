@@ -195,7 +195,7 @@ function App() {
     return <MyPage onNavigate={handleNavigate} pathname={path} />;
   }
   if (activeGuidePage) return <ServiceGuidePage type={activeGuidePage} />;
-  if (path === "/sll") {
+  if (path === "/sell") {
     if (!hasAccessToken()) return requireLogin();
     return <SellPage />;
   }
