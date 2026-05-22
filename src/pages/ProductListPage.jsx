@@ -12,9 +12,9 @@ function toCardShape(p) {
     id: p.productId,
     name: p.title,
     price: p.price,
-    imageUrl: p.thumbnailUrl ? `${API_BASE}${p.thumbnailUrl}` : null,
-    likes: p.wishlistCount,
-    seller: "",
+    imageUrl: p.thumbnailUrl || null,
+    brandName: p.brandName || null,
+    size: p.size || null,
   };
 }
 

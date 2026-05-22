@@ -255,7 +255,10 @@
   outline: none;
   transition: border-color 0.15s;
   font-family: inherit;
+  -moz-appearance: textfield;
 }
+.sell-input::-webkit-outer-spin-button,
+.sell-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .sell-input:focus { border-color: #151515; }
 .sell-input.error { border-color: #d32f2f; }
 .sell-input::placeholder { color: #bbb; }

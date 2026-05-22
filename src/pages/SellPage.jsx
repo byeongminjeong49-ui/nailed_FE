@@ -508,14 +508,14 @@ export default function SellPage() {
             <div className="sell-field-col">
               <div className="sell-field-label">기본 배송비</div>
               <div className="sell-price-wrap">
-                <input type="number" className="sell-input" defaultValue={0} min={0} />
+                <input type="text" className="sell-input" defaultValue={0} />
                 <span className="sell-unit">원</span>
               </div>
             </div>
             <div className="sell-field-col">
               <div className="sell-field-label">도서산간 배송비</div>
               <div className="sell-price-wrap">
-                <input type="number" className="sell-input" defaultValue={0} min={0} />
+                <input type="text" className="sell-input" defaultValue={0} />
                 <span className="sell-unit">원</span>
               </div>
             </div>
@@ -525,8 +525,8 @@ export default function SellPage() {
           <div className="sell-field">
             <div className="sell-field-label">판매가</div>
             <div className="sell-price-wrap">
-              <input type="number" className={`sell-input${errors.price ? " error" : ""}`}
-                placeholder="0" value={price} min={0}
+              <input type="text" className={`sell-input${errors.price ? " error" : ""}`}
+                placeholder="0" value={price}
                 onChange={(e) => setPrice(e.target.value)} />
               <span className="sell-unit">원</span>
             </div>

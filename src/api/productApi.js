@@ -125,3 +125,29 @@ export async function removeWishlist(productId) {
     method: "DELETE",
   });
 }
+
+export async function getRandomProducts(size = 10) {
+  const data = await request(`/api/products/random?size=${size}`);
+  return fixSummaryImages(data);
+}
+
+export function fixSummaryImages(list) {
+  if (!Array.isArray(list)) return list;
+  return list.map((p) => ({
+    ...p,
+    thumbnailUrl:
+      p.thumbnailUrl && !p.thumbnailUrl.startsWith("http")
+        ? `${API_BASE_URL}${p.thumbnailUrl}`
+        : p.thumbnailUrl,
+  }));
+}
+
+export async function getSellerProducts(sellerId, excludeId) {
+  const params = new URLSearchParams();
+  if (excludeId != null) params.append("exclude", excludeId);
+  const qs = params.toString();
+  const data = await request(
+    `/api/products/seller/${encodeURIComponent(sellerId)}${qs ? `?${qs}` : ""}`
+  );
+  return fixSummaryImages(data);
+}

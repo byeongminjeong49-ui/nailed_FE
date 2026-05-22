@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import Footer from "../components/common/Footer";
 import Header from "../components/common/Header";
 import ReportModal from "../components/ReportModal";
-import { addWishlist, getProductDetail, incrementViewCount, removeWishlist } from "../api/productApi";
+import { addWishlist, getProductDetail, getRandomProducts, getSellerProducts, incrementViewCount, removeWishlist } from "../api/productApi";
 import "../styles/product-detail.css";
 
 const GRADE = { BRONZE: "브론즈", SILVER: "실버", GOLD: "골드", DIAMOND: "다이아" };
@@ -140,6 +140,69 @@ function SafeSection() {
   );
 }
 
+/* ── localStorage 최근 본 상품 ── */
+const RECENTLY_VIEWED_KEY = "nailed_recently_viewed";
+
+function saveRecentlyViewed(id) {
+  try {
+    const ids = JSON.parse(localStorage.getItem(RECENTLY_VIEWED_KEY) || "[]");
+    const updated = [String(id), ...ids.filter((x) => String(x) !== String(id))].slice(0, 10);
+    localStorage.setItem(RECENTLY_VIEWED_KEY, JSON.stringify(updated));
+  } catch {}
+}
+
+function getRecentlyViewedIds(excludeId) {
+  try {
+    return JSON.parse(localStorage.getItem(RECENTLY_VIEWED_KEY) || "[]")
+      .filter((id) => String(id) !== String(excludeId))
+      .slice(0, 5);
+  } catch {
+    return [];
+  }
+}
+
+/* ── 상품 미니카드 & 섹션 ── */
+function ProductMiniCard({ product }) {
+  const imgUrl = product.thumbnailUrl || getProductImageUrl(product);
+  const brand = product.brandName || null;
+  return (
+    <article className="product-card" onClick={() => navigate(`/product/${product.productId}`)}>
+      <div className="product-visual">
+        {imgUrl
+          ? <img className="product-image" src={imgUrl} alt={product.title} />
+          : <div className="product-no-img" />}
+      </div>
+      <div className="product-info">
+        {brand && (
+          <div className="product-brand-row">
+            <span className="product-brand-name">{brand}</span>
+            {product.size && <span className="product-size-tag">{product.size}</span>}
+          </div>
+        )}
+        {!brand && product.size && (
+          <div className="product-brand-row">
+            <span className="product-size-tag">{product.size}</span>
+          </div>
+        )}
+        <p className="product-card-title">{product.title}</p>
+        <p className="product-card-price">{product.price?.toLocaleString()}원</p>
+      </div>
+    </article>
+  );
+}
+
+function ProductRowSection({ title, products }) {
+  if (!products || products.length === 0) return null;
+  return (
+    <section className="pd-row-section">
+      <h2 className="pd-section-title">{title}</h2>
+      <div className="pd-five-grid">
+        {products.map((p) => <ProductMiniCard key={p.productId} product={p} />)}
+      </div>
+    </section>
+  );
+}
+
 function ProductDetailPage({ productId }) {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -149,6 +212,10 @@ function ProductDetailPage({ productId }) {
   const [showReport, setShowReport] = useState(false);
   const [toast, setToast] = useState("");
   const timerRef = useRef(null);
+
+  const [sellerProducts, setSellerProducts] = useState([]);
+  const [recentProducts, setRecentProducts] = useState([]);
+  const [randomProducts, setRandomProducts] = useState([]);
 
   const session = (() => { try { return JSON.parse(sessionStorage.getItem("nailed_session") ?? "null"); } catch { return null; } })();
   const currentMemberId = session?.member_id ?? session?.memberId ?? null;
@@ -161,15 +228,44 @@ function ProductDetailPage({ productId }) {
 
   useEffect(() => {
     setLoading(true);
+    setSellerProducts([]);
+    setRecentProducts([]);
+    setRandomProducts([]);
     getProductDetail(productId)
       .then((data) => {
         setProduct(data);
         setWishlisted(data.isWishlisted);
+        saveRecentlyViewed(productId);
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
     incrementViewCount(productId);
     return () => clearTimeout(timerRef.current);
+  }, [productId]);
+
+  useEffect(() => {
+    if (!product) return;
+    getSellerProducts(product.seller.memberId, productId)
+      .then((list) => setSellerProducts(list || []))
+      .catch(() => {});
+  }, [product?.seller?.memberId, productId]);
+
+  useEffect(() => {
+    if (!product) return;
+    const ids = getRecentlyViewedIds(productId);
+    if (ids.length === 0) return;
+    Promise.all(ids.map((id) => getProductDetail(id).catch(() => null)))
+      .then((results) => setRecentProducts(results.filter(Boolean)))
+      .catch(() => {});
+  }, [product, productId]);
+
+  useEffect(() => {
+    getRandomProducts(15)
+      .then((list) => {
+        const filtered = (list || []).filter((p) => String(p.productId) !== String(productId));
+        setRandomProducts(filtered.slice(0, 15));
+      })
+      .catch(() => {});
   }, [productId]);
 
   const handleWishlist = async () => {
@@ -353,31 +449,17 @@ function ProductDetailPage({ productId }) {
         {/* ── 배송 / 환불 아코디언 ── */}
         <SafeSection />
 
-        {/* ── 같은 카테고리 상품 ── */}
-        {product.related?.length > 0 && (
-          <>
-            <hr className="pd-divider" />
-            <section className="pd-section">
-              <h2 className="pd-section-title">비슷한 상품</h2>
-              <div className="pd-related-grid">
-                {product.related.map((r) => (
-                  <button key={r.productId} className="pd-related-card" onClick={() => navigate(`/product/${r.productId}`)}>
-                    {getProductImageUrl(r) && (
-                      <div className="pd-related-img">
-                        <img src={getProductImageUrl(r)} alt={r.title} />
-                      </div>
-                    )}
-                    <div className="pd-related-body">
-                      {r.brandName && <p className="pd-related-brand">{r.brandName}</p>}
-                      <p className="pd-related-name">{r.title}</p>
-                      <p className="pd-related-price">{r.price.toLocaleString()}원</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </section>
-          </>
-        )}
+        {/* ── 판매자의 다른 상품 ── */}
+        <ProductRowSection
+          title={`${product.seller.nickname}의 다른 상품`}
+          products={sellerProducts}
+        />
+
+        {/* ── 최근 본 상품 ── */}
+        <ProductRowSection title="최근 본 상품" products={recentProducts} />
+
+        {/* ── 랜덤 추천 ── */}
+        <ProductRowSection title="이런 상품은 어때요?" products={randomProducts} />
 
       </div>
       <Footer />
