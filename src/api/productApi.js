@@ -28,6 +28,15 @@ export async function getProductList(categoryId, page = 0, size = 15) {
   return request(`/api/products?${params.toString()}`);
 }
 
+export async function getBrands() {
+  return request("/api/products/brands");
+}
+
+export async function getProductListByCode(categoryCode, page = 0, size = 20) {
+  const params = new URLSearchParams({ categoryCode, page, size });
+  return request(`/api/products?${params.toString()}`);
+}
+
 export async function getNewProducts() {
   return request("/api/products/new");
 }

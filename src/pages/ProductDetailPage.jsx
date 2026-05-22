@@ -7,6 +7,7 @@ import "../styles/product-detail.css";
 
 const GRADE = { BRONZE: "브론즈", SILVER: "실버", GOLD: "골드", DIAMOND: "다이아" };
 const STATUS = { ON_SALE: "판매중", SOLD: "판매완료" };
+const CONDITION_SHORT = { S: "새제품", A: "거의 새것", B: "상태 좋음", C: "상태 보통", D: "사용감 많음" };
 
 function navigate(path) {
   window.history.pushState({}, "", path);
@@ -119,42 +120,21 @@ function AccordionItem({ title, children, defaultOpen = false }) {
 function SafeSection() {
   return (
     <section className="pd-accordion">
-      <AccordionItem title="Nailed 인증 안심 거래">
-        <div className="pd-safe-box">
-          <div className="pd-safe-icons">
-            <div className="pd-safe-icon-item">
-              <span className="pd-safe-icon-circle">🔍</span>
-              <span>전문 검수</span>
-            </div>
-            <div className="pd-safe-icon-item">
-              <span className="pd-safe-icon-circle">🛡️</span>
-              <span>200% 보상</span>
-            </div>
-            <div className="pd-safe-icon-item">
-              <span className="pd-safe-icon-circle">↩️</span>
-              <span>교환·환불</span>
-            </div>
-          </div>
-          <ul className="pd-safe-bullets">
-            <li>Nailed이 꼼꼼하게 검수한 하자 없는 고퀄리티 의류입니다.</li>
-            <li>정품이 아닌 경우 Nailed이 200% 보상해 드립니다.</li>
-            <li>인증 중고 의류 상품은 교환·환불이 가능합니다.</li>
-          </ul>
-        </div>
-      </AccordionItem>
-      <AccordionItem title="배송 정보">
+      <AccordionItem title="배송정보">
         <ul className="pd-safe-bullets">
-          <li>판매자가 결제 확인 후 1~3일 이내에 발송합니다.</li>
-          <li>배송은 영업일 기준 평균 2~4일 소요됩니다.</li>
-          <li>제주·도서 산간 지역은 추가 배송비가 발생할 수 있습니다.</li>
+          <li>상품은 판매자 측에서 직접 배송하며 평균적으로 2일 이내 배송이 시작됩니다.</li>
+          <li>배송 상태는 Nailed 앱에서 확인 가능하고, 그 외 문의는 판매자에게 연락해 주시기 바랍니다.</li>
+          <li>판매자와 연락이 되지 않는 경우, Nailed 고객센터로 문의해 주시면 확인 도와드리겠습니다.</li>
         </ul>
       </AccordionItem>
       <AccordionItem title="반품 및 환불 정책">
+        <p className="pd-safe-para">판매자가 통신판매업자인 경우, 구매자의 반품 요청 시 협의를 진행해 주셔야 하니 상호 간 원만한 협의를 부탁드립니다.</p>
+        <p className="pd-safe-para">중고거래 특성상, 개인 간 개인 거래는 반품이 원칙적으로 어렵습니다. 단, Nailed 안전결제를 이용하시면 아래 경우에는 반품 및 환불 진행을 도와드립니다.</p>
         <ul className="pd-safe-bullets">
-          <li>상품 수령 후 7일 이내에 반품 신청이 가능합니다.</li>
-          <li>단순 변심에 의한 반품 배송비는 구매자가 부담합니다.</li>
-          <li>상품 하자·오배송의 경우 Nailed이 전액 보상합니다.</li>
+          <li>받은 상품이 설명과 다른 경우</li>
+          <li>구매한 상품이 배송되지 않은 경우</li>
         </ul>
+        <p className="pd-safe-para pd-safe-warn">외부(계좌) 거래 시, Nailed 고객 지원이 불가능합니다.</p>
       </AccordionItem>
     </section>
   );
@@ -241,14 +221,6 @@ function ProductDetailPage({ productId }) {
       <Header />
       <div className="pd-inner">
 
-        {/* 빵가루 */}
-        <nav className="pd-breadcrumb" aria-label="경로">
-          <a href="/" onClick={(e) => { e.preventDefault(); navigate("/"); }}>홈</a>
-          <span aria-hidden>›</span>
-          <a href={`/category/${product.categoryName}`} onClick={(e) => { e.preventDefault(); navigate(`/category/${product.categoryName}`); }}>{product.categoryName}</a>
-          <span aria-hidden>›</span>
-          <span>{product.title}</span>
-        </nav>
 
         {/* ── 메인 2단 ── */}
         <div className="pd-body">
@@ -275,12 +247,12 @@ function ProductDetailPage({ productId }) {
             </div>
           </div>
 
-          {/* 오른쪽: 브랜드/제목/가격/메타/설명/해시태그/CTA */}
+          {/* 오른쪽: 제목/가격/메타/설명/해시태그/CTA */}
           <div className="pd-info">
 
-            {/* 브랜드 + 액션 (찜/공유/신고) */}
+            {/* 제목 + 액션 (찜/신고) */}
             <div className="pd-info-top">
-              <span className="pd-brand">{product.brandName}</span>
+              <h1 className="pd-title">{product.title}</h1>
               <div className="pd-info-icons">
                 <button
                   className={`pd-icon-btn ${wishlisted ? "on" : ""}`}
@@ -306,20 +278,14 @@ function ProductDetailPage({ productId }) {
               </div>
             </div>
 
-            <h1 className="pd-title">{product.title}</h1>
             <p className="pd-price">{product.price.toLocaleString()}<span className="pd-price-won">원</span></p>
-
-            {/* 상태 배지 + 메타 */}
-            <div className="pd-meta-row">
-              {product.productStatus !== "ON_SALE" && (
-                <span className={`pd-status-badge ${product.productStatus === "SOLD" ? "sold" : "reserved"}`}>
-                  {STATUS[product.productStatus]}
-                </span>
-              )}
-              <span className="pd-meta-item">{timeAgo(product.createdAt)}</span>
-              <span className="pd-meta-dot">·</span>
-              <span className="pd-meta-item">조회 {product.viewCount}</span>
-            </div>
+            <p className="pd-product-meta">
+              {[
+                product.brandName,
+                product.categoryName + (product.size ? ` ${product.size}` : ""),
+                CONDITION_SHORT[product.conditionCode] || product.conditionDescription,
+              ].filter(Boolean).join(" · ")}
+            </p>
 
             <hr className="pd-info-divider" />
 
@@ -333,17 +299,20 @@ function ProductDetailPage({ productId }) {
               </div>
             )}
 
-            {/* 카테고리 링크 + 시간 (레퍼런스 스타일) */}
+            {/* 카테고리 링크 + 시간/조회수 */}
             <div className="pd-info-footer">
               <a
                 href={`/category/${product.categoryName}`}
                 className="pd-cat-link"
                 onClick={(e) => { e.preventDefault(); navigate(`/category/${product.categoryName}`); }}
               >
-                {product.categoryName}
-                {product.size && <> &gt; {product.size}</>}
+                {product.categoryPath || product.categoryName}
               </a>
-              <span className="pd-info-time">{timeAgo(product.createdAt)}</span>
+              <span className="pd-info-time">
+                {timeAgo(product.createdAt)}
+                <span className="pd-meta-dot"> · </span>
+                조회 {product.viewCount}
+              </span>
             </div>
 
             {/* 하단 CTA */}
@@ -381,30 +350,8 @@ function ProductDetailPage({ productId }) {
           </div>
         </div>
 
-        {/* ── 상품 정보 테이블 ── */}
-        <hr className="pd-divider" />
-        <section className="pd-section">
-          <h2 className="pd-section-title">상품 정보</h2>
-          <table className="pd-meta-table">
-            <tbody>
-              <tr><td>상태</td><td>{product.conditionDescription}</td></tr>
-              {product.brandName && <tr><td>브랜드</td><td>{product.brandName}</td></tr>}
-              <tr><td>카테고리</td><td>{product.categoryName}</td></tr>
-              {product.size && <tr><td>사이즈</td><td>{product.size}</td></tr>}
-              <tr><td>배송</td><td>{product.shippingMethod === "DELIVERY" ? "택배" : product.shippingMethod}</td></tr>
-              <tr><td>조회수</td><td>{product.viewCount.toLocaleString()}</td></tr>
-            </tbody>
-          </table>
-        </section>
-
-        {/* ── 안심 거래 / 배송 / 환불 아코디언 ── */}
-        {!isMine && !isSold && (
-          <>
-            <hr className="pd-divider" />
-            <SafeSection />
-          </>
-        )}
-
+        {/* ── 배송 / 환불 아코디언 ── */}
+        <SafeSection />
 
         {/* ── 같은 카테고리 상품 ── */}
         {product.related?.length > 0 && (

@@ -4,6 +4,7 @@ import "../styles/product-detail.css";
 
 function ReportModal({ targetMemberId, targetNickname, onClose }) {
   const [reasonCode, setReasonCode] = useState("");
+  const [detail, setDetail] = useState("");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
@@ -13,7 +14,7 @@ function ReportModal({ targetMemberId, targetNickname, onClose }) {
     setLoading(true);
     setError("");
     try {
-      await submitReport({ targetMemberId, reasonCode });
+      await submitReport({ targetMemberId, reasonCode, detail: detail.trim() || null });
       setDone(true);
     } catch (e) {
       setError(e.message);
@@ -53,6 +54,16 @@ function ReportModal({ targetMemberId, targetNickname, onClose }) {
                 </li>
               ))}
             </ul>
+            <div className="report-detail-wrap">
+              <textarea
+                className="report-detail"
+                placeholder="신고 사유를 자세히 적어주세요. (선택)"
+                maxLength={500}
+                value={detail}
+                onChange={(e) => setDetail(e.target.value)}
+              />
+              <span className="report-detail-count">{detail.length}/500</span>
+            </div>
             {error && <p style={{ fontSize: 13, color: "#d32f2f", margin: "-8px 0 12px" }}>{error}</p>}
             <button
               className={`report-submit ${reasonCode ? "ready" : ""}`}

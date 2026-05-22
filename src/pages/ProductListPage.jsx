@@ -3,7 +3,7 @@ import Header from "../components/common/Header";
 import Footer from "../components/common/Footer";
 import ProductCard from "../components/home/ProductCard";
 import { findCategory, findSubcategory, resolveDbCode } from "../data/categories";
-import { getProductList } from "../api/productApi";
+import { getProductListByCode } from "../api/productApi";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
@@ -29,10 +29,18 @@ function ProductListPage({ path, search }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
+  // 카테고리 변경 시 페이지 초기화
+  useEffect(() => {
+    setCurrentPage(0);
+    setTotalPages(0);
+  }, [categoryValue, subcategoryValue]);
+
+  // 상품 조회
   useEffect(() => {
     if (!category) return;
-
     const targetCode = resolveDbCode(category, subcategoryValue);
     if (!targetCode) return;
 
@@ -40,26 +48,19 @@ function ProductListPage({ path, search }) {
     setError(null);
     setProducts([]);
 
-    // /api/products/categories → code 로 groupId 찾기 → 상품 조회
-    fetch(`${API_BASE}/api/products/categories`)
-      .then((r) => r.json())
-      .then((res) => {
-        const cats = Array.isArray(res.data) ? res.data : [];
-        const found = cats.find((c) => c.code === targetCode);
-        if (!found) {
-          setLoading(false);
-          return null;
-        }
-        return getProductList(found.groupId, 0, 40);
-      })
+    getProductListByCode(targetCode, currentPage, 20)
       .then((data) => {
-        if (data === null || data === undefined) return;
         const list = Array.isArray(data) ? data : (data.content ?? []);
         setProducts(list.map(toCardShape));
+        setTotalPages(data.totalPages ?? 1);
       })
       .catch(() => setError("상품을 불러오는 데 실패했습니다."))
       .finally(() => setLoading(false));
-  }, [categoryValue, subcategoryValue]);
+  }, [categoryValue, subcategoryValue, currentPage]);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
 
   return (
     <div className="home-page">
@@ -84,9 +85,57 @@ function ProductListPage({ path, search }) {
               ))}
             </div>
           )}
+
+          {totalPages > 1 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
+          )}
         </section>
       </main>
       <Footer />
+    </div>
+  );
+}
+
+function Pagination({ currentPage, totalPages, onPageChange }) {
+  const maxVisible = 5;
+  let start = Math.max(0, currentPage - Math.floor(maxVisible / 2));
+  let end = Math.min(totalPages - 1, start + maxVisible - 1);
+  if (end - start < maxVisible - 1) {
+    start = Math.max(0, end - maxVisible + 1);
+  }
+
+  const pages = [];
+  for (let i = start; i <= end; i++) pages.push(i);
+
+  return (
+    <div className="pagination">
+      <button
+        className="page-btn"
+        onClick={() => onPageChange(currentPage - 1)}
+        disabled={currentPage === 0}
+      >
+        &lt;
+      </button>
+      {pages.map((p) => (
+        <button
+          key={p}
+          className={`page-btn${p === currentPage ? " active" : ""}`}
+          onClick={() => onPageChange(p)}
+        >
+          {p + 1}
+        </button>
+      ))}
+      <button
+        className="page-btn"
+        onClick={() => onPageChange(currentPage + 1)}
+        disabled={currentPage === totalPages - 1}
+      >
+        &gt;
+      </button>
     </div>
   );
 }
