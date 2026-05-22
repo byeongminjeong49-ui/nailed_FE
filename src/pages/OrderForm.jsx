@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import axios from 'axios';
+import { useState } from 'react';
+import { createOrder } from '../api/orderApi';
 
 const s = {
   page: { minHeight: '100vh', background: '#f5f6f7', padding: '40px 20px 80px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' },
@@ -25,6 +25,16 @@ const s = {
 };
 
 const COMMISSION_RATE = 0.02; 
+const SESSION_KEY = 'nailed_session';
+
+function getCurrentMemberId() {
+  try {
+    const session = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
+    return session?.member_id || session?.memberId || session?.id || null;
+  } catch {
+    return null;
+  }
+}
 
 export default function OrderForm() {
   const [pendingOrder] = useState(() => {
@@ -72,14 +82,12 @@ export default function OrderForm() {
         receiverAddressDetail: form.addressDetail,
         deliveryRequest:       form.deliveryRequest,
       };
-      const response = await axios.post(
-        `/api/orders?buyerId=${pendingOrder.buyerId}&sellerId=${pendingOrder.sellerId}`,
-        orderData
-      );
-      if (response.status === 200 || response.status === 201) {
+      const buyerId = getCurrentMemberId() || pendingOrder.buyerId;
+      const response = await createOrder(buyerId, pendingOrder.sellerId, orderData);
+      if (response?.orderId) {
         sessionStorage.removeItem('pendingOrder');
         sessionStorage.setItem('pendingPayment', JSON.stringify({
-          orderId:    response.data.orderId,
+          orderId:    response.orderId,
           finalPrice: totalPrice,
           title:      pendingOrder.title,
           productId:  pendingOrder.productId,

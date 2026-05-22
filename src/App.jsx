@@ -14,6 +14,7 @@ import MyPage from "./pages/MyPage.jsx";
 import ProductDetailPage from "./pages/ProductDetailPage.jsx";
 import ProductListPage from "./pages/ProductListPage.jsx";
 import ReadyPage from "./pages/ReadyPage.jsx";
+import SellPage from "./pages/SellPage.jsx";
 import ReviewWritePage from "./pages/ReviewWritePage.jsx";
 import SearchResultPage from "./pages/SearchResultPage.jsx";
 import ServiceGuidePage from "./pages/ServiceGuidePage.jsx";
@@ -149,6 +150,7 @@ function App() {
   const activeReadyPage = readyRoutes[path];
   const activeGuidePage = guideRoutes[path];
   const activeOrderPage = orderRoutes[path]; 
+  const isMyPageRoute = path === "/mypage" || path.startsWith("/mypage/");
   const productId = getProductId(path);
   const userId = getUserId(path);
   const reviewOrderId = getReviewOrderId(path);
@@ -188,11 +190,15 @@ function App() {
   if (activeAuthPage === "login") return <LoginPage onNavigate={handleNavigate} />;
   if (activeAuthPage === "signup") return <SignupPage onNavigate={handleNavigate} />;
   if (activeAuthPage === "find-password") return <FindPasswordPage onNavigate={handleNavigate} />;
-  if (activeAuthPage === "mypage") {
+  if (isMyPageRoute) {
     if (!hasAccessToken()) return requireLogin();
-    return <MyPage onNavigate={handleNavigate} />;
+    return <MyPage onNavigate={handleNavigate} pathname={path} />;
   }
   if (activeGuidePage) return <ServiceGuidePage type={activeGuidePage} />;
+  if (path === "/sll") {
+    if (!hasAccessToken()) return requireLogin();
+    return <SellPage />;
+  }
   if (activeReadyPage) {
     if (!hasAccessToken()) return requireLogin();
     return <ReadyPage title={activeReadyPage} />;

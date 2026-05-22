@@ -1,11 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 import Footer from "../components/common/Footer";
 import Header from "../components/common/Header";
-import { fetchMyProfile, fetchSettlements } from "../api/myPageApi";
+import {
+  fetchMyProfile,
+  fetchMyProducts,
+  fetchOrders,
+  fetchSettlements,
+  fetchWishlist,
+} from "../api/myPageApi";
 import { getProducts } from "../api/productApi";
 import { getSellerReviews } from "../api/reviewApi";
 import "../styles/review.css";
 import "../styles/product-detail.css";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 const GRADE = { BRONZE: "브론즈", SILVER: "실버", GOLD: "골드", DIAMOND: "다이아" };
 
@@ -23,16 +31,108 @@ function navigate(path) {
   window.dispatchEvent(new PopStateEvent("popstate"));
 }
 
+function toAssetUrl(url) {
+  if (!url) return "";
+  if (/^https?:\/\//i.test(url) || url.startsWith("data:") || url.startsWith("blob:")) {
+    return url;
+  }
+  return `${API_BASE_URL}${url.startsWith("/") ? url : `/${url}`}`;
+}
+
 function getProductImageUrl(product) {
+  if (product?.thumbnailUrl) {
+    return toAssetUrl(product.thumbnailUrl);
+  }
+
   if (product?.imageUrl) {
-    return product.imageUrl;
+    return toAssetUrl(product.imageUrl);
   }
 
   if (Array.isArray(product?.imageUrls)) {
-    return product.imageUrls.find(Boolean) ?? "";
+    return toAssetUrl(product.imageUrls.find(Boolean) ?? "");
   }
 
   return "";
+}
+
+function getTabFromPath(pathname) {
+  if (pathname === "/mypage/orders") return "orders";
+  if (pathname === "/mypage/wishlist") return "wishlist";
+  if (pathname === "/mypage/selling") return "selling";
+  if (pathname === "/mypage/settlements") return "settlements";
+  if (pathname === "/mypage/reviews") return "reviews";
+  return "products";
+}
+
+function getPathFromTab(tab) {
+  if (tab === "orders") return "/mypage/orders";
+  if (tab === "wishlist") return "/mypage/wishlist";
+  if (tab === "selling") return "/mypage/selling";
+  if (tab === "settlements") return "/mypage/settlements";
+  if (tab === "reviews") return "/mypage/reviews";
+  return "/mypage";
+}
+
+function toList(data) {
+  if (Array.isArray(data?.content)) return data.content;
+  if (Array.isArray(data?.data?.content)) return data.data.content;
+  if (Array.isArray(data?.items)) return data.items;
+  if (Array.isArray(data?.list)) return data.list;
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data)) return data;
+  return [];
+}
+
+function readTotalPages(data) {
+  return Number(data?.totalPages ?? data?.data?.totalPages ?? 0);
+}
+
+function readTotalElements(data) {
+  return Number(data?.totalElements ?? data?.data?.totalElements ?? 0);
+}
+
+function formatWon(value) {
+  const amount = Number(value ?? 0);
+  return `${amount.toLocaleString()}원`;
+}
+
+function normalizeProduct(product) {
+  return {
+    ...product,
+    productId: product?.productId,
+    title: product?.title || product?.productTitle || "상품명 없음",
+    price: Number(product?.price ?? product?.finalPrice ?? 0),
+    productStatus: product?.productStatus || product?.orderStatus || "",
+    conditionLabel: product?.conditionLabel || product?.conditionCode || "",
+    brandName: product?.brandName || "",
+    wishlistCount: product?.wishlistCount ?? 0,
+  };
+}
+
+function normalizeOrder(order) {
+  return {
+    ...order,
+    orderId: order?.orderId || "",
+    productId: order?.productId,
+    productTitle: order?.productTitle || order?.title || "상품명 없음",
+    finalPrice: Number(order?.finalPrice ?? order?.price ?? 0),
+    orderStatus: order?.orderStatus || "",
+    createdAt: order?.createdAt || "",
+  };
+}
+
+function normalizeSettlement(settlement) {
+  return {
+    ...settlement,
+    orderId: settlement?.orderId || "",
+    productId: settlement?.productId,
+    productTitle: settlement?.productTitle || settlement?.title || "상품명 없음",
+    commission: Number(settlement?.commission ?? 0),
+    finalPrice: Number(settlement?.finalPrice ?? settlement?.price ?? 0),
+    sellerSettlementAmount: Number(settlement?.sellerSettlementAmount ?? 0),
+    orderStatus: settlement?.orderStatus || "",
+    createdAt: settlement?.createdAt || "",
+  };
 }
 
 function mapProfileToSeller(profile, fallbackMemberId) {
@@ -166,14 +266,14 @@ function FilterSidebar({ excludeSold, setExcludeSold, selectedCats, setSelectedC
 }
 
 /* ── 상품 탭 ── */
-function ProductsTab({ products }) {
+function ProductsTab({ products, emptyMessage = "조건에 맞는 상품이 없습니다." }) {
   const [excludeSold, setExcludeSold] = useState(false);
   const [selectedCats, setSelectedCats] = useState([]);
   const [priceMin, setPriceMin] = useState(0);
   const [priceMax, setPriceMax] = useState(0);
   const [visible, setVisible] = useState(12);
 
-  const filtered = products
+  const filtered = products.map(normalizeProduct)
     .filter((p) => !excludeSold || p.productStatus !== "SOLD")
     .filter((p) => selectedCats.length === 0 || selectedCats.some((k) => p.categoryName?.toLowerCase().includes(k)))
     .filter((p) => priceMin === 0 || p.price >= priceMin)
@@ -198,7 +298,7 @@ function ProductsTab({ products }) {
         </div>
 
         {filtered.length === 0 ? (
-          <p className="up-empty">조건에 맞는 상품이 없습니다.</p>
+          <p className="up-empty">{emptyMessage}</p>
         ) : (
           <>
             <div className="up-product-grid">
@@ -244,35 +344,61 @@ function ProductsTab({ products }) {
   );
 }
 
-/* ── 정산 내역 탭 ── */
-function SettlementTab() {
-  const [settlements, setSettlements] = useState([]);
-  const [loading, setLoading] = useState(true);
+function OrdersTab({ orders }) {
+  const normalizedOrders = orders.map(normalizeOrder);
 
-  useEffect(() => {
-    fetchSettlements()
-      .then((data) => {
-        setSettlements(data.content ?? []);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
-
-  if (loading) return <p className="up-empty">불러오는 중...</p>;
-  if (settlements.length === 0) return <p className="up-empty">정산 내역 정보가 없습니다.</p>;
+  if (normalizedOrders.length === 0) return <p className="up-empty">주문 내역 정보가 없습니다.</p>;
 
   return (
     <div className="up-order-list">
-      {settlements.map((s) => (
-        <div key={s.orderId} className="up-order-item">
+      {normalizedOrders.map((order) => {
+        const title = order.productTitle;
+        const imageUrl = getProductImageUrl(order);
+
+        return (
+          <div key={order.orderId || order.productId} className="up-order-item">
+            {imageUrl && (
+              <div className="up-card-img-wrap">
+                <div className="product-visual">
+                  <img className="product-image" src={imageUrl} alt={title} />
+                </div>
+              </div>
+            )}
+            <div className="up-order-info">
+              <p className="up-order-title">{title}</p>
+              <p className="up-order-meta">주문번호: {order.orderId || "-"}</p>
+              <p className="up-order-meta">{order.createdAt || ""}</p>
+            </div>
+            <div className="up-order-right">
+              <p className="up-order-price">{formatWon(order.finalPrice)}</p>
+              <p className="up-order-status">{order.orderStatus || "-"}</p>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── 정산 내역 탭 ── */
+function SettlementTab({ settlements }) {
+  const normalizedSettlements = settlements.map(normalizeSettlement);
+
+  if (normalizedSettlements.length === 0) return <p className="up-empty">정산 내역 정보가 없습니다.</p>;
+
+  return (
+    <div className="up-order-list">
+      {normalizedSettlements.map((s) => (
+        <div key={s.orderId || s.productId} className="up-order-item">
           <div className="up-order-info">
-            <p className="up-order-title">{s.title}</p>
-            <p className="up-order-meta">주문번호: {s.orderId}</p>
+            <p className="up-order-title">{s.productTitle}</p>
+            <p className="up-order-meta">주문번호: {s.orderId || "-"}</p>
+            <p className="up-order-meta">{s.createdAt || ""}</p>
           </div>
           <div className="up-order-right">
-            <p className="up-order-price">정산 예정액 {s.sellerSettlementAmount?.toLocaleString()}원</p>
-            <p className="up-order-meta">수수료 {s.commission}% · 결제금액 {s.finalPrice?.toLocaleString()}원</p>
-            <p className="up-order-status">{s.orderStatus}</p>
+            <p className="up-order-price">정산 예정액 {formatWon(s.sellerSettlementAmount)}</p>
+            <p className="up-order-meta">수수료 {s.commission ?? 0}% · 결제금액 {formatWon(s.finalPrice)}</p>
+            <p className="up-order-status">{s.orderStatus || "-"}</p>
           </div>
         </div>
       ))}
@@ -281,34 +407,9 @@ function SettlementTab() {
 }
 
 /* ── 리뷰 탭 ── */
-function ReviewsTab({ reviews, avgRating, totalElements, totalPages, page, setPage, rvLoading }) {
-  const ratingDist = [5, 4, 3, 2, 1].map((star) => ({
-    star, count: reviews.filter((r) => r.rating === star).length,
-  }));
-
+function ReviewsTab({ reviews, totalPages, page, setPage, rvLoading }) {
   return (
     <div className="up-reviews-wrap">
-      {avgRating != null && totalElements > 0 && (
-        <div className="rv-summary">
-          <div className="rv-avg-block">
-            <span className="rv-avg-num">{avgRating.toFixed(1)}</span>
-            <span className="rv-avg-stars">{"★".repeat(Math.round(avgRating))}{"☆".repeat(5 - Math.round(avgRating))}</span>
-            <span className="rv-total">리뷰 {totalElements}건</span>
-          </div>
-          <div className="rv-bars">
-            {ratingDist.map(({ star, count }) => (
-              <div key={star} className="rv-bar-row">
-                <span className="rv-bar-label">{star}점</span>
-                <div className="rv-bar-bg">
-                  <div className="rv-bar-fill" style={{ width: totalElements ? `${(count / totalElements) * 100}%` : "0%" }} />
-                </div>
-                <span className="rv-bar-count">{count}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {reviews.length === 0 && !rvLoading && (
         <p className="up-empty">아직 받은 리뷰가 없습니다.</p>
       )}
@@ -347,9 +448,19 @@ function EmptyProfileTab({ label }) {
 }
 
 /* ── 메인 페이지 ── */
-function UserProfilePage({ memberId, hideFooter = false }) {
+function UserProfilePage({
+  memberId,
+  hideFooter = false,
+  onNavigate,
+  pathname = "/mypage",
+}) {
   const [seller, setSeller] = useState(null);
   const [sellerProducts, setSellerProducts] = useState([]);
+  const [myProducts, setMyProducts] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [wishlist, setWishlist] = useState([]);
+  const [settlements, setSettlements] = useState([]);
+  const [tabLoading, setTabLoading] = useState(false);
   const [reviews, setReviews] = useState([]);
   const [avgRating, setAvgRating] = useState(null);
   const [totalElements, setTotalElements] = useState(0);
@@ -359,6 +470,7 @@ function UserProfilePage({ memberId, hideFooter = false }) {
   const [activeTab, setActiveTab] = useState("products");
   const [toast, setToast] = useState("");
   const timerRef = useRef(null);
+  const currentTab = hideFooter ? getTabFromPath(pathname) : activeTab;
 
   function showToast(msg) {
     setToast(msg);
@@ -367,41 +479,138 @@ function UserProfilePage({ memberId, hideFooter = false }) {
   }
 
   useEffect(() => {
-    if (hideFooter) {
-      let ignore = false;
-      setSeller(null);
-      setSellerProducts([]);
-      fetchMyProfile()
-        .then((profile) => {
-          if (ignore) return;
-          setSeller(mapProfileToSeller(profile, memberId));
-        })
-        .catch((error) => {
-          if (ignore) return;
-          showToast(error.message || "프로필 정보를 불러올 수 없습니다.");
-          setSeller(mapProfileToSeller(null, memberId));
-        });
+    let ignore = false;
 
-      return () => {
-        ignore = true;
-        clearTimeout(timerRef.current);
-      };
+    async function loadProfile() {
+      if (hideFooter) {
+        try {
+          const profile = await fetchMyProfile();
+          if (!ignore) {
+            setSeller(mapProfileToSeller(profile, memberId));
+          }
+        } catch (error) {
+          if (!ignore) {
+            showToast(error.message || "프로필 정보를 불러올 수 없습니다.");
+            setSeller(mapProfileToSeller(null, memberId));
+          }
+        }
+        return;
+      }
+
+      const products = getProducts().filter((p) => p.seller?.memberId === memberId);
+      if (!ignore) {
+        setSeller({ memberId, nickname: memberId, sellerGrade: "BRONZE", completedOrderCount: 0, averageRating: null });
+        setSellerProducts(products);
+      }
     }
 
-    setSeller({ memberId, nickname: memberId, sellerGrade: "BRONZE", completedOrderCount: 0, averageRating: null });
-    setSellerProducts(getProducts().filter((p) => p.seller?.memberId === memberId));
-    return () => clearTimeout(timerRef.current);
+    loadProfile();
+
+    return () => {
+      ignore = true;
+      clearTimeout(timerRef.current);
+    };
   }, [hideFooter, memberId]);
 
   useEffect(() => {
-    setRvLoading(true);
-    getSellerReviews(memberId, page, 10).then((data) => {
-      setAvgRating(data.averageRating);
-      setReviews((prev) => page === 0 ? data.reviews.content : [...prev, ...data.reviews.content]);
-      setTotalElements(data.reviews.totalElements);
-      setTotalPages(data.reviews.totalPages);
-    }).finally(() => setRvLoading(false));
-  }, [memberId, page]);
+    if (hideFooter) {
+      return;
+    }
+
+    async function resetReviews() {
+      setPage(0);
+      setReviews([]);
+    }
+
+    resetReviews();
+  }, [hideFooter, memberId]);
+
+  useEffect(() => {
+    if (!hideFooter) return;
+
+    let ignore = false;
+
+    async function loadTabData() {
+      try {
+        setTabLoading(true);
+
+        if (currentTab === "products" || currentTab === "selling") {
+          const data = await fetchMyProducts(0, 15);
+          if (!ignore) {
+            const list = toList(data).map(normalizeProduct);
+            setMyProducts(list);
+            setSellerProducts(list);
+          }
+        }
+
+        if (currentTab === "orders") {
+          const data = await fetchOrders(0, 15, "BUY");
+          if (!ignore) setOrders(toList(data).map(normalizeOrder));
+        }
+
+        if (currentTab === "wishlist") {
+          const data = await fetchWishlist(0, 15);
+          if (!ignore) setWishlist(toList(data).map(normalizeProduct));
+        }
+
+        if (currentTab === "settlements") {
+          const data = await fetchSettlements(0, 20);
+          if (!ignore) setSettlements(toList(data).map(normalizeSettlement));
+        }
+      } catch (error) {
+        if (!ignore) {
+          showToast(error.message || "목록을 불러올 수 없습니다.");
+        }
+      } finally {
+        if (!ignore) setTabLoading(false);
+      }
+    }
+
+    loadTabData();
+
+    return () => {
+      ignore = true;
+    };
+  }, [hideFooter, currentTab]);
+
+  useEffect(() => {
+    if (!memberId) return;
+    if (hideFooter && currentTab !== "reviews") return;
+
+    let ignore = false;
+
+    async function loadReviews() {
+      try {
+        setRvLoading(true);
+        const data = await getSellerReviews(memberId, page, 10);
+        if (!ignore) {
+          const reviewPage = data?.reviews ?? data?.data?.reviews ?? {};
+          const nextReviews = toList(reviewPage);
+
+          setAvgRating(data?.averageRating ?? data?.data?.averageRating ?? null);
+          setReviews((prev) => page === 0 ? nextReviews : [...prev, ...nextReviews]);
+          setTotalElements(readTotalElements(reviewPage));
+          setTotalPages(readTotalPages(reviewPage));
+        }
+      } catch (error) {
+        if (!ignore) {
+          showToast(error.message || "리뷰를 불러올 수 없습니다.");
+          setReviews([]);
+          setTotalElements(0);
+          setTotalPages(0);
+          setAvgRating(null);
+        }
+      } finally {
+        if (!ignore) setRvLoading(false);
+      }
+    }
+
+    loadReviews();
+
+    return () => {
+      ignore = true;
+    };
+  }, [memberId, page, hideFooter, currentTab]);
 
   if (!seller) return (
     <>
@@ -448,11 +657,6 @@ function UserProfilePage({ memberId, hideFooter = false }) {
               )}
             </div>
           </div>
-          <div className="up-profile-actions">
-            <button className="up-follow-btn" onClick={() => showToast("팔로우 기능은 준비 중입니다.")}>
-              + 팔로우
-            </button>
-          </div>
         </div>
       </div>
 
@@ -462,8 +666,15 @@ function UserProfilePage({ memberId, hideFooter = false }) {
           {PROFILE_TABS.map(({ key, label }) => (
             <button
               key={key}
-              className={`up-tab ${activeTab === key ? "active" : ""}`}
-              onClick={() => setActiveTab(key)}
+              className={`up-tab ${currentTab === key ? "active" : ""}`}
+              onClick={() => {
+                if (hideFooter && onNavigate) {
+                  onNavigate(getPathFromTab(key));
+                  return;
+                }
+
+                setActiveTab(key);
+              }}
             >
               {key === "reviews" && totalElements > 0 ? `${label} ${totalElements}` : label}
             </button>
@@ -473,21 +684,38 @@ function UserProfilePage({ memberId, hideFooter = false }) {
 
       {/* 탭 콘텐츠 */}
       <div className="up-inner">
-        {activeTab === "products" && <ProductsTab products={sellerProducts} />}
-        {activeTab === "settlements" && <SettlementTab />}
-        {activeTab === "reviews" && (
+        {tabLoading && currentTab !== "reviews" && <p className="up-empty">불러오는 중...</p>}
+        {!tabLoading && currentTab === "products" && (
+          <ProductsTab
+            products={hideFooter ? myProducts : sellerProducts}
+            emptyMessage="상품 정보가 없습니다."
+          />
+        )}
+        {!tabLoading && hideFooter && currentTab === "selling" && (
+          <ProductsTab
+            products={myProducts}
+            emptyMessage="내가 판매한 상품 정보가 없습니다."
+          />
+        )}
+        {!tabLoading && hideFooter && currentTab === "orders" && <OrdersTab orders={orders} />}
+        {!tabLoading && hideFooter && currentTab === "wishlist" && (
+          <ProductsTab
+            products={wishlist}
+            emptyMessage="찜 목록 정보가 없습니다."
+          />
+        )}
+        {!tabLoading && hideFooter && currentTab === "settlements" && <SettlementTab settlements={settlements} />}
+        {currentTab === "reviews" && (
           <ReviewsTab
             reviews={reviews}
-            avgRating={avgRating}
-            totalElements={totalElements}
             totalPages={totalPages}
             page={page}
             setPage={setPage}
             rvLoading={rvLoading}
           />
         )}
-        {activeTab !== "products" && activeTab !== "reviews" && activeTab !== "settlements" && (
-          <EmptyProfileTab label={PROFILE_TABS.find((tab) => tab.key === activeTab)?.label ?? "선택한 탭"} />
+        {!hideFooter && currentTab !== "products" && currentTab !== "reviews" && currentTab !== "settlements" && (
+          <EmptyProfileTab label={PROFILE_TABS.find((tab) => tab.key === currentTab)?.label ?? "선택한 탭"} />
         )}
       </div>
 

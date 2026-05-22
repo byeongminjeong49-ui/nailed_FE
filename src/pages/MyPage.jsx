@@ -15,8 +15,15 @@ function getMyPageMemberId() {
   return getCurrentMemberId();
 }
 
-function MyPage() {
-  return <UserProfilePage memberId={getMyPageMemberId()} hideFooter />;
+function MyPage({ onNavigate, pathname }) {
+  return (
+    <UserProfilePage
+      memberId={getMyPageMemberId()}
+      hideFooter
+      onNavigate={onNavigate}
+      pathname={pathname}
+    />
+  );
 }
 
 export default MyPage;

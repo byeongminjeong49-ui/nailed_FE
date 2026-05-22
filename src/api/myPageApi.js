@@ -36,8 +36,8 @@ export async function updateMyProfile(payload) {
   });
 }
 
-export async function fetchMyProducts() {
-  return request("/api/members/mypage/products");
+export async function fetchMyProducts(page = 0, size = 15) {
+  return request(`/api/members/mypage/products?page=${page}&size=${size}`);
 }
 
 export async function updateMyProductStatus(productId, payload) {
@@ -53,8 +53,8 @@ export async function deleteMyProduct(productId) {
   });
 }
 
-export async function fetchWishlist() {
-  return request("/api/members/mypage/wishlist");
+export async function fetchWishlist(page = 0, size = 15) {
+  return request(`/api/members/mypage/wishlist?page=${page}&size=${size}`);
 }
 
 export async function deleteWishlist(productId) {
@@ -63,12 +63,12 @@ export async function deleteWishlist(productId) {
   });
 }
 
-export async function fetchOrders() {
-  return request("/api/members/mypage/orders");
+export async function fetchOrders(page = 0, size = 15, type = "BUY") {
+  return request(`/api/members/mypage/orders?type=${type}&page=${page}&size=${size}`);
 }
 
-export async function fetchSettlements() {
-  return request("/api/members/mypage/settlements?page=0&size=20");
+export async function fetchSettlements(page = 0, size = 20) {
+  return request(`/api/members/mypage/settlements?page=${page}&size=${size}`);
 }
 
 export async function withdrawMe() {
