@@ -45,9 +45,6 @@ function ProductCard({ link, product }) {
 
   return (
     <article className="product-card">
-      <button className="wish-button" type="button" aria-label={`${product.name} 찜하기`}>
-        ♡
-      </button>
       <a className="product-card-link" href={href} onClick={handleClick}>
         {cardContent}
       </a>

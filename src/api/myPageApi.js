@@ -25,19 +25,19 @@ export function getCurrentMemberId() {
 }
 
 export async function fetchMyProfile() {
-  const data = await request("/api/members/me/profile");
+  const data = await request("/api/members/mypage/profile");
   return data?.data ?? data;
 }
 
 export async function updateMyProfile(payload) {
-  return request("/api/members/me/profile", {
+  return request("/api/members/mypage/profile", {
     method: "PUT",
     body: JSON.stringify(payload),
   });
 }
 
 export async function fetchMyProducts() {
-  return request("/api/members/me/products");
+  return request("/api/members/mypage/products");
 }
 
 export async function updateMyProductStatus(productId, payload) {
@@ -54,17 +54,17 @@ export async function deleteMyProduct(productId) {
 }
 
 export async function fetchWishlist() {
-  return request("/api/members/me/wishlist");
+  return request("/api/members/mypage/wishlist");
 }
 
 export async function deleteWishlist(productId) {
-  return request(`/api/members/me/wishlist/${encodeURIComponent(productId)}`, {
+  return request(`/api/products/${encodeURIComponent(productId)}/wishlist`, {
     method: "DELETE",
   });
 }
 
 export async function fetchOrders() {
-  return request("/api/members/me/orders");
+  return request("/api/members/mypage/orders");
 }
 
 export async function fetchSettlements() {
@@ -72,7 +72,7 @@ export async function fetchSettlements() {
 }
 
 export async function withdrawMe() {
-  return request("/api/members/me", {
+  return request("/api/members/mypage", {
     method: "DELETE",
   });
 }

@@ -132,16 +132,16 @@
   display: block;
 }
 
-
-
-
-
-
-
-
-
-
-
+
+
+
+
+
+
+
+
+
+
 
 .hero-copy {
   position: absolute;
@@ -306,15 +306,16 @@
   height: 190px;
   display: grid;
   place-items: center;
+  overflow: hidden;
 }
-
+
 
 .product-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-
+
 
 .product-info {
   padding: 14px 14px 16px;

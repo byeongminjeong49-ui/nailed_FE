@@ -1,22 +1,108 @@
 import { authRequest } from "./authApi";
 
-function getProducts() {
-  return [];
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
+async function request(path, options = {}) {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    headers: {
+      ...(options.body ? { "Content-Type": "application/json" } : {}),
+      ...options.headers,
+    },
+    ...options,
+  });
+  const contentType = res.headers.get("content-type") || "";
+  const data = contentType.includes("application/json") ? await res.json() : await res.text();
+  if (!res.ok) {
+    const message = typeof data === "string" ? data : data?.error?.message || data?.message || "요청 처리에 실패했습니다.";
+    throw new Error(message);
+  }
+  return data?.data ?? data;
 }
 
 async function requestWithAuth(path, options = {}) {
   return authRequest(path, options);
 }
 
-const delay = (ms = 350) => new Promise((r) => setTimeout(r, ms));
-
-export async function getProductDetail() {
-  await delay();
-  throw new Error("상품 정보를 불러올 수 없습니다.");
+export async function getProductList(categoryId, page = 0, size = 15) {
+  const params = new URLSearchParams({ categoryId, page, size });
+  return request(`/api/products?${params.toString()}`);
 }
 
-export async function incrementViewCount() {
-  return undefined;
+export async function getNewProducts() {
+  return request("/api/products/new");
+}
+
+export async function getPopularProducts() {
+  return request("/api/products/popular");
+}
+
+export async function searchProducts({ categoryId, keyword, minPrice, maxPrice, conditionCode, size: sizeParam, sortBy = "latest", page = 0, size = 15 } = {}) {
+  const params = new URLSearchParams();
+  if (categoryId !== undefined && categoryId !== null) params.append("categoryId", categoryId);
+  if (keyword) params.append("keyword", keyword);
+  if (minPrice !== undefined && minPrice !== null) params.append("minPrice", minPrice);
+  if (maxPrice !== undefined && maxPrice !== null) params.append("maxPrice", maxPrice);
+  if (conditionCode) params.append("conditionCode", conditionCode);
+  if (sizeParam) params.append("size", sizeParam);
+  params.append("sortBy", sortBy);
+  params.append("page", page);
+  params.append("size", size);
+  return request(`/api/products/search?${params.toString()}`);
+}
+
+export async function getProductDetail(productId) {
+  const data = await request(`/api/products/${encodeURIComponent(productId)}`);
+  if (data && Array.isArray(data.imageUrls)) {
+    data.imageUrls = data.imageUrls.map((url) =>
+      url && !url.startsWith("http") ? `${API_BASE_URL}${url}` : url
+    );
+  }
+  return data;
+}
+
+export async function incrementViewCount(productId) {
+  return request(`/api/products/${encodeURIComponent(productId)}/view`, { method: "POST" });
+}
+
+export async function uploadImage(file) {
+  const formData = new FormData();
+  formData.append("file", file);
+  return requestWithAuth("/api/products/image-upload", {
+    method: "POST",
+    body: formData,
+  });
+}
+
+export async function registerProduct(body) {
+  return requestWithAuth("/api/products", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function updateProduct(productId, body) {
+  return requestWithAuth(`/api/products/${encodeURIComponent(productId)}`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function deleteProduct(productId, reason) {
+  const params = reason ? `?reason=${encodeURIComponent(reason)}` : "";
+  return requestWithAuth(`/api/products/${encodeURIComponent(productId)}${params}`, {
+    method: "DELETE",
+  });
+}
+
+export async function changeProductStatus(productId, productStatus) {
+  return requestWithAuth(`/api/products/${encodeURIComponent(productId)}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ productStatus }),
+  });
+}
+
+export function getProducts() {
+  return [];
 }
 
 export async function addWishlist(productId) {
@@ -30,5 +116,3 @@ export async function removeWishlist(productId) {
     method: "DELETE",
   });
 }
-
-export { getProducts };

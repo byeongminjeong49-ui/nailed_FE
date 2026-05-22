@@ -1,16 +1,10 @@
 // src/api/orderApi.js
 
+import { authRequest } from "./authApi";
+
 const BASE = '/api/orders';
 
-const req = async (url, options = {}) => {
-  const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  });
-  if (!res.ok) throw new Error(await res.text() || `HTTP ${res.status}`);
-  const text = await res.text();
-  return text ? JSON.parse(text) : null;
-};
+const req = (path, options = {}) => authRequest(path, options);
 
 export const createOrder       = (buyerId, sellerId, body) =>
   req(`${BASE}?buyerId=${buyerId}&sellerId=${sellerId}`, { method: 'POST', body: JSON.stringify(body) });
@@ -25,3 +19,6 @@ export const registerTracking  = (orderId, body) =>
 
 export const confirmDelivery   = (orderId) =>
   req(`${BASE}/${orderId}/delivered`, { method: 'PATCH' });
+
+export const mockPay           = (orderId) =>
+  req(`${BASE}/${orderId}/pay`, { method: 'PATCH' });

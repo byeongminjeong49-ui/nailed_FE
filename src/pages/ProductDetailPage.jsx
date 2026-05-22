@@ -3,7 +3,6 @@ import Footer from "../components/common/Footer";
 import Header from "../components/common/Header";
 import ReportModal from "../components/ReportModal";
 import { addWishlist, getProductDetail, incrementViewCount, removeWishlist } from "../api/productApi";
-import { getSellerReviews } from "../api/reviewApi";
 import "../styles/product-detail.css";
 
 const GRADE = { BRONZE: "브론즈", SILVER: "실버", GOLD: "골드", DIAMOND: "다이아" };
@@ -168,9 +167,6 @@ function ProductDetailPage({ productId }) {
   const [wishlisted, setWishlisted] = useState(false);
   const [wishLoading, setWishLoading] = useState(false);
   const [showReport, setShowReport] = useState(false);
-  const [avgRating, setAvgRating] = useState(null);
-  const [reviews, setReviews] = useState([]);
-  const [reviewCount, setReviewCount] = useState(0);
   const [toast, setToast] = useState("");
   const timerRef = useRef(null);
 
@@ -189,12 +185,6 @@ function ProductDetailPage({ productId }) {
       .then((data) => {
         setProduct(data);
         setWishlisted(data.isWishlisted);
-        return getSellerReviews(data.seller.memberId, 0, 100);
-      })
-      .then((rv) => {
-        setAvgRating(rv.averageRating);
-        setReviewCount(rv.reviews.totalElements);
-        setReviews(rv.reviews.content);
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -245,9 +235,6 @@ function ProductDetailPage({ productId }) {
   const tags = product.hashtags ? product.hashtags.split(",").map((t) => t.trim()).filter(Boolean) : [];
   const gradeClass = product.seller.sellerGrade?.toLowerCase() ?? "bronze";
   const productImageUrls = getProductImageUrls(product);
-  const ratingDist = [5, 4, 3, 2, 1].map((star) => ({
-    star, count: reviews.filter((r) => r.rating === star).length,
-  }));
 
   return (
     <div className="pd-page">
@@ -417,63 +404,6 @@ function ProductDetailPage({ productId }) {
           </>
         )}
 
-        {/* ── 판매자 리뷰 ── */}
-        {reviewCount > 0 && (
-          <>
-            <hr className="pd-divider" />
-            <section className="pd-section">
-              <div className="pd-section-title-row">
-                <h2 className="pd-section-title">판매자 리뷰</h2>
-                <button className="pd-section-link" onClick={() => navigate(`/user/${product.seller.memberId}`)}>
-                  전체 보기 ›
-                </button>
-              </div>
-
-              {avgRating != null && (
-                <div className="pd-rv-summary">
-                  <div className="pd-rv-avg-block">
-                    <span className="pd-rv-avg-num">{avgRating.toFixed(1)}</span>
-                    <span className="pd-rv-stars">{"★".repeat(Math.round(avgRating))}{"☆".repeat(5 - Math.round(avgRating))}</span>
-                    <span className="pd-rv-total">리뷰 {reviewCount}건</span>
-                  </div>
-                  <div className="pd-rv-bars">
-                    {ratingDist.map(({ star, count }) => (
-                      <div key={star} className="pd-rv-bar-row">
-                        <span className="pd-rv-bar-label">{star}점</span>
-                        <div className="pd-rv-bar-bg">
-                          <div className="pd-rv-bar-fill" style={{ width: reviewCount ? `${(count / reviewCount) * 100}%` : "0%" }} />
-                        </div>
-                        <span className="pd-rv-bar-count">{count}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <ul className="pd-rv-list">
-                {reviews.slice(0, 3).map((r) => (
-                  <li key={r.reviewId} className="pd-rv-item">
-                    <div className="pd-rv-header">
-                      <div className="pd-rv-avatar">{r.buyerNickname.charAt(0)}</div>
-                      <div className="pd-rv-meta">
-                        <span className="pd-rv-buyer">{r.buyerNickname}</span>
-                        <span className="pd-rv-stars-sm">{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</span>
-                      </div>
-                      <span className="pd-rv-date">{new Date(r.createdAt).toLocaleDateString("ko-KR")}</span>
-                    </div>
-                    {r.content && <p className="pd-rv-content">{r.content}</p>}
-                  </li>
-                ))}
-              </ul>
-
-              {reviewCount > 3 && (
-                <button className="pd-rv-more" onClick={() => navigate(`/user/${product.seller.memberId}`)}>
-                  리뷰 {reviewCount}개 전체 보기 ›
-                </button>
-              )}
-            </section>
-          </>
-        )}
 
         {/* ── 같은 카테고리 상품 ── */}
         {product.related?.length > 0 && (
