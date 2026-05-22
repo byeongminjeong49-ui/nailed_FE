@@ -251,7 +251,6 @@
 .badge-PAID      { background:#e6f4f3; color:#168f88; border:1px solid #168f88; }
 .badge-SHIPPING  { background:#e8f4fd; color:#2196f3; border:1px solid #2196f3; }
 .badge-DELIVERED { background:#fff8e1; color:#ffb300; border:1px solid #ffb300; }
-.badge-COMPLETED { background:#e8f5e9; color:#4caf50; border:1px solid #4caf50; }
 .badge-CANCELLED { background:#ffebee; color:#f44336; border:1px solid #f44336; }
 
 /* 알림/에러 메시지 박스 */

@@ -365,6 +365,7 @@ function ProductDetailPage({ productId }) {
           finalPrice:    product.price,
           shippingFee:   0,
           title:         product.title,
+          imageUrl:      productImageUrls[0] ?? '',
         }));
         navigate('/order/form');
       }}

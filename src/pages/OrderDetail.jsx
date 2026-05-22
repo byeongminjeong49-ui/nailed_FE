@@ -6,7 +6,6 @@ const STATUS_LABEL = {
   PAID:      '결제완료',
   SHIPPING:  '배송중',
   DELIVERED: '배송완료',
-  COMPLETED: '구매확정',
   CANCELLED: '취소됨',
 };
 
@@ -15,7 +14,6 @@ const STATUS_STEPS = [
   { key: 'PAID',      label: '결제완료' },
   { key: 'SHIPPING',  label: '배송중'   },
   { key: 'DELIVERED', label: '배송완료' },
-  { key: 'COMPLETED', label: '구매확정' },
 ];
 
 const METHOD_LABEL = {
@@ -39,7 +37,7 @@ const s = {
   stepLine: (done) => ({ position: 'absolute', top: '13px', left: '50%', width: '100%', height: '2px', background: done ? '#168f88' : '#e0e0e0' }),
   backBtn: { display: 'block', width: '100%', padding: '14px', background: '#fff', color: '#555', border: '1px solid #ddd', borderRadius: '10px', fontSize: '14px', cursor: 'pointer', marginTop: '8px', fontFamily: 'inherit' },
   badge: (status) => {
-    const colors = { REQUESTED: ['#fff3e0','#f57c00'], PAID: ['#e8f5e9','#2e7d32'], SHIPPING: ['#e3f2fd','#1565c0'], DELIVERED: ['#f3e5f5','#6a1b9a'], COMPLETED: ['#e8f5f4','#168f88'], CANCELLED: ['#ffebee','#c62828'] };
+    const colors = { REQUESTED: ['#fff3e0','#f57c00'], PAID: ['#e8f5e9','#2e7d32'], SHIPPING: ['#e3f2fd','#1565c0'], DELIVERED: ['#f3e5f5','#6a1b9a'], CANCELLED: ['#ffebee','#c62828'] };
     const [bg, color] = colors[status] || ['#f5f5f5','#555'];
     return { display: 'inline-block', padding: '3px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: '700', background: bg, color };
   },
@@ -186,7 +184,6 @@ export default function OrderDetail({ orderId }) {
             { label: '결제완료', val: order.paidAt },
             { label: '배송중',   val: order.shippedAt },
             { label: '배송완료', val: order.deliveredAt },
-            { label: '구매확정', val: order.completedAt },
             { label: '취소됨',  val: order.cancelledAt },
           ].filter((t) => t.val).map((t, i, arr) => (
             <div key={t.label} style={{ ...s.row, ...(i === arr.length - 1 ? { borderBottom: 'none' } : {}) }}>

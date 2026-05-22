@@ -124,7 +124,7 @@ export default function PaymentPage() {
               {paying ? '처리 중...' : `${(finalPrice || 0).toLocaleString()}원 결제하기`}
             </button>
             <button style={{ display: 'block', width: '100%', padding: '14px', background: '#fff', color: '#555', border: '1px solid #ddd', borderRadius: '10px', fontSize: '14px', cursor: 'pointer', marginTop: '8px' }} onClick={() => window.history.back()}>돌아가기</button>
-            <p style={{ fontSize: '12px', color: '#bbb', textAlign: 'center', marginTop: '12px' }}>* 테스트 환경입니다. 실제 결제가 발생하지 않습니다.</p>
+            <p style={{ fontSize: '12px', color: '#bbb', textAlign: 'center', marginTop: '12px' }}></p>
           </div>
         )}
 

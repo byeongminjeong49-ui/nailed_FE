@@ -24,7 +24,7 @@ const s = {
   btnDisabled: { display: 'block', width: '100%', padding: '16px', background: '#ccc', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '16px', fontWeight: '700', cursor: 'not-allowed' },
 };
 
-const COMMISSION_RATE = 0.04; // 4%
+const COMMISSION_RATE = 0.02; 
 
 export default function OrderForm() {
   const [pendingOrder] = useState(() => {
@@ -39,13 +39,24 @@ export default function OrderForm() {
     address: '', addressDetail: '', deliveryRequest: '',
   });
   const [agree1, setAgree1] = useState(false);
+  const [addressTouched, setAddressTouched] = useState(false);
 
   const commission = Math.floor((pendingOrder.productAmount || 0) * COMMISSION_RATE);
   const shippingFee = pendingOrder.shippingFee || 0;
   const totalPrice = (pendingOrder.productAmount || 0) + shippingFee + commission;
-  const canPay = agree1 && form.receiverName && form.receiverPhone && form.address;
-
-  const onChange = (key) => (e) => setForm((p) => ({ ...p, [key]: e.target.value }));
+  const isValidPhone   = /^\d{10,11}$/.test(form.receiverPhone);
+  const isValidZipcode = /^\d{5}$/.test(form.zipcode);
+  const canPay = agree1 && form.receiverName && isValidPhone && isValidZipcode && form.address;
+  const onChange = (key) => (e) => {
+    let val = e.target.value;
+    if (key === 'receiverPhone' || key === 'zipcode') {
+      val = val.replace(/[^0-9]/g, '');
+    }
+    if (key === 'receiverName') {
+      val = val.replace(/[^가-힣ㄱ-ㅎㅏ-ㅣ\s]/g, '');
+    }
+    setForm((p) => ({ ...p, [key]: val }));
+  };
 
   const handlePayment = async () => {
     if (!canPay) return;
@@ -83,11 +94,11 @@ export default function OrderForm() {
   };
 
   const fields = [
-    { key: 'receiverName',   label: '수령인 *',      placeholder: '홍길동' },
-    { key: 'receiverPhone',  label: '연락처 *',       placeholder: '010-0000-0000' },
-    { key: 'zipcode',        label: '우편번호',        placeholder: '12345' },
-    { key: 'address',        label: '도로명 주소 *',   placeholder: '서울시 강남구...' },
-    { key: 'addressDetail',  label: '상세 주소',       placeholder: '101동 202호' },
+    { key: 'receiverName',   label: '받는 분 성함을 입력하세요 *',      placeholder: '홍길동' },
+    { key: 'receiverPhone',  label: '- 없이 숫자만 입력 가능 *',       placeholder: '01012345678' },
+    { key: 'zipcode',        label: '우편번호 입력하세요',        placeholder: '12345' },
+    { key: 'address', label: '도로명 또는 지번 주소 *', placeholder: '클릭하여 주소 검색' },
+    { key: 'addressDetail',  label: '동·호수 등 상세 주소',       placeholder: '101동 202호' },
     { key: 'deliveryRequest',label: '배송 요청사항',   placeholder: '문 앞에 놓아주세요' },
   ];
 
@@ -100,7 +111,10 @@ export default function OrderForm() {
         <div style={s.card}>
           <div style={s.cardTitle}>상품 정보</div>
           <div style={s.productRow}>
-            <div style={s.productImg}>👕</div>
+            {pendingOrder.imageUrl
+              ? <img src={pendingOrder.imageUrl} alt={pendingOrder.title} style={{ width: '64px', height: '64px', borderRadius: '8px', objectFit: 'cover' }} />
+              : <div style={s.productImg}>👕</div>
+            }
             <div>
               <div style={s.productName}>{pendingOrder.title}</div>
               <div style={s.productPrice}>{(pendingOrder.productAmount || 0).toLocaleString()}원</div>
@@ -115,13 +129,45 @@ export default function OrderForm() {
             <div style={s.formGroup} key={key}>
               <label style={s.label}>{label}</label>
               <input
-                style={s.input}
+                style={{ ...s.input, cursor: key === 'address' ? 'pointer' : 'text' }}
                 value={form[key]}
                 onChange={onChange(key)}
                 placeholder={placeholder}
+                readOnly={key === 'address'}
+                onClick={() => {
+                  if (key !== 'address') return;
+                  new window.daum.Postcode({
+                    oncomplete: (data) => {
+                      setForm((p) => ({
+                        ...p,
+                        address: data.roadAddress || data.jibunAddress,
+                        zipcode: data.zonecode,
+                      }));
+                      setAddressTouched(false);
+                    }
+                  }).open();
+                }}
                 onFocus={(e) => e.target.style.borderColor = '#168f88'}
-                onBlur={(e) => e.target.style.borderColor = '#ddd'}
+                onBlur={(e) => {
+                  e.target.style.borderColor = '#ddd';
+                  if (key === 'address') setAddressTouched(true);
+                }}
               />
+              {key === 'receiverPhone' && form.receiverPhone.length > 11 && (
+                <span style={{ fontSize: '12px', color: '#e05c5c', marginTop: '4px', display: 'block' }}>
+                  숫자만 10~11자리 입력하세요
+                </span>
+              )}
+              {key === 'zipcode' && form.zipcode.length > 5 && (
+                <span style={{ fontSize: '12px', color: '#e05c5c', marginTop: '4px', display: 'block' }}>
+                  우편번호는 숫자 5자리입니다
+                </span>
+              )}
+              {key === 'address' && addressTouched && form.address && !/\d$/.test(form.address) && (
+                <span style={{ fontSize: '12px', color: '#e05c5c', marginTop: '4px', display: 'block' }}>
+                  번지/건물번호까지 입력해주세요 (예: 테헤란로 123)
+                </span>
+              )}
             </div>
           ))}
         </div>
@@ -142,7 +188,6 @@ export default function OrderForm() {
             <input type="checkbox" style={s.checkbox} checked={agree1} onChange={(e) => setAgree1(e.target.checked)} />
             <span style={s.agreeText}>주문할 상품의 결제, 배송, 주문정보를 확인하였으며 이에 동의합니다. <span style={{ color: '#168f88', fontWeight: 600 }}>[필수]</span></span>
           </label>
-
         </div>
 
         <button style={canPay ? s.btn : s.btnDisabled} onClick={handlePayment} disabled={!canPay}>
