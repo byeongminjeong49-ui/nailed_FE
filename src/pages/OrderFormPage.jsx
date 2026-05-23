@@ -24,7 +24,7 @@ const s = {
   btnDisabled: { display: 'block', width: '100%', padding: '16px', background: '#ccc', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '16px', fontWeight: '700', cursor: 'not-allowed' },
 };
 
-const COMMISSION_RATE = 0.02; 
+const COMMISSION_RATE = 0.02;
 const SESSION_KEY = 'nailed_session';
 
 function getCurrentMemberId() {
@@ -44,12 +44,21 @@ export default function OrderForm() {
     } catch { return { productId: 1, title: '기본 상품', productAmount: 0, finalPrice: 0, shippingFee: 0 }; }
   });
 
-  const [form, setForm] = useState({
-    receiverName: '', receiverPhone: '', zipcode: '',
-    address: '', addressDetail: '', deliveryRequest: '',
+  const [form, setForm] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('orderForm');
+      return saved ? JSON.parse(saved) : {
+        receiverName: '', receiverPhone: '', zipcode: '',
+        address: '', addressDetail: '', deliveryRequest: '',
+      };
+    } catch {
+      return { receiverName: '', receiverPhone: '', zipcode: '',
+        address: '', addressDetail: '', deliveryRequest: '' };
+    }
   });
   const [agree1, setAgree1] = useState(false);
   const [addressTouched, setAddressTouched] = useState(false);
+  const [paying, setPaying] = useState(false); // ← 추가
 
   const commission = Math.floor((pendingOrder.productAmount || 0) * COMMISSION_RATE);
   const shippingFee = pendingOrder.shippingFee || 0;
@@ -57,6 +66,7 @@ export default function OrderForm() {
   const isValidPhone   = /^\d{10,11}$/.test(form.receiverPhone);
   const isValidZipcode = /^\d{5}$/.test(form.zipcode);
   const canPay = agree1 && form.receiverName && isValidPhone && isValidZipcode && form.address;
+
   const onChange = (key) => (e) => {
     let val = e.target.value;
     if (key === 'receiverPhone' || key === 'zipcode') {
@@ -65,11 +75,14 @@ export default function OrderForm() {
     if (key === 'receiverName') {
       val = val.replace(/[^가-힣ㄱ-ㅎㅏ-ㅣ\s]/g, '');
     }
-    setForm((p) => ({ ...p, [key]: val }));
+    const updated = { ...form, [key]: val };
+    setForm(updated);
+    sessionStorage.setItem('orderForm', JSON.stringify(updated));
   };
 
   const handlePayment = async () => {
-    if (!canPay) return;
+    if (!canPay || paying) return; // ← paying 조건 추가
+    setPaying(true); // ← 추가
     try {
       const orderData = {
         productId:             pendingOrder.productId,
@@ -85,7 +98,6 @@ export default function OrderForm() {
       const buyerId = getCurrentMemberId() || pendingOrder.buyerId;
       const response = await createOrder(buyerId, pendingOrder.sellerId, orderData);
       if (response?.orderId) {
-        sessionStorage.removeItem('pendingOrder');
         sessionStorage.setItem('pendingPayment', JSON.stringify({
           orderId:    response.orderId,
           finalPrice: totalPrice,
@@ -98,6 +110,8 @@ export default function OrderForm() {
     } catch (error) {
       console.error('주문 처리 중 에러 발생:', error);
       alert('주문 요청에 실패했습니다.');
+    } finally {
+      setPaying(false);
     }
   };
 
@@ -146,11 +160,13 @@ export default function OrderForm() {
                   if (key !== 'address') return;
                   new window.daum.Postcode({
                     oncomplete: (data) => {
-                      setForm((p) => ({
-                        ...p,
+                      const updated = {
+                        ...form,
                         address: data.roadAddress || data.jibunAddress,
                         zipcode: data.zonecode,
-                      }));
+                      };
+                      setForm(updated);
+                      sessionStorage.setItem('orderForm', JSON.stringify(updated));
                       setAddressTouched(false);
                     }
                   }).open();
@@ -198,8 +214,8 @@ export default function OrderForm() {
           </label>
         </div>
 
-        <button style={canPay ? s.btn : s.btnDisabled} onClick={handlePayment} disabled={!canPay}>
-          {totalPrice.toLocaleString()}원 안전결제
+        <button style={canPay && !paying ? s.btn : s.btnDisabled} onClick={handlePayment} disabled={!canPay || paying}>
+          {paying ? '처리 중...' : `${totalPrice.toLocaleString()}원 안전결제`}
         </button>
         {!canPay && <p style={{ textAlign: 'center', fontSize: '12px', color: '#e05c5c', marginTop: '8px' }}>배송지 입력 및 필수 동의를 완료해 주세요.</p>}
       </div>

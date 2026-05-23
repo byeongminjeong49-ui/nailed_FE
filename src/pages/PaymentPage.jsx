@@ -67,16 +67,35 @@ export default function PaymentPage() {
 
   const { orderId, finalPrice, title } = pendingPayment;
 
-  const onPay = async () => {
-    setPaying(true);
+const onPay = async () => {
+  setPaying(true);
+  setError('');
+  try {
+    // ① PG창 시뮬레이션 (실제: IMP.request_pay() 호출)
     await new Promise((res) => setTimeout(res, 1500));
-    alert('결제가 완료되었습니다.');
+
+    // ② mock imp_uid 생성 (실제: PG사 콜백으로 받음)
+    const mockImpUid = `mock_imp_${Date.now()}`;
+
+    // ③ 백엔드 결제 검증 요청 (실제: imp_uid로 금액 검증)
+    const res = await fetch(`/api/orders/${orderId}/pay`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ impUid: mockImpUid, amount: finalPrice }),
+    });
+    if (!res.ok) throw new Error('결제 처리 실패');
+
+    sessionStorage.removeItem('orderForm');
+    sessionStorage.removeItem('pendingOrder');
     sessionStorage.setItem('completedOrder', JSON.stringify({ orderId, finalPrice, title, method: selectedMethod }));
     sessionStorage.removeItem('pendingPayment');
     setDone(true);
+  } catch (e) {
+    setError(e.message || '결제 중 오류가 발생했습니다.');
+  } finally {
     setPaying(false);
-  };
-
+  }
+};
   return (
     <div style={s.page}>
       <div style={s.inner}>

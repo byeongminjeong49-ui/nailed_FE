@@ -81,6 +81,7 @@ export default function OrderDetail({ orderId }) {
   const [trackingNumber, setTrackingNumber] = useState('');
   const [submitting,     setSubmitting]     = useState(false);
   const [showShipForm,   setShowShipForm]   = useState(false);
+  const [confirming,     setConfirming]     = useState(false); // ← 추가: 배송완료 처리 중 상태
 
   const session = (() => { try { return JSON.parse(sessionStorage.getItem('nailed_session') ?? 'null'); } catch { return null; } })();
   const currentMemberId = session?.member_id ?? session?.memberId ?? null;
@@ -129,6 +130,21 @@ export default function OrderDetail({ orderId }) {
     }
   };
 
+  // ← 추가: 배송완료 확인 → DELIVERED 처리 → 정산 확정
+  const handleConfirmDelivery = async () => {
+    if (confirming) return;
+    setConfirming(true);
+    try {
+      await axios.patch(`/api/orders/${orderId}/delivered`);
+      alert('배송완료 처리되었습니다. 판매자에게 정산됩니다.');
+      window.location.reload();
+    } catch (e) {
+      alert('배송완료 처리에 실패했습니다.');
+    } finally {
+      setConfirming(false);
+    }
+  };
+
   if (loading) return <div style={s.page}><div style={{ textAlign: 'center', padding: '80px', color: '#888' }}>로딩 중...</div></div>;
 
   if (error || !order) return (
@@ -145,7 +161,9 @@ export default function OrderDetail({ orderId }) {
   const imageUrl = getProductImageUrl(product);
   const title = completed?.title || product?.title || '-';
   const isSeller = currentMemberId && currentMemberId === order.sellerId;
-const canShip = isSeller && (order.orderStatus === 'PAID' || order.orderStatus === 'REQUESTED');
+  const isBuyer = currentMemberId && currentMemberId === order.buyerId; // ← 추가
+  const canShip = isSeller && order.orderStatus === 'PAID';
+  const canConfirmDelivery = isBuyer && order.orderStatus === 'SHIPPING'; // ← 추가
 
   return (
     <div style={s.page}>
@@ -214,42 +232,60 @@ const canShip = isSeller && (order.orderStatus === 'PAID' || order.orderStatus =
         </div>
 
         {/* 운송장 입력 - 판매자 + PAID 상태일 때만 */}
-       {canShip && (
-  <div style={{ ...s.card, border: '1.5px solid #168f88' }}>
-    <div style={s.cardTitle}>운송장 등록</div>
-    <div style={{ marginBottom: '12px' }}>
-      <label style={s.label}>택배사 선택 *</label>
-      <select style={s.select} value={carrierCode} onChange={(e) => setCarrierCode(e.target.value)}>
-        {CARRIERS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-      </select>
-    </div>
-    <div style={{ marginBottom: '16px' }}>
-      <label style={s.label}>운송장 번호 *</label>
-      <input
-        style={s.input}
-        type="text"
-        placeholder="숫자만 입력하세요"
-        value={trackingNumber}
-        onChange={(e) => setTrackingNumber(e.target.value.replace(/[^0-9]/g, ''))}
-        onFocus={(e) => e.target.style.borderColor = '#168f88'}
-        onBlur={(e) => e.target.style.borderColor = '#ddd'}
-      />
-    </div>
-    <button
-      style={carrierCode && trackingNumber ? s.shipBtn : s.shipBtnDisabled}
-      onClick={handleShip}
-      disabled={!carrierCode || !trackingNumber || submitting}
-    >
-      {submitting ? '등록 중...' : '운송장 등록'}
-    </button>
-  </div>
-)}
+        {canShip && (
+          <div style={{ ...s.card, border: '1.5px solid #168f88' }}>
+            <div style={s.cardTitle}>운송장 등록</div>
+            <div style={{ marginBottom: '12px' }}>
+              <label style={s.label}>택배사 선택 *</label>
+              <select style={s.select} value={carrierCode} onChange={(e) => setCarrierCode(e.target.value)}>
+                {CARRIERS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+              </select>
+            </div>
+            <div style={{ marginBottom: '16px' }}>
+              <label style={s.label}>운송장 번호 *</label>
+              <input
+                style={s.input}
+                type="text"
+                placeholder="숫자만 입력하세요"
+                value={trackingNumber}
+                onChange={(e) => setTrackingNumber(e.target.value.replace(/[^0-9]/g, ''))}
+                onFocus={(e) => e.target.style.borderColor = '#168f88'}
+                onBlur={(e) => e.target.style.borderColor = '#ddd'}
+              />
+            </div>
+            <button
+              style={carrierCode && trackingNumber ? s.shipBtn : s.shipBtnDisabled}
+              onClick={handleShip}
+              disabled={!carrierCode || !trackingNumber || submitting}
+            >
+              {submitting ? '등록 중...' : '운송장 등록'}
+            </button>
+          </div>
+        )}
+
         {/* 운송장 조회 - 등록된 경우 */}
         {order.carrierCode && order.trackingNumber && (
           <div style={s.card}>
             <div style={s.cardTitle}>배송 추적</div>
             <div style={s.row}><span style={s.rowLabel}>택배사</span><span style={s.rowValue}>{CARRIERS.find((c) => c.value === order.carrierCode)?.label || order.carrierCode}</span></div>
             <div style={{ ...s.row, borderBottom: 'none' }}><span style={s.rowLabel}>운송장 번호</span><span style={{ ...s.rowValue, fontFamily: 'monospace' }}>{order.trackingNumber}</span></div>
+          </div>
+        )}
+
+        {/* 배송완료 확인 - 구매자 + SHIPPING 상태일 때만 */}
+        {canConfirmDelivery && (
+          <div style={{ ...s.card, border: '1.5px solid #168f88' }}>
+            <div style={s.cardTitle}>배송 확인</div>
+            <p style={{ fontSize: '13px', color: '#888', margin: '0 0 14px' }}>
+              상품을 받으셨나요? 배송완료 확인 시 판매자에게 정산됩니다.
+            </p>
+            <button
+              style={s.shipBtn}
+              onClick={handleConfirmDelivery}
+              disabled={confirming}
+            >
+              {confirming ? '처리 중...' : '배송완료 확인'}
+            </button>
           </div>
         )}
 

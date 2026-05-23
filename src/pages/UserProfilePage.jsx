@@ -391,12 +391,26 @@ function OrdersTab({ orders }) {
             <div className="up-order-info">
               <p className="up-order-title">{title}</p>
               <p className="up-order-meta">주문번호: {order.orderId || "-"}</p>
-              
-            {order.shippedAt && <p className="up-order-meta">배송중: {order.shippedAt}</p>}
+              {order.shippedAt && <p className="up-order-meta">배송중: {order.shippedAt}</p>}
             </div>
             <div className="up-order-right">
               <p className="up-order-price">{formatWon(order.finalPrice)}</p>
               <p className="up-order-status">{order.orderStatus || "-"}</p>
+              <button
+                style={{
+                  marginTop: '8px',
+                  padding: '8px 16px',
+                  background: '#168f88',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                }}
+                onClick={() => navigate(`/order/detail/${order.orderId}`)}
+              >
+                주문 상세
+              </button>
             </div>
           </div>
         );
@@ -411,9 +425,9 @@ function SellingTab() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchSettlements(0, 20)
+    fetchOrders(0, 50, 'SELL')
       .then((data) => {
-        setOrders(toList(data).map(normalizeSettlement));
+        setOrders(toList(data).map(normalizeOrder));
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -436,20 +450,22 @@ function SellingTab() {
             <p className="up-order-meta">{o.createdAt || ""}</p>
           </div>
           <div className="up-order-right">
-            <button
-              style={{
-                padding: "8px 16px",
-                background: "#168f88",
-                color: "#fff",
-                border: "none",
-                borderRadius: "8px",
-                fontSize: "13px",
-                cursor: "pointer",
-              }}
-              onClick={() => navigate(`/order/detail/${o.orderId}`)}
-            >
-              운송장 등록
-            </button>
+            {o.orderStatus === 'PAID' && (
+              <button
+                style={{
+                  padding: "8px 16px",
+                  background: "#168f88",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "13px",
+                  cursor: "pointer",
+                }}
+                onClick={() => navigate(`/order/detail/${o.orderId}`)}
+              >
+                운송장 등록
+              </button>
+            )}
           </div>
         </div>
       ))}
@@ -463,22 +479,34 @@ function SettlementTab({ settlements }) {
 
   if (normalizedSettlements.length === 0) return <p className="up-empty">정산 내역 정보가 없습니다.</p>;
 
+  const getSettlementLabel = (status) => {
+    if (status === 'DELIVERED') return { text: '정산 완료', color: '#2e7d32', bg: '#e8f5e9' };
+    return { text: '정산 예정', color: '#1565c0', bg: '#e3f2fd' };
+  };
+
   return (
     <div className="up-order-list">
-      {normalizedSettlements.map((s) => (
-        <div key={s.orderId || s.productId} className="up-order-item">
-          <div className="up-order-info">
-            <p className="up-order-title">{s.productTitle}</p>
-            <p className="up-order-meta">주문번호: {s.orderId || "-"}</p>
-            <p className="up-order-meta">{s.createdAt || ""}</p>
+      {normalizedSettlements.map((s) => {
+        const badge = getSettlementLabel(s.orderStatus);
+        return (
+          <div key={s.orderId || s.productId} className="up-order-item">
+            <div className="up-order-info">
+              <p className="up-order-title">{s.productTitle}</p>
+              <p className="up-order-meta">주문번호: {s.orderId || "-"}</p>
+              <p className="up-order-meta">{s.createdAt || ""}</p>
+            </div>
+            <div className="up-order-right">
+              <p className="up-order-price">
+                {s.orderStatus === 'DELIVERED' ? '정산 완료액' : '정산 예정액'} {formatWon(s.sellerSettlementAmount)}
+              </p>
+              <p className="up-order-meta">수수료 {s.commission ?? 0}% · 결제금액 {formatWon(s.finalPrice)}</p>
+              <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: '700', background: badge.bg, color: badge.color }}>
+                {badge.text}
+              </span>
+            </div>
           </div>
-          <div className="up-order-right">
-            <p className="up-order-price">정산 예정액 {formatWon(s.sellerSettlementAmount)}</p>
-            <p className="up-order-meta">수수료 {s.commission ?? 0}% · 결제금액 {formatWon(s.finalPrice)}</p>
-            <p className="up-order-status">{s.orderStatus || "-"}</p>
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
