@@ -309,7 +309,8 @@
   padding: 3px 0;
 }
 .up-filter-check input[type="checkbox"],
-.up-filter-list input[type="checkbox"] {
+.up-filter-list input[type="checkbox"],
+.up-filter-list input[type="radio"] {
   width: 15px;
   height: 15px;
   accent-color: #151515;
@@ -365,8 +366,9 @@
 
 .up-product-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 16px;
+  max-width: 960px;
   margin-bottom: 24px;
 }
 
@@ -418,12 +420,18 @@
 }
 .up-card-body { padding: 0 2px; }
 .up-card-brand {
+  display: inline-block;
   font-size: 11px;
   font-weight: 700;
-  color: #aaa;
-  margin: 0 0 3px;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
+  color: #151515;
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 2px 7px;
+  border-radius: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: calc(100% - 42px);
 }
 .up-card-name {
   font-size: 13px;
@@ -441,14 +449,20 @@
 }
 .up-card-meta {
   display: flex;
-  gap: 6px;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px;
+  margin-bottom: 2px;
 }
 .up-card-cond, .up-card-size {
   font-size: 11px;
+  font-weight: 700;
   padding: 2px 7px;
-  border-radius: 4px;
-  background: #f0f0f0;
-  color: #666;
+  border-radius: 50px;
+  background: #fff;
+  border: 1.5px solid #bbb;
+  color: #555;
+  white-space: nowrap;
 }
 
 /* 가격 필터 */
@@ -516,12 +530,14 @@
 /* 주문 내역 */
 .up-buy-order-list {
   display: grid;
-  grid-template-columns: repeat(4, minmax(180px, 1fr));
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
   gap: 16px;
-  max-width: 1120px;
+  max-width: 960px;
 }
 
 .up-buy-order-card {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
 }
 
@@ -533,6 +549,14 @@
 .up-order-info,
 .up-order-right {
   min-width: 0;
+}
+
+.up-buy-order-card .up-order-info {
+  min-height: 74px;
+}
+
+.up-buy-order-card .up-order-right {
+  margin-top: auto;
 }
 
 .up-order-title {
@@ -586,9 +610,9 @@
 /* 정산 내역 */
 .up-settlement-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(220px, 1fr));
-  gap: 18px;
-  max-width: 920px;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 16px;
+  max-width: 960px;
 }
 
 .up-settlement-card {

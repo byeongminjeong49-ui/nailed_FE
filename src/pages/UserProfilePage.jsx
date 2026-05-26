@@ -8,7 +8,7 @@ import {
   fetchSettlements,
   fetchWishlist,
 } from "../api/myPageApi";
-import { getProducts, getSellerProducts } from "../api/productApi";
+import { getSellerProducts, getUserHome } from "../api/productApi";
 import { getSellerReviews } from "../api/reviewApi";
 import "../styles/review.css";
 import "../styles/product-detail.css";
@@ -16,15 +16,6 @@ import "../styles/product-detail.css";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 const GRADE = { BRONZE: "브론즈", SILVER: "실버", GOLD: "골드", DIAMOND: "다이아" };
-
-const CATEGORIES = [
-  { key: "menswear",    label: "Menswear" },
-  { key: "womenswear",  label: "Womenswear" },
-  { key: "luxury",      label: "Luxury" },
-  { key: "accessories", label: "Accessories" },
-  { key: "lifestyle",   label: "Lifestyle" },
-  { key: "it-tech",     label: "IT/Tech" },
-];
 
 function navigate(path) {
   window.history.pushState({}, "", path);
@@ -58,7 +49,6 @@ function getProductImageUrl(product) {
 function getTabFromPath(pathname) {
   if (pathname === "/mypage/orders") return "orders";
   if (pathname === "/mypage/wishlist") return "wishlist";
-  if (pathname === "/mypage/selling") return "selling";
   if (pathname === "/mypage/settlements") return "settlements";
   if (pathname === "/mypage/reviews") return "reviews";
   return "products";
@@ -67,7 +57,6 @@ function getTabFromPath(pathname) {
 function getPathFromTab(tab) {
   if (tab === "orders") return "/mypage/orders";
   if (tab === "wishlist") return "/mypage/wishlist";
-  if (tab === "selling") return "/mypage/selling";
   if (tab === "settlements") return "/mypage/settlements";
   if (tab === "reviews") return "/mypage/reviews";
   return "/mypage";
@@ -105,6 +94,10 @@ function normalizeProduct(product) {
     productStatus: product?.productStatus || product?.orderStatus || "",
     conditionLabel: product?.conditionLabel || product?.conditionCode || "",
     brandName: product?.brandName || "",
+    size: product?.size || "",
+    categoryCode: product?.categoryCode || "",
+    categoryName: product?.categoryName || "",
+    categoryPath: product?.categoryPath || "",
     wishlistCount: product?.wishlistCount ?? 0,
   };
 }
@@ -136,7 +129,7 @@ function normalizeSettlement(settlement) {
   };
 }
 
-function mapProfileToSeller(profile, fallbackMemberId) {
+function mapProfileToSeller(profile, fallbackMemberId, counts = {}) {
   const memberId = profile?.memberId || fallbackMemberId || "";
   return {
     memberId,
@@ -144,7 +137,7 @@ function mapProfileToSeller(profile, fallbackMemberId) {
     nickname: profile?.nickname || profile?.userid || memberId || "회원",
     name: profile?.name || "",
     sellerGrade: profile?.sellerGrade || "BRONZE",
-    completedOrderCount: 0,
+    completedOrderCount: Number(counts?.soldProductCount ?? counts?.completedOrderCount ?? 0),
     averageRating: null,
   };
 }
@@ -159,36 +152,37 @@ const PRICE_PRESETS = [
 
 const PROFILE_TABS = [
   { key: "products",     label: "상품" },
-  { key: "orders",       label: "주문 내역" },
   { key: "wishlist",     label: "위시리스트" },
-  { key: "selling",      label: "내가 판매한 상품" },
+  { key: "orders",       label: "주문 내역" },
   { key: "settlements",  label: "정산 내역" },
   { key: "reviews",      label: "리뷰" },
 ];
 
 /* ── 사이드바 필터 ── */
-function FilterSidebar({ excludeSold, setExcludeSold, selectedCats, setSelectedCats, onPriceApply }) {
-  const [catOpen, setCatOpen] = useState(true);
+function FilterSidebar({ filters, onApplyFilters }) {
+  const [genderOpen, setGenderOpen] = useState(true);
   const [priceOpen, setPriceOpen] = useState(true);
-  const [minInput, setMinInput] = useState("");
-  const [maxInput, setMaxInput] = useState("");
-
-  function toggleCat(key) {
-    setSelectedCats((prev) =>
-      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
-    );
-  }
+  const [draftExcludeSold, setDraftExcludeSold] = useState(filters.excludeSold);
+  const [draftOnlyNew, setDraftOnlyNew] = useState(filters.onlyNew);
+  const [draftGender, setDraftGender] = useState(filters.gender);
+  const [minInput, setMinInput] = useState(filters.priceMin ? String(filters.priceMin) : "");
+  const [maxInput, setMaxInput] = useState(filters.priceMax ? String(filters.priceMax) : "");
 
   function applyPreset(max) {
     setMinInput("0");
     setMaxInput(String(max));
-    onPriceApply(0, max);
   }
 
   function handleApply() {
     const min = minInput === "" ? 0 : Number(minInput.replace(/,/g, ""));
     const max = maxInput === "" ? 0 : Number(maxInput.replace(/,/g, ""));
-    onPriceApply(min, max);
+    onApplyFilters({
+      excludeSold: draftExcludeSold,
+      onlyNew: draftOnlyNew,
+      gender: draftGender,
+      priceMin: min,
+      priceMax: max,
+    });
   }
 
   return (
@@ -197,24 +191,33 @@ function FilterSidebar({ excludeSold, setExcludeSold, selectedCats, setSelectedC
 
       <div className="up-filter-check">
         <label>
-          <input type="checkbox" checked={excludeSold} onChange={(e) => setExcludeSold(e.target.checked)} />
+          <input type="checkbox" checked={draftExcludeSold} onChange={(e) => setDraftExcludeSold(e.target.checked)} />
           품절 상품 제외
+        </label>
+        <label>
+          <input type="checkbox" checked={draftOnlyNew} onChange={(e) => setDraftOnlyNew(e.target.checked)} />
+          새상품만 보기
         </label>
       </div>
 
       <div className="up-filter-group">
-        <button className="up-filter-head" onClick={() => setCatOpen((o) => !o)}>
-          카테고리 <span className={`up-filter-arrow ${catOpen ? "open" : ""}`}>›</span>
+        <button className="up-filter-head" onClick={() => setGenderOpen((o) => !o)}>
+          성별 <span className={`up-filter-arrow ${genderOpen ? "open" : ""}`}>›</span>
         </button>
-        {catOpen && (
+        {genderOpen && (
           <ul className="up-filter-list">
-            {CATEGORIES.map(({ key, label }) => (
-              <li key={key}>
+            {[
+              { value: "all", label: "전체" },
+              { value: "mens", label: "남성" },
+              { value: "womens", label: "여성" },
+            ].map(({ value, label }) => (
+              <li key={value}>
                 <label>
                   <input
-                    type="checkbox"
-                    checked={selectedCats.includes(key)}
-                    onChange={() => toggleCat(key)}
+                    type="radio"
+                    name="up-gender-filter"
+                    checked={draftGender === value}
+                    onChange={() => setDraftGender(value)}
                   />
                   {label}
                 </label>
@@ -268,28 +271,32 @@ function FilterSidebar({ excludeSold, setExcludeSold, selectedCats, setSelectedC
 
 /* ── 상품 탭 ── */
 function ProductsTab({ products, emptyMessage = "조건에 맞는 상품이 없습니다.", showOrderButton = false, orderIdMap = {} }) {
-  const [excludeSold, setExcludeSold] = useState(false);
-  const [selectedCats, setSelectedCats] = useState([]);
-  const [priceMin, setPriceMin] = useState(0);
-  const [priceMax, setPriceMax] = useState(0);
+  const [filters, setFilters] = useState({
+    excludeSold: false,
+    onlyNew: false,
+    gender: "all",
+    priceMin: 0,
+    priceMax: 0,
+  });
   const [visible, setVisible] = useState(12);
 
   const filtered = products.map(normalizeProduct)
-    .filter((p) => !excludeSold || p.productStatus !== "SOLD")
-    .filter((p) => selectedCats.length === 0 || selectedCats.some((k) => p.categoryName?.toLowerCase().includes(k)))
-    .filter((p) => priceMin === 0 || p.price >= priceMin)
-    .filter((p) => priceMax === 0 || p.price <= priceMax);
+    .filter((p) => !filters.excludeSold || p.productStatus !== "SOLD")
+    .filter((p) => !filters.onlyNew || isNewProduct(p))
+    .filter((p) => filters.gender === "all" || matchesGender(p, filters.gender))
+    .filter((p) => filters.priceMin === 0 || p.price >= filters.priceMin)
+    .filter((p) => filters.priceMax === 0 || p.price <= filters.priceMax);
 
   const shown = filtered.slice(0, visible);
 
   return (
     <div className="up-tab-layout">
       <FilterSidebar
-        excludeSold={excludeSold}
-        setExcludeSold={setExcludeSold}
-        selectedCats={selectedCats}
-        setSelectedCats={setSelectedCats}
-        onPriceApply={(min, max) => { setPriceMin(min); setPriceMax(max); setVisible(12); }}
+        filters={filters}
+        onApplyFilters={(nextFilters) => {
+          setFilters(nextFilters);
+          setVisible(12);
+        }}
       />
 
       <div className="up-products-main">
@@ -320,13 +327,14 @@ function ProductsTab({ products, emptyMessage = "조건에 맞는 상품이 없�
                     </button>
                   </div>
                   <div className="up-card-body">
-                    <p className="up-card-brand">{p.brandName}</p>
+                    {(p.brandName || p.size) && (
+                      <div className="up-card-meta">
+                        {p.brandName && <span className="up-card-brand">{p.brandName}</span>}
+                        {p.size && <span className="up-card-size">{p.size}</span>}
+                      </div>
+                    )}
                     <p className="up-card-name">{p.title}</p>
                     <p className="up-card-price">{p.price.toLocaleString()}원</p>
-                    <div className="up-card-meta">
-                      <span className="up-card-cond">{p.conditionLabel}</span>
-                      {p.size && <span className="up-card-size">{p.size}</span>}
-                    </div>
                     {showOrderButton && (
                       <button
                         style={{
@@ -369,6 +377,31 @@ function ProductsTab({ products, emptyMessage = "조건에 맞는 상품이 없�
 
 function isSoldProduct(product) {
   return String(product?.productStatus || "").toUpperCase() === "SOLD";
+}
+
+function isNewProduct(product) {
+  const conditionCode = String(product?.conditionCode || "").toUpperCase();
+  const conditionText = String(product?.conditionLabel || product?.conditionDescription || "");
+  return conditionCode === "S" || conditionText.includes("새");
+}
+
+function matchesGender(product, gender) {
+  const categoryCode = String(product?.categoryCode || "").toUpperCase();
+  const categoryText = [
+    categoryCode,
+    product?.categoryName,
+    product?.categoryPath,
+  ].filter(Boolean).join(" ").toUpperCase();
+
+  if (gender === "mens") {
+    return categoryCode.startsWith("MENS") || categoryText.includes("남성") || categoryText.includes("맨즈");
+  }
+
+  if (gender === "womens") {
+    return categoryCode.startsWith("WOMENS") || categoryText.includes("여성") || categoryText.includes("우먼");
+  }
+
+  return true;
 }
 
 /* ── 주문 내역 탭 ── */
@@ -591,8 +624,9 @@ function UserProfilePage({
       if (hideFooter) {
         try {
           const profile = await fetchMyProfile();
+          const home = await getUserHome(profile?.memberId || memberId);
           if (!ignore) {
-            setSeller(mapProfileToSeller(profile, memberId));
+            setSeller(mapProfileToSeller(home?.profile || profile, memberId, home));
           }
         } catch (error) {
           if (!ignore) {
@@ -604,9 +638,12 @@ function UserProfilePage({
       }
 
       try {
-        const products = await getSellerProducts(memberId);
+        const [home, products] = await Promise.all([
+          getUserHome(memberId),
+          getSellerProducts(memberId),
+        ]);
         if (!ignore) {
-          setSeller({ memberId, nickname: memberId, sellerGrade: "BRONZE", completedOrderCount: 0, averageRating: null });
+          setSeller(mapProfileToSeller(home?.profile, memberId, home));
           setSellerProducts(toList(products).map(normalizeProduct));
         }
       } catch (error) {
@@ -648,7 +685,7 @@ function UserProfilePage({
       try {
         setTabLoading(true);
 
-        if (currentTab === "products" || currentTab === "selling") {
+        if (currentTab === "products") {
           const data = await fetchMyProducts(0, 15);
           if (!ignore) {
             const list = toList(data).map(normalizeProduct);
@@ -815,20 +852,12 @@ function UserProfilePage({
 
         {!tabLoading && currentTab === "products" && (
           <ProductsTab
-            products={(hideFooter ? myProducts : sellerProducts).filter((product) => !isSoldProduct(product))}
+            products={hideFooter ? myProducts : sellerProducts}
             emptyMessage="상품 정보가 없습니다."
           />
         )}
 
         {/* hideFooter(마이페이지) 전용 탭들 */}
-        {!tabLoading && hideFooter && currentTab === "selling" && (
-          <ProductsTab
-            products={myProducts.filter(isSoldProduct)}
-            emptyMessage="판매 완료 상품 정보가 없습니다."
-            showOrderButton
-            orderIdMap={sellOrderMap}
-          />
-        )}
         {!tabLoading && hideFooter && currentTab === "orders" && <OrdersTab orders={orders} />}
         {!tabLoading && hideFooter && currentTab === "wishlist" && (
           <ProductsTab
@@ -837,14 +866,6 @@ function UserProfilePage({
           />
         )}
         {!tabLoading && hideFooter && currentTab === "settlements" && <SettlementTab settlements={settlements} />}
-
-        {/* 공개 프로필(비마이페이지)에서의 "내가 판매한 상품" 탭 */}
-        {!tabLoading && !hideFooter && currentTab === "selling" && (
-          <ProductsTab
-            products={sellerProducts.filter(isSoldProduct)}
-            emptyMessage="판매 완료 상품 정보가 없습니다."
-          />
-        )}
 
         {currentTab === "reviews" && (
           <ReviewsTab
@@ -860,8 +881,7 @@ function UserProfilePage({
         {!hideFooter &&
           currentTab !== "products" &&
           currentTab !== "reviews" &&
-          currentTab !== "settlements" &&
-          currentTab !== "selling" && (
+          currentTab !== "settlements" && (
             <EmptyProfileTab label={PROFILE_TABS.find((tab) => tab.key === currentTab)?.label ?? "선택한 탭"} />
           )}
       </div>

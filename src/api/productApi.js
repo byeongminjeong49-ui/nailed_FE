@@ -82,6 +82,10 @@ export async function incrementViewCount(productId) {
   return request(`/api/products/${encodeURIComponent(productId)}/view`, { method: "POST" });
 }
 
+export async function getUserHome(memberId) {
+  return request(`/api/users/${encodeURIComponent(memberId)}`);
+}
+
 export async function uploadImage(file) {
   const formData = new FormData();
   formData.append("file", file);
