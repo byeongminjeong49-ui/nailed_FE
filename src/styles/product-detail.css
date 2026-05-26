@@ -8,7 +8,7 @@
 }
 
 .pd-inner {
-  max-width: 1160px;
+  max-width: 900px;
   margin: 0 auto;
   padding: 40px 24px 120px;
 }
@@ -29,7 +29,7 @@
 /* ?? 蹂몃Ц 2???덉씠?꾩썐 ?? */
 .pd-body {
   display: grid;
-  grid-template-columns: minmax(0, 500px) 1fr;
+  grid-template-columns: minmax(0, 380px) 1fr;
   gap: 64px;
   align-items: start;
 }
@@ -221,21 +221,21 @@
 .pd-icon-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 14px;
+  gap: 4px;
+  padding: 6px 10px;
   border: 1px solid #e5e5e5;
   background: #fff;
   color: #888;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   border-radius: 8px;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
-.pd-icon-btn svg { width: 22px; height: 22px; }
+.pd-icon-btn svg { width: 16px; height: 16px; }
 .pd-icon-btn:hover { border-color: #999; color: #333; }
 .pd-icon-btn.on { color: #111; border-color: #ccc; background: #fff; }
-.pd-icon-btn span { font-size: 14px; line-height: 1; font-weight: 700; }
+.pd-icon-btn span { font-size: 12px; line-height: 1; font-weight: 700; }
 
 /* 移댄뀒怨좊━ + ?쒓컙 (?ㅻ챸/?댁떆 ?꾨옒) */
 .pd-info-footer {
@@ -263,11 +263,17 @@
   margin-bottom: 8px;
 }
 .pd-brand {
-  font-size: 13px;
-  color: #999;
-  font-weight: 500;
-  letter-spacing: 0.3px;
+  display: inline-block;
+  width: fit-content;
+  font-size: 12px;
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.5px;
   text-transform: uppercase;
+  background: #1a1a1a;
+  border-radius: 20px;
+  padding: 4px 12px;
+  margin: 0 0 12px;
 }
 
 .pd-report-btn {
@@ -287,13 +293,14 @@
 .pd-report-btn:hover { border-color: #e53935; color: #e53935; }
 
 .pd-title {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 600;
   color: #151515;
-  line-height: 1.4;
+  line-height: 1.5;
   margin: 0;
   letter-spacing: -0.3px;
   flex: 1;
+  word-break: keep-all;
 }
 .pd-product-meta {
   font-size: 13px;
@@ -734,7 +741,7 @@
 /* ?? ?좎뒪???? */
 .pd-toast {
   position: fixed;
-  bottom: 36px;
+  top: 24px;
   left: 50%;
   transform: translateX(-50%);
   background: rgba(21,21,21,0.88);
@@ -748,7 +755,7 @@
   white-space: nowrap;
   box-shadow: 0 4px 20px rgba(0,0,0,0.2);
 }
-@keyframes toastFade { from { opacity: 0; transform: translateX(-50%) translateY(8px); } }
+@keyframes toastFade { from { opacity: 0; transform: translateX(-50%) translateY(-8px); } }
 
 /* ?? 濡쒕뵫 / ?먮윭 ?? */
 .pd-loading, .pd-error {
@@ -904,6 +911,61 @@
 .report-done-btn:hover { border-color: #151515; }
 
 /* ?? 諛섏쓳???? */
+/* ── 왼쪽 컬럼: 비슷한 상품 (가로 썸네일 한 줄) ── */
+.pd-related-strip {
+  margin-top: 8px;
+}
+.pd-related-strip-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #151515;
+  margin: 0 0 10px;
+  letter-spacing: -0.3px;
+}
+.pd-related-thumbs {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+}
+.pd-related-thumb {
+  aspect-ratio: 1;
+  border: 0;
+  padding: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: pointer;
+  background: #f0f0f0;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.pd-related-thumb:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+.pd-related-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.pd-related-thumb-noimg { width: 100%; height: 100%; background: #ebebeb; }
+
+.pd-related-more-card {
+  aspect-ratio: 1;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background: #fafafa;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.pd-related-more-card:hover {
+  border-color: #151515;
+  color: #151515;
+  background: #fff;
+}
+
 /* ── 판매자/최근본/추천 섹션 ── */
 .pd-row-section { margin-top: 48px; }
 .pd-five-grid {

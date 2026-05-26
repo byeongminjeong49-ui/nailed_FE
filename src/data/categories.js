@@ -267,11 +267,31 @@ export function findSubcategory(category, subcategoryValue) {
 }
 
 /**
- * URL 값들로 product_groups.code 조회
- * /category/womenswear                        → "WOMENS"
- * /category/womenswear?subcategory=outer      → "WOMENS_OUTER"
- * /category/womenswear?subcategory=hood-zipup → "WOMENS_OUTER_HOODIE_ZIP"
+ * product_groups.code → 카테고리 페이지 URL 변환
+ * "MENS_TOP_TSHIRT" → "/category/menswear?subcategory=t-shirt"
+ * "MENS_TOP"        → "/category/menswear?subcategory=top"
+ * "MENS"            → "/category/menswear"
  */
+export function categoryCodeToUrl(dbCode) {
+  if (!dbCode) return "/";
+  for (const cat of categories) {
+    if (cat.categoryDbCode === dbCode) {
+      return `/category/${cat.value}`;
+    }
+    for (const grp of cat.groups) {
+      if (grp.groupDbCode === dbCode) {
+        return `/category/${cat.value}?subcategory=${grp.value}`;
+      }
+      for (const item of grp.items) {
+        if (item.dbCode === dbCode) {
+          return `/category/${cat.value}?subcategory=${item.value}`;
+        }
+      }
+    }
+  }
+  return "/";
+}
+
 export function resolveDbCode(category, subcategoryValue) {
   if (!category) return null;
 

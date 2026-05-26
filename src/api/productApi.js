@@ -59,8 +59,17 @@ export async function searchProducts({ categoryId, keyword, minPrice, maxPrice, 
   return request(`/api/products/search?${params.toString()}`);
 }
 
+function getOptionalAuthHeaders() {
+  const token = sessionStorage.getItem("accessToken");
+  if (!token) return {};
+  const tokenType = sessionStorage.getItem("tokenType") || "Bearer";
+  return { Authorization: `${tokenType} ${token}` };
+}
+
 export async function getProductDetail(productId) {
-  const data = await request(`/api/products/${encodeURIComponent(productId)}`);
+  const data = await request(`/api/products/${encodeURIComponent(productId)}`, {
+    headers: getOptionalAuthHeaders(),
+  });
   if (data && Array.isArray(data.imageUrls)) {
     data.imageUrls = data.imageUrls.map((url) =>
       url && !url.startsWith("http") ? `${API_BASE_URL}${url}` : url
@@ -148,6 +157,13 @@ export async function getSellerProducts(sellerId, excludeId) {
   const qs = params.toString();
   const data = await request(
     `/api/products/seller/${encodeURIComponent(sellerId)}${qs ? `?${qs}` : ""}`
+  );
+  return fixSummaryImages(data);
+}
+
+export async function getRelatedProducts(productId, size = 5) {
+  const data = await request(
+    `/api/products/${encodeURIComponent(productId)}/related?size=${size}`
   );
   return fixSummaryImages(data);
 }

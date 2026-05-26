@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import Footer from "../components/common/Footer";
 import Header from "../components/common/Header";
 import ReportModal from "../components/ReportModal";
-import { addWishlist, getProductDetail, getRandomProducts, getSellerProducts, incrementViewCount, removeWishlist } from "../api/productApi";
+import { addWishlist, getProductDetail, getRandomProducts, getRelatedProducts, getSellerProducts, incrementViewCount, removeWishlist } from "../api/productApi";
+import { categoryCodeToUrl } from "../data/categories";
 import "../styles/product-detail.css";
 
 const GRADE = { BRONZE: "브론즈", SILVER: "실버", GOLD: "골드", DIAMOND: "다이아" };
@@ -228,6 +229,7 @@ function ProductDetailPage({ productId }) {
   const [sellerProducts, setSellerProducts] = useState([]);
   const [recentProducts, setRecentProducts] = useState([]);
   const [randomProducts, setRandomProducts] = useState([]);
+  const [relatedProducts, setRelatedProducts] = useState([]);
 
   const session = (() => { try { return JSON.parse(sessionStorage.getItem("nailed_session") ?? "null"); } catch { return null; } })();
   const currentMemberId = session?.member_id ?? session?.memberId ?? null;
@@ -244,6 +246,7 @@ function ProductDetailPage({ productId }) {
     setSellerProducts([]);
     setRecentProducts([]);
     setRandomProducts([]);
+    setRelatedProducts([]);
     getProductDetail(productId)
       .then((data) => {
         setProduct(data);
@@ -281,6 +284,12 @@ function ProductDetailPage({ productId }) {
       .catch(() => {});
   }, [productId]);
 
+  useEffect(() => {
+    getRelatedProducts(productId, 5)
+      .then((list) => setRelatedProducts(list || []))
+      .catch(() => {});
+  }, [productId]);
+
   const handleWishlist = async () => {
     if (!currentMemberId) { navigate("/login"); return; }
     setWishLoading(true);
@@ -289,21 +298,18 @@ function ProductDetailPage({ productId }) {
         await removeWishlist(productId);
         setWishlisted(false);
         setProduct((p) => ({ ...p, wishlistCount: p.wishlistCount - 1 }));
-        showToast("찜 목록에서 제거했습니다.");
       } else {
         try {
           await addWishlist(productId);
           setWishlisted(true);
           setProduct((p) => ({ ...p, wishlistCount: p.wishlistCount + 1 }));
-          showToast("찜 목록에 추가했습니다.");
+          showToast("위시리스트에 추가했습니다.");
         } catch (e) {
           if (e.message && e.message.includes("이미 찜한 상품")) {
-            // 상태가 틀어진 경우 — 실제로는 이미 찜 상태이므로 바로 취소
             setWishlisted(true);
             await removeWishlist(productId);
             setWishlisted(false);
             setProduct((p) => ({ ...p, wishlistCount: Math.max(0, p.wishlistCount - 1) }));
-            showToast("찜 목록에서 제거했습니다.");
           } else {
             throw e;
           }
@@ -347,9 +353,36 @@ function ProductDetailPage({ productId }) {
         {/* ── 메인 2단 ── */}
         <div className="pd-body">
 
-          {/* 왼쪽: 갤러리 + 판매자 카드 */}
+          {/* 왼쪽: 갤러리 + 비슷한 상품 + 판매자 카드 */}
           <div className="pd-left-col">
             <Gallery imageUrls={productImageUrls} title={product.title} brandName={product.brandName} isSold={product.productStatus === "SOLD"} />
+
+            {/* 비슷한 상품 (같은 카테고리) — 갤러리와 판매자 카드 사이 */}
+            {relatedProducts.length > 0 && (
+              <div className="pd-related-strip">
+                <h3 className="pd-related-strip-title">비슷한 상품</h3>
+                <div className="pd-related-thumbs">
+                  {relatedProducts.slice(0, 5).map((p) => (
+                    <button
+                      key={p.productId}
+                      className="pd-related-thumb"
+                      onClick={() => navigate(`/product/${p.productId}`)}
+                      aria-label={p.title}
+                    >
+                      {p.thumbnailUrl
+                        ? <img src={p.thumbnailUrl} alt={p.title} />
+                        : <div className="pd-related-thumb-noimg" />}
+                    </button>
+                  ))}
+                  <button
+                    className="pd-related-more-card"
+                    onClick={() => navigate(categoryCodeToUrl(product.categoryCode))}
+                  >
+                    더보기
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="pd-seller-card">
               <div className="pd-seller-avatar">{product.seller.nickname.charAt(0)}</div>
@@ -371,6 +404,8 @@ function ProductDetailPage({ productId }) {
 
           {/* 오른쪽: 제목/가격/메타/설명/해시태그/CTA */}
           <div className="pd-info">
+
+            {product.brandName && <p className="pd-brand">{product.brandName}</p>}
 
             {/* 제목 + 액션 (찜/신고) */}
             <div className="pd-info-top">
@@ -424,9 +459,9 @@ function ProductDetailPage({ productId }) {
             {/* 카테고리 링크 + 시간/조회수 */}
             <div className="pd-info-footer">
               <a
-                href={`/category/${product.categoryName}`}
+                href={categoryCodeToUrl(product.categoryCode)}
                 className="pd-cat-link"
-                onClick={(e) => { e.preventDefault(); navigate(`/category/${product.categoryName}`); }}
+                onClick={(e) => { e.preventDefault(); navigate(categoryCodeToUrl(product.categoryCode)); }}
               >
                 {product.categoryPath || product.categoryName}
               </a>
