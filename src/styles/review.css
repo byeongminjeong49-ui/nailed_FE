@@ -513,6 +513,148 @@
 }
 .up-load-more:hover { border-color: #151515; }
 
+/* 주문 내역 */
+.up-buy-order-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(180px, 1fr));
+  gap: 16px;
+  max-width: 1120px;
+}
+
+.up-buy-order-card {
+  min-width: 0;
+}
+
+.up-buy-order-card .up-order-img-wrap {
+  aspect-ratio: 3 / 4;
+  margin-bottom: 10px;
+}
+
+.up-order-info,
+.up-order-right {
+  min-width: 0;
+}
+
+.up-order-title {
+  margin: 0 0 8px;
+  color: #151515;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.up-order-meta {
+  margin: 0 0 6px;
+  color: #555;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.up-order-price {
+  margin: 8px 0 6px;
+  color: #151515;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.up-order-status {
+  margin: 0 0 10px;
+  color: #168f88;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.up-order-detail-btn {
+  width: 100%;
+  min-height: 36px;
+  border: 0;
+  border-radius: 6px;
+  background: #168f88;
+  color: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.up-order-detail-btn:hover {
+  background: #0f766e;
+}
+
+/* 정산 내역 */
+.up-settlement-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  gap: 18px;
+  max-width: 920px;
+}
+
+.up-settlement-card {
+  min-width: 0;
+}
+
+.up-settlement-img-wrap {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #f7f7f7;
+}
+
+.up-settlement-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.up-settlement-no-img {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: #aaa;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.up-settlement-body {
+  padding-top: 10px;
+}
+
+.up-settlement-title {
+  margin: 0 0 5px;
+  color: #151515;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.up-settlement-price {
+  margin: 0 0 8px;
+  color: #151515;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.up-settlement-meta {
+  margin: 0 0 5px;
+  color: #555;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.up-settlement-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 /* ── 리뷰 탭 ── */
 .up-reviews-wrap { max-width: 720px; }
 
@@ -562,8 +704,12 @@
 @media (max-width: 900px) {
   .up-tab-layout { flex-direction: column; }
   .up-sidebar { width: 100%; display: flex; gap: 24px; flex-wrap: wrap; }
-  .up-product-grid { grid-template-columns: repeat(3, 1fr); }
+  .up-product-grid,
+  .up-buy-order-list,
+  .up-settlement-grid { grid-template-columns: repeat(3, 1fr); }
 }
 @media (max-width: 560px) {
-  .up-product-grid { grid-template-columns: repeat(2, 1fr); }
+  .up-product-grid,
+  .up-buy-order-list,
+  .up-settlement-grid { grid-template-columns: repeat(2, 1fr); }
 }

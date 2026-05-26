@@ -23,7 +23,7 @@ function AuthLayout({ children, onNavigate }) {
       {children}
       <footer className="auth-footer">
         <strong>Nailed</strong>
-        <span>mock 기반 회원 화면입니다. 외부 인증 API는 사용하지 않습니다.</span>
+        <span>중고 의류 &amp; IT기기 거래 플랫폼</span>
       </footer>
     </div>
   );

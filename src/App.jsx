@@ -94,16 +94,26 @@ function moveTo(path) {
   window.dispatchEvent(new PopStateEvent("popstate"));
 }
 
-function requireLogin() {
-  window.alert("로그인이 필요한 페이지입니다.");
-  moveTo("/login");
-  return null;
-}
-
 function requireAdmin() {
   window.alert("관리자 권한이 필요한 페이지입니다.");
   moveTo("/");
   return null;
+}
+
+function LoginRequiredRedirect() {
+  useEffect(() => {
+    window.alert("로그인이 필요한 페이지입니다.");
+    moveTo("/login");
+  }, []);
+
+  return (
+    <LoginPage
+      onNavigate={(nextPath) => {
+        window.history.pushState({}, "", nextPath);
+        window.dispatchEvent(new PopStateEvent("popstate"));
+      }}
+    />
+  );
 }
 
 function getProductId(pathname) {
@@ -176,7 +186,7 @@ function App() {
 
   // 1. 관리자 전용 라우트 우선 처리
   if (activePage) {
-    if (!hasAccessToken()) return requireLogin();
+    if (!hasAccessToken()) return <LoginRequiredRedirect />;
     if (getCurrentRole() !== "ADMIN") return requireAdmin();
 
     return (
@@ -191,16 +201,16 @@ function App() {
   if (activeAuthPage === "signup") return <SignupPage onNavigate={handleNavigate} />;
   if (activeAuthPage === "find-password") return <FindPasswordPage onNavigate={handleNavigate} />;
   if (isMyPageRoute) {
-    if (!hasAccessToken()) return requireLogin();
+    if (!hasAccessToken()) return <LoginRequiredRedirect />;
     return <MyPage onNavigate={handleNavigate} pathname={path} />;
   }
   if (activeGuidePage) return <ServiceGuidePage type={activeGuidePage} />;
   if (path === "/sell") {
-    if (!hasAccessToken()) return requireLogin();
+    if (!hasAccessToken()) return <LoginRequiredRedirect />;
     return <SellPage />;
   }
   if (activeReadyPage) {
-    if (!hasAccessToken()) return requireLogin();
+    if (!hasAccessToken()) return <LoginRequiredRedirect />;
     return <ReadyPage title={activeReadyPage} />;
   }
 
@@ -212,14 +222,14 @@ function App() {
   // 4. 회원 프로필 및 리뷰 작성 허브
   if (userId) return <UserProfilePage memberId={userId} />;
   if (reviewOrderId) {
-    if (!hasAccessToken()) return requireLogin();
+    if (!hasAccessToken()) return <LoginRequiredRedirect />;
     const params = new URLSearchParams(location.search);
     return <ReviewWritePage orderId={reviewOrderId} sellerId={params.get("sellerId")} />;
   }
 
   // 5. 주문서 / 결제 / 주문상세 내역 통합 처리 분기점
   if (activeOrderPage === "form") {
-    if (!hasAccessToken()) return requireLogin();
+    if (!hasAccessToken()) return <LoginRequiredRedirect />;
 
     return (
       <div className="main-wrapper">
@@ -231,7 +241,7 @@ function App() {
   }
 
   if (activeOrderPage === "payment") {
-    if (!hasAccessToken()) return requireLogin();
+    if (!hasAccessToken()) return <LoginRequiredRedirect />;
 
     return (
       <div className="main-wrapper">
@@ -243,7 +253,7 @@ function App() {
   }
 
   if (orderId) {
-    if (!hasAccessToken()) return requireLogin();
+    if (!hasAccessToken()) return <LoginRequiredRedirect />;
 
     return (
       <div className="main-wrapper">
