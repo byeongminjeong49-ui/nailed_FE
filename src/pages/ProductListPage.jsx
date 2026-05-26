@@ -15,6 +15,7 @@ function toCardShape(p) {
     imageUrl: p.thumbnailUrl || null,
     brandName: p.brandName || null,
     size: p.size || null,
+    wishlistCount: p.wishlistCount ?? 0,
   };
 }
 

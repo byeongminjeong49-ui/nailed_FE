@@ -207,7 +207,8 @@ function App() {
   if (activeGuidePage) return <ServiceGuidePage type={activeGuidePage} />;
   if (path === "/sell") {
     if (!hasAccessToken()) return <LoginRequiredRedirect />;
-    return <SellPage />;
+    const editProductId = new URLSearchParams(location.search).get("edit");
+    return <SellPage editProductId={editProductId} />;
   }
   if (activeReadyPage) {
     if (!hasAccessToken()) return <LoginRequiredRedirect />;

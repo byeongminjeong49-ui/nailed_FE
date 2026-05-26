@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { registerProduct, uploadImage, getBrands } from "../api/productApi";
+import { registerProduct, uploadImage, getBrands, getProductDetail, updateProduct, deleteProduct, changeProductStatus } from "../api/productApi";
 import "../styles/sell.css";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
@@ -184,7 +184,23 @@ function navigate(path) {
   window.dispatchEvent(new PopStateEvent("popstate"));
 }
 
-export default function SellPage() {
+function findCategoryByPath(path) {
+  const parts = (path || "").split(" > ").map((s) => s.trim());
+  for (const top of CATEGORY_TREE) {
+    if (top.label !== parts[0]) continue;
+    for (const group of top.groups) {
+      if (group.label !== parts[1]) continue;
+      for (const item of group.items) {
+        if (item.label === parts[2]) return { topCode: top.code, groupCode: group.code, itemCode: item.code };
+      }
+      return { topCode: top.code, groupCode: group.code, itemCode: "" };
+    }
+    return { topCode: top.code, groupCode: "", itemCode: "" };
+  }
+  return { topCode: "MENS", groupCode: "", itemCode: "" };
+}
+
+export default function SellPage({ editProductId }) {
   const [images, setImages]               = useState([]);
   const [title, setTitle]                 = useState("");
   const [description, setDescription]     = useState("");
@@ -196,27 +212,64 @@ export default function SellPage() {
   const [brandId, setBrandId]             = useState("");
   const [price, setPrice]                 = useState("");
   const [hashtags, setHashtags]           = useState("");
+  const [productStatus, setProductStatus] = useState("ON_SALE");
   const [brands, setBrands]               = useState([]);
   const [codeToGroupId, setCodeToGroupId] = useState({});
   const [submitting, setSubmitting]       = useState(false);
   const [errors, setErrors]               = useState({});
+  const isEditMode                        = Boolean(editProductId);
 
   const fileInputRef = useRef();
   const dragItem     = useRef(null);
   const dragOver     = useRef(null);
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/products/categories`)
+    const catPromise = fetch(`${API_BASE}/api/products/categories`)
       .then((r) => r.json())
       .then((res) => {
         const cats = Array.isArray(res.data) ? res.data : [];
         const map = {};
         cats.forEach((c) => { map[c.code] = c.groupId; });
         setCodeToGroupId(map);
+        return cats;
       })
-      .catch(() => {});
-    getBrands().then(setBrands).catch(() => {});
-  }, []);
+      .catch(() => []);
+
+    const brandPromise = getBrands().then((list) => { setBrands(list); return list; }).catch(() => []);
+
+    if (isEditMode) {
+      Promise.all([catPromise, brandPromise, getProductDetail(editProductId)])
+        .then(([, brandList, product]) => {
+          setTitle(product.title);
+          setDescription(product.description);
+          setPrice(String(product.price));
+          setCondition(product.conditionCode);
+          setSelectedSize(product.size || "");
+          setHashtags(product.hashtags || "");
+          setProductStatus(product.productStatus || "ON_SALE");
+
+          const { topCode: tc, groupCode: gc, itemCode: ic } = findCategoryByPath(product.categoryPath);
+          setTopCode(tc);
+          setGroupCode(gc);
+          setItemCode(ic);
+
+          if (product.brandName) {
+            const matched = brandList.find((b) => b.name === product.brandName);
+            if (matched) setBrandId(String(matched.groupId));
+          }
+
+          if (Array.isArray(product.imageUrls) && product.imageUrls.length > 0) {
+            setImages(product.imageUrls.map((url) => ({
+              id: crypto.randomUUID(),
+              preview: url,
+              url,
+              uploading: false,
+            })));
+          }
+        })
+        .catch(() => {});
+    }
+  }, [editProductId]);
 
   const topCategory  = CATEGORY_TREE.find((c) => c.code === topCode);
   const groups       = topCategory?.groups ?? [];
@@ -249,6 +302,9 @@ export default function SellPage() {
     const filesToAdd = Array.from(files).slice(0, remaining);
     if (!filesToAdd.length) return;
 
+    // 같은 파일 재선택 시에도 onChange 발동되도록 인풋 리셋
+    if (fileInputRef.current) fileInputRef.current.value = "";
+
     const newImages = filesToAdd.map((f) => ({
       id: crypto.randomUUID(),
       preview: URL.createObjectURL(f),
@@ -279,35 +335,52 @@ export default function SellPage() {
 
   const handleSubmit = async () => {
     const errs = {};
-    if (images.length === 0)              errs.images      = "이미지를 최소 1장 등록해주세요.";
-    else if (images.some((i) => i.uploading)) errs.images  = "이미지 업로드 중입니다. 잠시 기다려주세요.";
-    if (!title.trim())                    errs.title       = "제목을 입력해주세요.";
-    if (!description.trim())              errs.description = "설명을 입력해주세요.";
-    if (!itemCode)                        errs.category    = "서브 카테고리를 선택해주세요.";
-    if (!condition)                       errs.condition   = "상태를 선택해주세요.";
-    if (!price || Number(price) < 1000)   errs.price       = "최소 1,000원 이상 입력해주세요.";
+    if (images.length === 0)                  errs.images      = "이미지를 최소 1장 등록해주세요.";
+    else if (images.some((i) => i.uploading)) errs.images      = "이미지 업로드 중입니다. 잠시 기다려주세요.";
+    if (!title.trim())                        errs.title       = "제목을 입력해주세요.";
+    if (!description.trim())                  errs.description = "설명을 입력해주세요.";
+    if (!itemCode)                            errs.category    = "서브 카테고리를 선택해주세요.";
+    if (!condition)                           errs.condition   = "상태를 선택해주세요.";
+    if (!price || Number(price) < 1000)       errs.price       = "최소 1,000원 이상 입력해주세요.";
 
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setErrors({});
     setSubmitting(true);
 
+    const body = {
+      title:         title.trim(),
+      categoryId:    codeToGroupId[itemCode],
+      brandId:       brandId ? Number(brandId) : null,
+      price:         Number(price),
+      description:   description.trim(),
+      conditionCode: condition,
+      size:          selectedSize || null,
+      hashtags:      hashtags.trim() || null,
+      imageUrls:     images.map((i) => i.url),
+    };
+
     try {
-      await registerProduct({
-        title:         title.trim(),
-        categoryId:    codeToGroupId[itemCode],
-        brandId:       brandId ? Number(brandId) : null,
-        price:         Number(price),
-        description:   description.trim(),
-        conditionCode: condition,
-        size:          selectedSize || null,
-        hashtags:      hashtags.trim() || null,
-        imageUrls:     images.map((i) => i.url),
-      });
+      if (isEditMode) {
+        await updateProduct(editProductId, body);
+        await changeProductStatus(editProductId, productStatus);
+      } else {
+        await registerProduct(body);
+      }
       navigate("/mypage");
     } catch (e) {
-      setErrors({ submit: e.message || "등록에 실패했습니다." });
+      setErrors({ submit: e.message || (isEditMode ? "수정에 실패했습니다." : "등록에 실패했습니다.") });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm("상품을 삭제하시겠습니까? 삭제된 상품은 복구할 수 없습니다.")) return;
+    try {
+      await deleteProduct(editProductId);
+      navigate("/mypage");
+    } catch (e) {
+      setErrors({ submit: e.message || "삭제에 실패했습니다." });
     }
   };
 
@@ -317,12 +390,15 @@ export default function SellPage() {
       {/* ── 상단 헤더 ── */}
       <div className="sell-header">
         <span className="sell-header-title">
-          상품 등록 <span className="sell-beta">Beta</span>
+          {isEditMode ? "상품 수정" : <>상품 등록 <span className="sell-beta">Beta</span></>}
         </span>
         <div className="sell-header-actions">
           <button className="sell-cancel-btn" onClick={() => window.history.back()}>취소</button>
+          {isEditMode && (
+            <button className="sell-delete-btn" onClick={handleDelete}>상품 삭제</button>
+          )}
           <button className="sell-upload-btn" onClick={handleSubmit} disabled={submitting}>
-            {submitting ? "등록 중..." : "업로드"}
+            {submitting ? (isEditMode ? "수정 중..." : "등록 중...") : (isEditMode ? "수정 완료" : "업로드")}
           </button>
         </div>
       </div>
@@ -503,8 +579,18 @@ export default function SellPage() {
             </select>
           </div>
 
-          {/* 배송비 */}
+          {/* 판매가 + 기본 배송비 2열 */}
           <div className="sell-field sell-field-row">
+            <div className="sell-field-col">
+              <div className="sell-field-label">판매가</div>
+              <div className="sell-price-wrap">
+                <input type="text" className={`sell-input${errors.price ? " error" : ""}`}
+                  placeholder="0" value={price}
+                  onChange={(e) => setPrice(e.target.value)} />
+                <span className="sell-unit">원</span>
+              </div>
+              {errors.price && <p className="sell-error">{errors.price}</p>}
+            </div>
             <div className="sell-field-col">
               <div className="sell-field-label">기본 배송비</div>
               <div className="sell-price-wrap">
@@ -512,26 +598,26 @@ export default function SellPage() {
                 <span className="sell-unit">원</span>
               </div>
             </div>
-            <div className="sell-field-col">
-              <div className="sell-field-label">도서산간 배송비</div>
-              <div className="sell-price-wrap">
-                <input type="text" className="sell-input" defaultValue={0} />
-                <span className="sell-unit">원</span>
-              </div>
-            </div>
           </div>
 
-          {/* 판매가 */}
-          <div className="sell-field">
-            <div className="sell-field-label">판매가</div>
-            <div className="sell-price-wrap">
-              <input type="text" className={`sell-input${errors.price ? " error" : ""}`}
-                placeholder="0" value={price}
-                onChange={(e) => setPrice(e.target.value)} />
-              <span className="sell-unit">원</span>
+          {/* 판매 상태 — 수정 모드에서만 표시 */}
+          {isEditMode && (
+            <div className="sell-field">
+              <div className="sell-field-label">판매 상태</div>
+              <div className="sell-status-group">
+                <button type="button"
+                  className={`sell-status-btn${productStatus === "ON_SALE" ? " active" : ""}`}
+                  onClick={() => setProductStatus("ON_SALE")}>
+                  판매중
+                </button>
+                <button type="button"
+                  className={`sell-status-btn${productStatus === "SOLD" ? " active" : ""}`}
+                  onClick={() => setProductStatus("SOLD")}>
+                  판매완료
+                </button>
+              </div>
             </div>
-            {errors.price && <p className="sell-error">{errors.price}</p>}
-          </div>
+          )}
 
           {/* 해시태그 */}
           <div className="sell-field">

@@ -35,7 +35,7 @@ function getProductImageUrl(product) {
   return getProductImageUrls(product)[0] ?? "";
 }
 
-function Gallery({ imageUrls, title, brandName }) {
+function Gallery({ imageUrls, title, brandName, isSold }) {
   const [cur, setCur] = useState(0);
   const hasImages = imageUrls && imageUrls.length > 0;
   if (!hasImages) return null;
@@ -48,6 +48,11 @@ function Gallery({ imageUrls, title, brandName }) {
     <div className="pd-gallery">
       <div className="pd-gallery-main">
         <img src={imageUrls[cur]} alt={`${title} ${cur + 1}`} />
+        {isSold && (
+          <div className="pd-gallery-sold-overlay">
+            <span>SOLD</span>
+          </div>
+        )}
         {hasImages && count > 1 && (
           <>
             <button className="pd-gallery-arrow pd-gallery-arrow-l" onClick={prev} aria-label="이전">‹</button>
@@ -165,12 +170,19 @@ function getRecentlyViewedIds(excludeId) {
 function ProductMiniCard({ product }) {
   const imgUrl = product.thumbnailUrl || getProductImageUrl(product);
   const brand = product.brandName || null;
+  const wishlistCount = product.wishlistCount ?? 0;
   return (
     <article className="product-card" onClick={() => navigate(`/product/${product.productId}`)}>
       <div className="product-visual">
         {imgUrl
           ? <img className="product-image" src={imgUrl} alt={product.title} />
           : <div className="product-no-img" />}
+        <div className="product-heart-btn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+          <span className="product-heart-count">{wishlistCount}</span>
+        </div>
       </div>
       <div className="product-info">
         {brand && (
@@ -228,13 +240,14 @@ function ProductDetailPage({ productId }) {
 
   useEffect(() => {
     setLoading(true);
+    setWishlisted(false);
     setSellerProducts([]);
     setRecentProducts([]);
     setRandomProducts([]);
     getProductDetail(productId)
       .then((data) => {
         setProduct(data);
-        setWishlisted(data.isWishlisted);
+        setWishlisted(!!data.isWishlisted);
         saveRecentlyViewed(productId);
       })
       .catch((e) => setError(e.message))
@@ -278,10 +291,23 @@ function ProductDetailPage({ productId }) {
         setProduct((p) => ({ ...p, wishlistCount: p.wishlistCount - 1 }));
         showToast("찜 목록에서 제거했습니다.");
       } else {
-        await addWishlist(productId);
-        setWishlisted(true);
-        setProduct((p) => ({ ...p, wishlistCount: p.wishlistCount + 1 }));
-        showToast("찜 목록에 추가했습니다.");
+        try {
+          await addWishlist(productId);
+          setWishlisted(true);
+          setProduct((p) => ({ ...p, wishlistCount: p.wishlistCount + 1 }));
+          showToast("찜 목록에 추가했습니다.");
+        } catch (e) {
+          if (e.message && e.message.includes("이미 찜한 상품")) {
+            // 상태가 틀어진 경우 — 실제로는 이미 찜 상태이므로 바로 취소
+            setWishlisted(true);
+            await removeWishlist(productId);
+            setWishlisted(false);
+            setProduct((p) => ({ ...p, wishlistCount: Math.max(0, p.wishlistCount - 1) }));
+            showToast("찜 목록에서 제거했습니다.");
+          } else {
+            throw e;
+          }
+        }
       }
     } catch (e) { showToast(e.message); }
     finally { setWishLoading(false); }
@@ -323,7 +349,7 @@ function ProductDetailPage({ productId }) {
 
           {/* 왼쪽: 갤러리 + 판매자 카드 */}
           <div className="pd-left-col">
-            <Gallery imageUrls={productImageUrls} title={product.title} brandName={product.brandName} />
+            <Gallery imageUrls={productImageUrls} title={product.title} brandName={product.brandName} isSold={product.productStatus === "SOLD"} />
 
             <div className="pd-seller-card">
               <div className="pd-seller-avatar">{product.seller.nickname.charAt(0)}</div>
@@ -414,7 +440,7 @@ function ProductDetailPage({ productId }) {
             {/* 하단 CTA */}
 <div className="pd-actions">
   {isMine ? (
-    <button className="pd-edit-btn" onClick={() => showToast("상품 수정 기능은 준비 중입니다.")}>
+    <button className="pd-edit-btn" onClick={() => navigate(`/sell?edit=${product.productId}`)}>
       수정하기
     </button>
   ) : (

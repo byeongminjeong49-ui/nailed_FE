@@ -220,7 +220,7 @@ export async function authRequest(path, options = {}, retried = false) {
     credentials: "include",
     ...options,
     headers: {
-      ...(options.body ? { "Content-Type": "application/json" } : {}),
+      ...(options.body && !(options.body instanceof FormData) ? { "Content-Type": "application/json" } : {}),
       Authorization: `${getTokenType()} ${token}`,
       ...options.headers,
     },
