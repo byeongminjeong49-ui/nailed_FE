@@ -1,43 +1,50 @@
-// TODO: IA 문서 기준 API 확정 후 배너 mock data를 실제 API 응답으로 교체
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
+function toBannerImageUrl(path) {
+  if (!path) return "";
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  return `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
 export const banners = [
   {
-    id: 1,
-    brand: "STONE ISLAND",
-    title: "24FW COLLECTION",
-    description: "아이코닉한 디자인과 실용적인 소재",
-    cta: "컬렉션 보러가기",
-    link: "/",
+    id: "menswear",
+    imageUrl: toBannerImageUrl("/images/banners/banner_menswear.png"),
+    link: "/category/menswear",
+    label: "menswear",
+    title: "Menswear",
+    description: "가볍고 시원한 여름 데일리 스타일",
   },
   {
-    id: 2,
-    brand: "NAILED PICK",
-    title: "PREMIUM SECONDHAND",
-    description: "지금 주목받는 프리미엄 중고 상품",
-    cta: "추천 상품 보기",
-    link: "/",
+    id: "womenswear",
+    imageUrl: toBannerImageUrl("/images/banners/banner_womenswear.png"),
+    link: "/category/womenswear",
+    label: "womenswear",
+    title: "Womenswear",
+    description: "부드럽게 빛나는 여름의 실루엣",
   },
   {
-    id: 3,
-    brand: "VINTAGE SHOP",
-    title: "RARE ITEM MARKET",
-    description: "개성 있는 빈티지 아이템을 만나보세요",
-    cta: "빈티지 둘러보기",
-    link: "/",
+    id: "luxury",
+    imageUrl: toBannerImageUrl("/images/banners/banner_luxury.png"),
+    link: "/category/luxury",
+    label: "luxury",
+    title: "Luxury",
+    description: "취향을 완성하는 단 하나의 포인트",
   },
   {
-    id: 4,
-    brand: "LUXURY DEAL",
-    title: "AUTHENTIC VALUE",
-    description: "가치를 오래 간직하는 럭셔리 거래",
-    cta: "럭셔리 보기",
-    link: "/",
+    id: "kawaii",
+    imageUrl: toBannerImageUrl("/images/banners/banner_keyring.png"),
+    link: "/category/accessory?subcategory=keyring",
+    label: "kawaii",
+    title: "Kawaii",
+    description: "귀여움이 세상을 지배한다",
   },
   {
-    id: 5,
-    brand: "TECH & LIFE",
-    title: "SMART LIFESTYLE",
-    description: "일상에 필요한 라이프 아이템 추천",
-    cta: "라이프 보기",
-    link: "/",
+    id: "itTech",
+    imageUrl: toBannerImageUrl("/images/banners/banner_it_tech.png"),
+    link: "/category/tech",
+    label: "itTech",
+    title: "IT/Tech",
+    description: "필요한 순간 더 빛나는 스마트한 선택",
   },
 ];

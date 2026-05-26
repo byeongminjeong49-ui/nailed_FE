@@ -14,8 +14,16 @@
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+}
+
 body {
   min-width: 320px;
   margin: 0;
   background: #fff;
+  overflow-x: hidden;
 }

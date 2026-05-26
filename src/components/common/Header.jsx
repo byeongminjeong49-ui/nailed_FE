@@ -163,8 +163,8 @@ function Header() {
   return (
     <header className="site-header">
       <div className="header-main">
-        <a className="brand" href="/" aria-label="Nailed 홈">
-          Nailed
+        <a className="header-logo" href="/" aria-label="Nailed 홈">
+          <img src="/images/logo/nailed-logo.png" alt="Nailed" />
         </a>
         <form className="search-bar" onSubmit={handleSearchSubmit}>
           <label className="sr-only" htmlFor="home-search">

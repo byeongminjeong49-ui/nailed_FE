@@ -5,7 +5,7 @@ const footerGroups = [
   },
   {
     title: "마이페이지",
-    links: ["구매/판매 내역", "취소/환불 내역", "최근 본 상품", "위시리스트"],
+    links: ["주문내역", "위시리스트", "판매한 상품", "정산내역"],
   },
   {
     title: "고객센터",
@@ -22,6 +22,10 @@ const footerLinkMap = {
   "자주 묻는 질문": "/customer-center?tab=faq",
   "1:1 문의": "/customer-center?tab=inquiry",
   서비스: "/customer-center?tab=service",
+  주문내역: "/mypage/orders",
+  위시리스트: "/mypage/wishlist",
+  "판매한 상품": "/mypage/selling",
+  정산내역: "/mypage/settlements",
 };
 
 const socialIcons = {
