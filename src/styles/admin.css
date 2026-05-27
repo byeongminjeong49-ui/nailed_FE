@@ -867,6 +867,185 @@
   font-weight: 500;
 }
 
+.admin-inquiry-filter {
+  padding: 0 24px 24px;
+}
+
+.admin-inquiry-message {
+  margin: 18px 0 0;
+  padding: 14px 16px;
+  border: 1px solid #d8efe7;
+  border-radius: 8px;
+  background: #f2fffb;
+  color: #087f6d;
+  font-weight: 800;
+}
+
+.admin-inquiry-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.9fr);
+  gap: 20px;
+}
+
+.admin-inquiry-list-card {
+  min-width: 0;
+}
+
+.admin-inquiry-table tbody tr {
+  cursor: pointer;
+}
+
+.admin-inquiry-table tbody tr:hover,
+.admin-inquiry-table tbody tr.is-selected {
+  background: #f4fbf8;
+}
+
+.admin-inquiry-title-cell {
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-inquiry-status {
+  display: inline-grid;
+  min-width: 76px;
+  height: 30px;
+  place-items: center;
+  padding: 0 10px;
+  border-radius: 6px;
+  background: #fff0d9;
+  color: #f08a00;
+  font-weight: 800;
+}
+
+.admin-inquiry-status.answered {
+  background: #d9f8ee;
+  color: #07946c;
+}
+
+.admin-inquiry-empty {
+  padding: 42px 20px;
+  color: #777d84;
+  text-align: center;
+}
+
+.admin-inquiry-detail {
+  align-self: start;
+  padding: 24px;
+}
+
+.admin-inquiry-detail-head {
+  display: grid;
+  gap: 10px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #e7e7e7;
+}
+
+.admin-inquiry-detail-head > span:first-child {
+  color: #08a978;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.admin-inquiry-detail-head h2 {
+  margin: 0;
+  color: #111;
+  font-size: 24px;
+  line-height: 1.35;
+}
+
+.admin-inquiry-detail-head .admin-inquiry-status {
+  justify-self: start;
+}
+
+.admin-inquiry-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 18px 0;
+}
+
+.admin-inquiry-meta div {
+  padding: 14px;
+  border-radius: 8px;
+  background: #f8f8f8;
+}
+
+.admin-inquiry-meta dt {
+  margin-bottom: 8px;
+  color: #777d84;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.admin-inquiry-meta dd {
+  margin: 0;
+  color: #111;
+  font-size: 13px;
+}
+
+.admin-inquiry-section {
+  padding-top: 18px;
+}
+
+.admin-inquiry-section + .admin-inquiry-section {
+  margin-top: 18px;
+  border-top: 1px solid #e7e7e7;
+}
+
+.admin-inquiry-section h3 {
+  margin: 0 0 12px;
+  color: #111;
+  font-size: 16px;
+}
+
+.admin-inquiry-section p {
+  margin: 0;
+  color: #333;
+  font-size: 14px;
+  line-height: 1.75;
+  white-space: pre-wrap;
+}
+
+.admin-inquiry-answer-form {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-inquiry-answer-form textarea {
+  width: 100%;
+  border: 1px solid #dfe2e5;
+  border-radius: 8px;
+  padding: 14px;
+  color: #202226;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.admin-inquiry-answer-form textarea:focus {
+  border-color: #10b981;
+  outline: 0;
+}
+
+.admin-inquiry-answer-form button {
+  justify-self: end;
+  min-width: 116px;
+  height: 42px;
+  border: 0;
+  border-radius: 6px;
+  background: #10b981;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.admin-inquiry-answer-form button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
 @media (max-width: 1280px) {
   .admin-shell {
     grid-template-columns: 230px minmax(0, 1fr);
@@ -884,7 +1063,8 @@
   }
 
   .admin-content-grid,
-  .dashboard-lower-grid {
+  .dashboard-lower-grid,
+  .admin-inquiry-grid {
     grid-template-columns: 1fr;
   }
 
@@ -936,7 +1116,8 @@
   .admin-stat-grid,
   .dashboard-upper-grid,
   .admin-side-column,
-  .admin-status-bar {
+  .admin-status-bar,
+  .admin-inquiry-meta {
     grid-template-columns: 1fr;
   }
 

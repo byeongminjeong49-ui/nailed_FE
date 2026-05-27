@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import Footer from "../components/common/Footer";
 import Header from "../components/common/Header";
+import { submitInquiry } from "../api/inquiryApi";
 import {
   customerTabs,
   faqCategories,
@@ -8,6 +9,21 @@ import {
   noticeItems,
   serviceCards,
 } from "../data/customerCenterMock";
+
+const initialInquiryForm = {
+  category: "",
+  title: "",
+  content: "",
+};
+
+const inquiryCategoryOptions = [
+  { value: "ORDER", label: "주문 문의" },
+  { value: "PAYMENT", label: "결제 문의" },
+  { value: "PRODUCT", label: "상품 문의" },
+  { value: "DELIVERY", label: "배송 문의" },
+  { value: "ACCOUNT", label: "회원/계정 문의" },
+  { value: "ETC", label: "기타 문의" },
+];
 
 const tabIcons = {
   notice: "!",
@@ -25,7 +41,9 @@ function CustomerCenterPage() {
   const [activeTab, setActiveTab] = useState(getInitialTab);
   const [activeFaqCategory, setActiveFaqCategory] = useState("전체");
   const [openFaqIndex, setOpenFaqIndex] = useState(0);
+  const [inquiryForm, setInquiryForm] = useState(initialInquiryForm);
   const [message, setMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const filteredFaqItems = useMemo(() => {
     if (activeFaqCategory === "전체") {
@@ -41,9 +59,33 @@ function CustomerCenterPage() {
     window.history.pushState({}, "", `/customer-center?tab=${tabId}`);
   };
 
-  const handleInquirySubmit = (event) => {
+  const handleInquiryChange = (event) => {
+    const { name, value } = event.target;
+    setInquiryForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+    setMessage("");
+  };
+
+  const handleInquirySubmit = async (event) => {
     event.preventDefault();
-    setMessage("문의가 접수되었습니다.");
+    setIsSubmitting(true);
+    setMessage("");
+
+    try {
+      await submitInquiry({
+        category: inquiryForm.category,
+        title: inquiryForm.title.trim(),
+        content: inquiryForm.content.trim(),
+      });
+      setInquiryForm(initialInquiryForm);
+      setMessage("문의가 접수되었습니다.");
+    } catch (error) {
+      setMessage(error.message || "문의 접수에 실패했습니다. 잠시 후 다시 시도해주세요.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -154,29 +196,41 @@ function CustomerCenterPage() {
                 <form className="inquiry-form" onSubmit={handleInquirySubmit}>
                   <label>
                     문의 유형
-                    <select required>
+                    <select name="category" value={inquiryForm.category} onChange={handleInquiryChange} required>
                       <option value="">문의 유형을 선택해주세요.</option>
-                      <option>회원</option>
-                      <option>상품</option>
-                      <option>거래</option>
-                      <option>배송</option>
-                      <option>정산</option>
+                      {inquiryCategoryOptions.map((option) => (
+                        <option value={option.value} key={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
                     </select>
                   </label>
                   <label>
                     제목
-                    <input type="text" placeholder="제목을 입력해주세요." required />
+                    <input
+                      type="text"
+                      name="title"
+                      value={inquiryForm.title}
+                      onChange={handleInquiryChange}
+                      placeholder="제목을 입력해주세요."
+                      required
+                    />
                   </label>
                   <label>
                     내용
-                    <textarea placeholder="문의 내용을 입력해주세요." rows="7" required />
-                  </label>
-                  <label>
-                    연락처
-                    <input type="text" placeholder="답변 받을 연락처를 입력해주세요." required />
+                    <textarea
+                      name="content"
+                      value={inquiryForm.content}
+                      onChange={handleInquiryChange}
+                      placeholder="문의 내용을 입력해주세요."
+                      rows="7"
+                      required
+                    />
                   </label>
                   {message && <p className="inquiry-message">{message}</p>}
-                  <button type="submit">문의 접수</button>
+                  <button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? "접수 중..." : "문의 접수"}
+                  </button>
                 </form>
               </section>
             )}

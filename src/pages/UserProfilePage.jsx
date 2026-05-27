@@ -8,6 +8,7 @@ import {
   fetchSettlements,
   fetchWishlist,
 } from "../api/myPageApi";
+import { fetchMyInquiries, fetchMyInquiryDetail } from "../api/inquiryApi";
 import { getSellerProducts, getUserHome } from "../api/productApi";
 import { getSellerReviews } from "../api/reviewApi";
 import "../styles/review.css";
@@ -51,6 +52,7 @@ function getTabFromPath(pathname) {
   if (pathname === "/mypage/wishlist") return "wishlist";
   if (pathname === "/mypage/settlements") return "settlements";
   if (pathname === "/mypage/reviews") return "reviews";
+  if (pathname === "/mypage/inquiries") return "inquiries";
   return "products";
 }
 
@@ -59,6 +61,7 @@ function getPathFromTab(tab) {
   if (tab === "wishlist") return "/mypage/wishlist";
   if (tab === "settlements") return "/mypage/settlements";
   if (tab === "reviews") return "/mypage/reviews";
+  if (tab === "inquiries") return "/mypage/inquiries";
   return "/mypage";
 }
 
@@ -129,6 +132,58 @@ function normalizeSettlement(settlement) {
   };
 }
 
+function normalizeInquiry(inquiry) {
+  return {
+    ...inquiry,
+    inquiryId: inquiry?.inquiryId || "",
+    memberId: inquiry?.memberId || "",
+    category: inquiry?.category || "",
+    title: inquiry?.title || "제목 없음",
+    content: inquiry?.content || "",
+    inquiryStatus: inquiry?.inquiryStatus || "",
+    answerContent: inquiry?.answerContent || "",
+    createdAt: inquiry?.createdAt || "",
+    answeredAt: inquiry?.answeredAt || "",
+  };
+}
+
+function formatDateTime(value) {
+  if (!value) return "-";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return date.toLocaleString("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+const INQUIRY_CATEGORY_LABELS = {
+  ORDER: "주문 문의",
+  PAYMENT: "결제 문의",
+  PRODUCT: "상품 문의",
+  DELIVERY: "배송 문의",
+  ACCOUNT: "회원/계정 문의",
+  ETC: "기타 문의",
+};
+
+const INQUIRY_STATUS_LABELS = {
+  PENDING: "답변 대기",
+  ANSWERED: "답변 완료",
+};
+
+function getInquiryCategoryLabel(category) {
+  return INQUIRY_CATEGORY_LABELS[category] || category || "-";
+}
+
+function getInquiryStatusLabel(status) {
+  return INQUIRY_STATUS_LABELS[status] || status || "-";
+}
+
 function mapProfileToSeller(profile, fallbackMemberId, counts = {}) {
   const memberId = profile?.memberId || fallbackMemberId || "";
   return {
@@ -156,6 +211,7 @@ const PROFILE_TABS = [
   { key: "orders",       label: "주문 내역" },
   { key: "settlements",  label: "정산 내역" },
   { key: "reviews",      label: "리뷰" },
+  { key: "inquiries",    label: "문의 내역" },
 ];
 
 /* ── 사이드바 필터 ── */
@@ -579,6 +635,85 @@ function ReviewsTab({ reviews, totalPages, page, setPage, rvLoading }) {
   );
 }
 
+function InquiriesTab({
+  inquiries,
+  selectedInquiry,
+  detailLoading,
+  onSelectInquiry,
+}) {
+  if (inquiries.length === 0) {
+    return <p className="up-empty">등록된 문의 내역이 없습니다.</p>;
+  }
+
+  return (
+    <div className="up-inquiry-layout">
+      <div className="up-inquiry-list" aria-label="1:1 문의 내역">
+        {inquiries.map((inquiry) => (
+          <button
+            type="button"
+            className={`up-inquiry-item ${selectedInquiry?.inquiryId === inquiry.inquiryId ? "active" : ""}`}
+            key={inquiry.inquiryId}
+            onClick={() => onSelectInquiry(inquiry.inquiryId)}
+          >
+            <span className="up-inquiry-category">{getInquiryCategoryLabel(inquiry.category)}</span>
+            <strong>{inquiry.title}</strong>
+            <span className={`up-inquiry-status ${inquiry.inquiryStatus === "ANSWERED" ? "answered" : ""}`}>
+              {getInquiryStatusLabel(inquiry.inquiryStatus)}
+            </span>
+            <span className="up-inquiry-date">작성일 {formatDateTime(inquiry.createdAt)}</span>
+            <span className="up-inquiry-date">답변일 {formatDateTime(inquiry.answeredAt)}</span>
+          </button>
+        ))}
+      </div>
+
+      <article className="up-inquiry-detail">
+        {detailLoading && <p className="up-inquiry-placeholder">문의 상세를 불러오는 중...</p>}
+
+        {!detailLoading && !selectedInquiry && (
+          <p className="up-inquiry-placeholder">문의 항목을 선택하면 상세 내용을 확인할 수 있습니다.</p>
+        )}
+
+        {!detailLoading && selectedInquiry && (
+          <>
+            <div className="up-inquiry-detail-head">
+              <span className="up-inquiry-category">{getInquiryCategoryLabel(selectedInquiry.category)}</span>
+              <h2>{selectedInquiry.title}</h2>
+              <span className={`up-inquiry-status ${selectedInquiry.inquiryStatus === "ANSWERED" ? "answered" : ""}`}>
+                {getInquiryStatusLabel(selectedInquiry.inquiryStatus)}
+              </span>
+            </div>
+
+            <dl className="up-inquiry-meta">
+              <div>
+                <dt>작성일</dt>
+                <dd>{formatDateTime(selectedInquiry.createdAt)}</dd>
+              </div>
+              <div>
+                <dt>답변일</dt>
+                <dd>{formatDateTime(selectedInquiry.answeredAt)}</dd>
+              </div>
+            </dl>
+
+            <section className="up-inquiry-section">
+              <h3>문의 내용</h3>
+              <p>{selectedInquiry.content || "-"}</p>
+            </section>
+
+            <section className="up-inquiry-section answer">
+              <h3>답변 내용</h3>
+              {selectedInquiry.inquiryStatus === "ANSWERED" && selectedInquiry.answerContent ? (
+                <p>{selectedInquiry.answerContent}</p>
+              ) : (
+                <p className="up-inquiry-placeholder">아직 답변이 등록되지 않았습니다.</p>
+              )}
+            </section>
+          </>
+        )}
+      </article>
+    </div>
+  );
+}
+
 function EmptyProfileTab({ label }) {
   return (
     <p className="up-empty">
@@ -600,6 +735,9 @@ function UserProfilePage({
   const [orders, setOrders] = useState([]);
   const [wishlist, setWishlist] = useState([]);
   const [settlements, setSettlements] = useState([]);
+  const [inquiries, setInquiries] = useState([]);
+  const [selectedInquiry, setSelectedInquiry] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [sellOrderMap, setSellOrderMap] = useState({});
   const [tabLoading, setTabLoading] = useState(false);
   const [reviews, setReviews] = useState([]);
@@ -612,6 +750,9 @@ function UserProfilePage({
   const [toast, setToast] = useState("");
   const timerRef = useRef(null);
   const currentTab = hideFooter ? getTabFromPath(pathname) : activeTab;
+  const profileTabs = hideFooter
+    ? PROFILE_TABS
+    : PROFILE_TABS.filter((tab) => tab.key !== "inquiries");
 
   function showToast(msg) {
     setToast(msg);
@@ -723,6 +864,14 @@ function UserProfilePage({
           const data = await fetchSettlements(0, 20);
           if (!ignore) setSettlements(toList(data).map(normalizeSettlement));
         }
+
+        if (currentTab === "inquiries") {
+          const data = await fetchMyInquiries(0, 10);
+          if (!ignore) {
+            setInquiries(toList(data).map(normalizeInquiry));
+            setSelectedInquiry(null);
+          }
+        }
       } catch (error) {
         if (!ignore) {
           showToast(error.message || "목록을 불러올 수 없습니다.");
@@ -738,6 +887,20 @@ function UserProfilePage({
       ignore = true;
     };
   }, [hideFooter, currentTab]);
+
+  async function handleSelectInquiry(inquiryId) {
+    if (!inquiryId) return;
+
+    try {
+      setDetailLoading(true);
+      const data = await fetchMyInquiryDetail(inquiryId);
+      setSelectedInquiry(normalizeInquiry(data));
+    } catch (error) {
+      showToast(error.message || "문의 상세를 불러올 수 없습니다.");
+    } finally {
+      setDetailLoading(false);
+    }
+  }
 
   useEffect(() => {
     if (!memberId) return;
@@ -829,7 +992,7 @@ function UserProfilePage({
       {/* 탭 바 */}
       <div className="up-tabs-bar">
         <div className="up-tabs-inner">
-          {PROFILE_TABS.map(({ key, label }) => (
+          {profileTabs.map(({ key, label }) => (
             <button
               key={key}
               className={`up-tab ${currentTab === key ? "active" : ""}`}
@@ -868,6 +1031,14 @@ function UserProfilePage({
           />
         )}
         {!tabLoading && hideFooter && currentTab === "settlements" && <SettlementTab settlements={settlements} />}
+        {!tabLoading && hideFooter && currentTab === "inquiries" && (
+          <InquiriesTab
+            inquiries={inquiries}
+            selectedInquiry={selectedInquiry}
+            detailLoading={detailLoading}
+            onSelectInquiry={handleSelectInquiry}
+          />
+        )}
 
         {currentTab === "reviews" && (
           <ReviewsTab
@@ -884,7 +1055,7 @@ function UserProfilePage({
           currentTab !== "products" &&
           currentTab !== "reviews" &&
           currentTab !== "settlements" && (
-            <EmptyProfileTab label={PROFILE_TABS.find((tab) => tab.key === currentTab)?.label ?? "선택한 탭"} />
+            <EmptyProfileTab label={profileTabs.find((tab) => tab.key === currentTab)?.label ?? "선택한 탭"} />
           )}
       </div>
 

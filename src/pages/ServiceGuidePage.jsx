@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import Footer from "../components/common/Footer";
 import Header from "../components/common/Header";
 import { guidePageData } from "../data/serviceGuideMock";
@@ -14,7 +15,7 @@ function GuideSection({ section }) {
             <div className="guide-calc-item" key={item.title}>
               <span>{item.title}</span>
               <strong>{item.value}</strong>
-              {index < section.items.length - 1 && <b aria-hidden="true">{index === 0 ? "−" : "="}</b>}
+              {index < section.items.length - 1 && <b aria-hidden="true">→</b>}
             </div>
           ))}
         </div>
@@ -29,14 +30,20 @@ function GuideSection({ section }) {
       </div>
       <div className={`guide-card-grid guide-card-grid-${section.variant}`}>
         {section.items.map((item, index) => (
-          <article className="guide-card" key={item.title}>
-            {section.variant === "steps" && <span className="guide-step-number">{index + 1}</span>}
-            <div className="guide-card-icon" aria-hidden="true">
-              {item.value ? item.value : index + 1}
-            </div>
-            <h3>{item.title}</h3>
-            <p>{item.text}</p>
-          </article>
+          <Fragment key={item.title}>
+            <article className="guide-card">
+              {item.value && (
+                <div className="guide-card-icon" aria-hidden="true">
+                  {item.value}
+                </div>
+              )}
+              <h3>{item.title}</h3>
+              <p>{item.text}</p>
+            </article>
+            {section.variant === "steps" && index < section.items.length - 1 && (
+              <span className="guide-step-arrow" aria-hidden="true">→</span>
+            )}
+          </Fragment>
         ))}
       </div>
     </section>

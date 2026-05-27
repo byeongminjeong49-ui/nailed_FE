@@ -1,4 +1,4 @@
-import { authRequest } from "./authApi";
+import { authRequest, getAuthorizationHeader, getValidAccessToken } from "./authApi";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
@@ -14,7 +14,9 @@ async function request(path, options = {}) {
   const data = contentType.includes("application/json") ? await res.json() : await res.text();
   if (!res.ok) {
     const message = typeof data === "string" ? data : data?.error?.message || data?.message || "요청 처리에 실패했습니다.";
-    throw new Error(message);
+    const error = new Error(message);
+    error.status = res.status;
+    throw error;
   }
   return data?.data ?? data;
 }
@@ -59,17 +61,61 @@ export async function searchProducts({ categoryId, keyword, minPrice, maxPrice, 
   return request(`/api/products/search?${params.toString()}`);
 }
 
-function getOptionalAuthHeaders() {
-  const token = sessionStorage.getItem("accessToken");
+function removeAuthorizationHeader(headers = {}) {
+  const { Authorization, authorization, ...rest } = headers;
+  return rest;
+}
+
+async function getOptionalAuthHeaders({ forceRefresh = false } = {}) {
+  const token = await getValidAccessToken({ forceRefresh });
   if (!token) return {};
-  const tokenType = sessionStorage.getItem("tokenType") || "Bearer";
-  return { Authorization: `${tokenType} ${token}` };
+  return { Authorization: getAuthorizationHeader(token) };
+}
+
+async function requestWithOptionalAuth(path, options = {}) {
+  const baseHeaders = removeAuthorizationHeader(options.headers);
+  const authHeaders = await getOptionalAuthHeaders();
+  const hasAuthHeader = Boolean(authHeaders.Authorization);
+
+  try {
+    return await request(path, {
+      ...options,
+      headers: {
+        ...baseHeaders,
+        ...authHeaders,
+      },
+    });
+  } catch (error) {
+    if (error.status !== 401 || !hasAuthHeader) {
+      throw error;
+    }
+
+    const refreshedHeaders = await getOptionalAuthHeaders({ forceRefresh: true });
+    if (refreshedHeaders.Authorization) {
+      try {
+        return await request(path, {
+          ...options,
+          headers: {
+            ...baseHeaders,
+            ...refreshedHeaders,
+          },
+        });
+      } catch (retryError) {
+        if (retryError.status !== 401) {
+          throw retryError;
+        }
+      }
+    }
+
+    return request(path, {
+      ...options,
+      headers: baseHeaders,
+    });
+  }
 }
 
 export async function getProductDetail(productId) {
-  const data = await request(`/api/products/${encodeURIComponent(productId)}`, {
-    headers: getOptionalAuthHeaders(),
-  });
+  const data = await requestWithOptionalAuth(`/api/products/${encodeURIComponent(productId)}`);
   if (data && Array.isArray(data.imageUrls)) {
     data.imageUrls = data.imageUrls.map((url) =>
       url && !url.startsWith("http") ? `${API_BASE_URL}${url}` : url

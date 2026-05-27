@@ -4,6 +4,7 @@ export const adminNavItems = [
   { id: "products", label: "상품 관리", path: "/admin/products", icon: "tag" },
   { id: "orders", label: "주문 관리", path: "/admin/orders", icon: "cart" },
   { id: "reports", label: "신고 관리", path: "/admin/reports", icon: "alert" },
+  { id: "inquiries", label: "문의 관리", path: "/admin/inquiries", icon: "document" },
 ];
 
 export const adminSystemStatus = {

@@ -679,6 +679,154 @@
   font-weight: 700;
 }
 
+/* 문의 내역 */
+.up-inquiry-layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+  gap: 24px;
+  max-width: 1080px;
+}
+
+.up-inquiry-list {
+  display: grid;
+  gap: 10px;
+}
+
+.up-inquiry-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 7px 10px;
+  width: 100%;
+  padding: 16px;
+  border: 1px solid #e7e7e7;
+  border-radius: 8px;
+  background: #fff;
+  color: #151515;
+  cursor: pointer;
+  text-align: left;
+}
+
+.up-inquiry-item:hover,
+.up-inquiry-item.active {
+  border-color: #151515;
+}
+
+.up-inquiry-item strong {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  color: #151515;
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.up-inquiry-category {
+  color: #168f88;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.up-inquiry-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: #f2f4f7;
+  color: #606875;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.up-inquiry-status.answered {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.up-inquiry-date {
+  color: #777;
+  font-size: 12px;
+}
+
+.up-inquiry-detail {
+  min-height: 360px;
+  padding: 22px;
+  border: 1px solid #e7e7e7;
+  border-radius: 8px;
+}
+
+.up-inquiry-detail-head {
+  display: grid;
+  gap: 8px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #e7e7e7;
+}
+
+.up-inquiry-detail-head h2 {
+  margin: 0;
+  color: #151515;
+  font-size: 22px;
+}
+
+.up-inquiry-detail-head .up-inquiry-status {
+  justify-self: start;
+}
+
+.up-inquiry-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 18px 0;
+}
+
+.up-inquiry-meta div {
+  padding: 12px;
+  border-radius: 8px;
+  background: #f7f7f7;
+}
+
+.up-inquiry-meta dt {
+  margin-bottom: 6px;
+  color: #777;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.up-inquiry-meta dd {
+  margin: 0;
+  color: #151515;
+  font-size: 13px;
+}
+
+.up-inquiry-section {
+  padding-top: 16px;
+}
+
+.up-inquiry-section + .up-inquiry-section {
+  margin-top: 18px;
+  border-top: 1px solid #e7e7e7;
+}
+
+.up-inquiry-section h3 {
+  margin: 0 0 10px;
+  color: #151515;
+  font-size: 15px;
+}
+
+.up-inquiry-section p,
+.up-inquiry-placeholder {
+  margin: 0;
+  color: #333;
+  font-size: 14px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.up-inquiry-placeholder {
+  color: #999;
+}
+
 /* ── 리뷰 탭 ── */
 .up-reviews-wrap { max-width: 720px; }
 
@@ -728,6 +876,7 @@
 @media (max-width: 900px) {
   .up-tab-layout { flex-direction: column; }
   .up-sidebar { width: 100%; display: flex; gap: 24px; flex-wrap: wrap; }
+  .up-inquiry-layout { grid-template-columns: 1fr; }
   .up-product-grid,
   .up-buy-order-list,
   .up-settlement-grid { grid-template-columns: repeat(3, 1fr); }

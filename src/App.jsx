@@ -9,6 +9,7 @@ import AdminMembersPage from "./pages/admin/AdminMembersPage.jsx";
 import AdminOrdersPage from "./pages/admin/AdminOrdersPage.jsx";
 import AdminProductsPage from "./pages/admin/AdminProductsPage.jsx";
 import AdminReportsPage from "./pages/admin/AdminReportsPage.jsx";
+import AdminInquiriesPage from "./pages/admin/AdminInquiriesPage.jsx";
 import { FindPasswordPage, LoginPage, SignupPage } from "./pages/AuthPages.jsx";
 import MyPage from "./pages/MyPage.jsx";
 import ProductDetailPage from "./pages/ProductDetailPage.jsx";
@@ -44,6 +45,7 @@ const adminRoutes = {
   "/admin/products": "products",
   "/admin/orders": "orders",
   "/admin/reports": "reports",
+  "/admin/inquiries": "inquiries",
 };
 
 const authRoutes = {
@@ -149,6 +151,7 @@ function renderAdminPage(activePage) {
   if (activePage === "products") return <AdminProductsPage />;
   if (activePage === "orders") return <AdminOrdersPage />;
   if (activePage === "reports") return <AdminReportsPage />;
+  if (activePage === "inquiries") return <AdminInquiriesPage />;
   return <AdminDashboardPage />;
 }
 

@@ -146,6 +146,30 @@ function getTokenType() {
   return sessionStorage.getItem(TOKEN_TYPE_KEY) || "Bearer";
 }
 
+function getTokenExpiresAt() {
+  return sessionStorage.getItem(TOKEN_EXPIRES_AT_KEY);
+}
+
+function isAccessTokenExpired() {
+  const expiresAt = getTokenExpiresAt();
+  if (!expiresAt) return false;
+
+  const numericExpiresAt = Number(expiresAt);
+  const expiresAtTime = Number.isFinite(numericExpiresAt)
+    ? numericExpiresAt < 1000000000000
+      ? numericExpiresAt * 1000
+      : numericExpiresAt
+    : Date.parse(expiresAt);
+
+  if (!Number.isFinite(expiresAtTime)) return false;
+
+  return Date.now() >= expiresAtTime - 10000;
+}
+
+export function getAuthorizationHeader(accessToken) {
+  return `${getTokenType()} ${accessToken}`;
+}
+
 function redirectToLoginWithMessage() {
   if (sessionExpiredNotified) return;
   sessionExpiredNotified = true;
@@ -205,24 +229,57 @@ async function refreshAccessToken() {
   return result.accessToken;
 }
 
+export async function getValidAccessToken({
+  forceRefresh = false,
+  redirectOnFailure = false,
+} = {}) {
+  const token = getAccessToken();
+  const refreshToken = getRefreshToken();
+
+  if (token && !forceRefresh && !isAccessTokenExpired()) {
+    return token;
+  }
+
+  if (refreshToken) {
+    try {
+      return await refreshAccessToken();
+    } catch (error) {
+      if (redirectOnFailure) {
+        clearAuthStorage({ redirect: true });
+        throw new Error(error.message || SESSION_EXPIRED_MESSAGE);
+      }
+      return null;
+    }
+  }
+
+  if (redirectOnFailure) {
+    clearAuthStorage({ redirect: true });
+    throw new Error(SESSION_EXPIRED_MESSAGE);
+  }
+
+  return null;
+}
+
 function isAuthPath(path) {
   return path === "/api/auth/login" || path === "/api/auth/refresh";
 }
 
 export async function authRequest(path, options = {}, retried = false) {
-  const token = getAccessToken();
+  const token = await getValidAccessToken({ redirectOnFailure: true });
   if (!token) {
     clearAuthStorage({ redirect: true });
     throw new Error(SESSION_EXPIRED_MESSAGE);
   }
+
+  const { Authorization, authorization, ...optionHeaders } = options.headers || {};
 
   const response = await fetch(buildUrl(path), {
     credentials: "include",
     ...options,
     headers: {
       ...(options.body && !(options.body instanceof FormData) ? { "Content-Type": "application/json" } : {}),
-      Authorization: `${getTokenType()} ${token}`,
-      ...options.headers,
+      ...optionHeaders,
+      Authorization: getAuthorizationHeader(token),
     },
   });
 
@@ -238,8 +295,8 @@ export async function authRequest(path, options = {}, retried = false) {
         {
           ...options,
           headers: {
-            ...options.headers,
-            Authorization: `${getTokenType()} ${newAccessToken}`,
+            ...optionHeaders,
+            Authorization: getAuthorizationHeader(newAccessToken),
           },
         },
         true,
