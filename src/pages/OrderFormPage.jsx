@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createOrder } from '../api/orderApi';
 
 const s = {
@@ -37,13 +37,13 @@ function getCurrentMemberId() {
 }
 
 export default function OrderForm() {
+
   const [pendingOrder] = useState(() => {
     try {
       const saved = sessionStorage.getItem('pendingOrder');
       return saved ? JSON.parse(saved) : { productId: 1, title: '기본 상품', productAmount: 0, finalPrice: 0, shippingFee: 0 };
     } catch { return { productId: 1, title: '기본 상품', productAmount: 0, finalPrice: 0, shippingFee: 0 }; }
   });
-
   const [form, setForm] = useState(() => {
     try {
       const saved = sessionStorage.getItem('orderForm');
@@ -81,8 +81,14 @@ export default function OrderForm() {
   };
 
   const handlePayment = async () => {
-    if (!canPay || paying) return; // ← paying 조건 추가
-    setPaying(true); // ← 추가
+    if (!canPay || paying) return; 
+    const existingPayment = sessionStorage.getItem('pendingPayment');
+if (existingPayment) {
+  window.history.pushState({}, '', '/order/payment');
+  window.dispatchEvent(new PopStateEvent('popstate'));
+  return;
+}
+    setPaying(true); 
     try {
       const orderData = {
         productId:             pendingOrder.productId,
@@ -98,14 +104,14 @@ export default function OrderForm() {
       const buyerId = getCurrentMemberId() || pendingOrder.buyerId;
       const response = await createOrder(buyerId, pendingOrder.sellerId, orderData);
       if (response?.orderId) {
-        sessionStorage.setItem('pendingPayment', JSON.stringify({
-          orderId:    response.orderId,
-          finalPrice: totalPrice,
-          title:      pendingOrder.title,
-          productId:  pendingOrder.productId,
-        }));
-        window.history.pushState({}, '', '/order/payment');
-        window.dispatchEvent(new PopStateEvent('popstate'));
+      sessionStorage.setItem('pendingPayment', JSON.stringify({
+  orderId:    response.orderId,
+  finalPrice: totalPrice,
+  title:      pendingOrder.title,
+  productId:  pendingOrder.productId,
+}));
+window.history.pushState({}, '', '/order/payment');
+window.dispatchEvent(new PopStateEvent('popstate'));
       }
     } catch (error) {
       console.error('주문 처리 중 에러 발생:', error);
@@ -127,6 +133,17 @@ export default function OrderForm() {
   return (
     <div style={s.page}>
       <div style={s.inner}>
+        <div style={{ display: 'flex', padding: '20px 0 24px' }}>
+  {['주문서', '결제', '완료'].map((label, i) => (
+    <div key={label} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', position: 'relative' }}>
+      {i < 2 && <div style={{ position: 'absolute', top: '13px', left: '50%', width: '100%', height: '2px', background: i < 0 ? '#168f88' : '#e0e0e0' }} />}
+      <div style={{ width: '28px', height: '28px', borderRadius: '50%', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', background: i === 0 ? '#168f88' : '#fff', border: `2px solid ${i === 0 ? '#168f88' : '#ddd'}`, color: i === 0 ? '#fff' : '#ccc', fontWeight: '600' }}>
+        {i === 0 ? '✓' : i + 1}
+      </div>
+      <span style={{ fontSize: '11px', color: i === 0 ? '#168f88' : '#bbb', whiteSpace: 'nowrap' }}>{label}</span>
+    </div>
+  ))}
+</div>
         <div style={s.title}>주문서 작성</div>
 
         {/* 상품 정보 */}
@@ -155,9 +172,9 @@ export default function OrderForm() {
                 value={form[key]}
                 onChange={onChange(key)}
                 placeholder={placeholder}
-                readOnly={key === 'address'}
+                readOnly={key === 'address' || key === 'zipcode'}
                 onClick={() => {
-                  if (key !== 'address') return;
+                  if (key !== 'zipcode') return;
                   new window.daum.Postcode({
                     oncomplete: (data) => {
                       const updated = {
@@ -217,7 +234,13 @@ export default function OrderForm() {
         <button style={canPay && !paying ? s.btn : s.btnDisabled} onClick={handlePayment} disabled={!canPay || paying}>
           {paying ? '처리 중...' : `${totalPrice.toLocaleString()}원 안전결제`}
         </button>
-        {!canPay && <p style={{ textAlign: 'center', fontSize: '12px', color: '#e05c5c', marginTop: '8px' }}>배송지 입력 및 필수 동의를 완료해 주세요.</p>}
+        {!canPay && !agree1 && <p style={{ textAlign: 'center', fontSize: '12px', color: '#e05c5c', marginTop: '8px' }}>배송지 입력 및 필수 동의를 완료해 주세요.</p>}
+      {form.receiverPhone.length > 11 && (
+  <p style={{ textAlign: 'center', fontSize: '12px', color: '#e05c5c', marginTop: '4px' }}>숫자만 10~11자리 입력하세요</p>
+)}
+{form.zipcode.length > 5 && (
+  <p style={{ textAlign: 'center', fontSize: '12px', color: '#e05c5c', marginTop: '4px' }}>우편번호는 숫자 5자리입니다</p>
+)}
       </div>
     </div>
   );

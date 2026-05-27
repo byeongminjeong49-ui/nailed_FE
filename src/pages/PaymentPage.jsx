@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-
+import kakaoIcon from '../assets/kakaopay.png';
+import naverIcon from '../assets/naverpay.png';
+import tossIcon  from '../assets/tosspay.png';
 const s = {
   page: { minHeight: '100vh', background: '#f5f6f7', padding: '40px 20px 80px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' },
   inner: { maxWidth: '560px', margin: '0 auto' },
@@ -26,13 +28,14 @@ const s = {
 };
 
 const STEPS = ['주문서', '결제', '완료'];
+
 const METHODS = [
   { id: 'card',   icon: '💳', label: '신용/체크카드' },
-  { id: 'kakao',  icon: '💛', label: '카카오페이',   color: '#FEE500' },
-  { id: 'naver',  icon: '🟢', label: '네이버페이',   color: '#03C75A' },
-  { id: 'toss',   icon: '🔵', label: '토스페이',     color: '#0064FF' },
+  { id: 'kakao',  icon: kakaoIcon, label: '카카오페이', color: '#FEE500' },
+{ id: 'naver',  icon: naverIcon, label: '네이버페이', color: '#03C75A' },
+{ id: 'toss',   icon: tossIcon,  label: '토스페이',   color: '#0064FF' },
   { id: 'phone',  icon: '📱', label: '휴대폰 결제' },
-  { id: 'bank',   icon: '🏦', label: '무통장 입금' },
+  { id: 'bank',   icon: '🏧', label: '무통장 입금' },
 ];
 
 function navigate(path) {
@@ -67,7 +70,8 @@ export default function PaymentPage() {
 
   const { orderId, finalPrice, title } = pendingPayment;
 
-const onPay = async () => {
+  const onPay = async () => {
+  if (paying) return;
   setPaying(true);
   setError('');
   try {
@@ -85,8 +89,9 @@ const onPay = async () => {
     });
     if (!res.ok) throw new Error('결제 처리 실패');
 
-    sessionStorage.removeItem('orderForm');
-    sessionStorage.removeItem('pendingOrder');
+   sessionStorage.removeItem('orderForm');
+sessionStorage.removeItem('pendingOrder');
+sessionStorage.removeItem('pendingPayment');
     sessionStorage.setItem('completedOrder', JSON.stringify({ orderId, finalPrice, title, method: selectedMethod }));
     sessionStorage.removeItem('pendingPayment');
     setDone(true);
@@ -103,7 +108,8 @@ const onPay = async () => {
         {/* 스텝바 */}
         <div style={s.steps}>
           {STEPS.map((label, i) => {
-            const done_ = i < 1, active = i === 1;
+            const done_ = done ? i <= 2 : i <= 1;
+            const active = done ? i === 2 : i === 1;
             return (
               <div key={label} style={s.step}>
                 {i < STEPS.length - 1 && <div style={s.stepLine} />}
@@ -116,7 +122,7 @@ const onPay = async () => {
           })}
         </div>
 
-        <div style={s.title}>결제 진행</div>
+        <div style={s.title}>{done ? '결제 완료' : '결제 진행'}</div>
 
         {/* 주문 확인 */}
         <div style={s.card}>
@@ -133,7 +139,10 @@ const onPay = async () => {
             <div style={s.methodGrid}>
               {METHODS.map(({ id, icon, label, color }) => (
                 <button key={id} style={s.methodBtn(selectedMethod === id)} onClick={() => setSelectedMethod(id)}>
-                  <span style={s.methodIcon}>{icon}</span>
+                  {typeof icon === 'object' || (typeof icon === 'string' && !icon.includes('http') && icon !== '💳' && icon !== '📱' && icon !== '🏧')
+                  ? <img src={icon} alt={label} style={{ width: '24px', height: '24px', display: 'block', margin: '0 auto 4px', objectFit: 'contain' }} />
+                  : <span style={s.methodIcon}>{icon}</span>
+}
                   <span style={{ color: selectedMethod === id ? '#168f88' : (color || '#333') }}>{label}</span>
                 </button>
               ))}
@@ -142,7 +151,9 @@ const onPay = async () => {
             <button style={s.payBtn} onClick={onPay} disabled={paying}>
               {paying ? '처리 중...' : `${(finalPrice || 0).toLocaleString()}원 결제하기`}
             </button>
-            <button style={{ display: 'block', width: '100%', padding: '14px', background: '#fff', color: '#555', border: '1px solid #ddd', borderRadius: '10px', fontSize: '14px', cursor: 'pointer', marginTop: '8px' }} onClick={() => window.history.back()}>돌아가기</button>
+            <button style={{ display: 'block', width: '100%', padding: '14px', background: '#fff', color: '#555', border: '1px solid #ddd', borderRadius: '10px', fontSize: '14px', cursor: 'pointer', marginTop: '8px' }} onClick={() => {
+  window.history.back();
+}}>돌아가기</button>
             <p style={{ fontSize: '12px', color: '#bbb', textAlign: 'center', marginTop: '12px' }}></p>
           </div>
         )}

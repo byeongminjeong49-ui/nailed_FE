@@ -309,11 +309,17 @@ export default function OrderDetail({ orderId }) {
         </div>
 
         <button
-          style={s.backBtn}
-          onClick={() => productId ? navigate(`/product/${productId}`) : navigate('/')}
-        >
-          상품 페이지로 돌아가기
-        </button>
+  style={{ ...s.backBtn, background: '#168f88', color: '#fff', border: 'none' }}
+  onClick={() => navigate('/mypage/orders')}
+>
+  주문내역 확인하기
+</button>
+<button
+  style={{ ...s.backBtn, marginTop: '8px' }}
+  onClick={() => navigate('/')}
+>
+  쇼핑 계속하기
+</button>
       </div>
     </div>
   );
