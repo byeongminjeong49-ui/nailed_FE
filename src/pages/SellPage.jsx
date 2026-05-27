@@ -286,6 +286,7 @@ export default function SellPage({ editProductId }) {
     setGroupCode("");
     setItemCode("");
     setSelectedSize("");
+    setBrandId("");
     // 그룹이 하나뿐인 카테고리는 자동 선택
     const cat = CATEGORY_TREE.find((c) => c.code === code);
     if (cat?.groups.length === 1) setGroupCode(cat.groups[0].code);
@@ -350,7 +351,7 @@ export default function SellPage({ editProductId }) {
     const body = {
       title:         title.trim(),
       categoryId:    codeToGroupId[itemCode],
-      brandId:       brandId ? Number(brandId) : null,
+      brandId:       (brandId && brandId !== "NOBRAND") ? Number(brandId) : null,
       price:         Number(price),
       description:   description.trim(),
       conditionCode: condition,
@@ -527,7 +528,15 @@ export default function SellPage({ editProductId }) {
                 {items.map((item) => (
                   <button key={item.code} type="button"
                     className={`sell-chip${itemCode === item.code ? " active" : ""}`}
-                    onClick={() => { setItemCode(item.code); setSelectedSize(""); }}>
+                    onClick={() => {
+                      setItemCode(item.code);
+                      setSelectedSize("");
+                      // 럭셔리 상세카테고리 선택 시 동일 code의 브랜드 항목 자동 연결
+                      if (item.code.startsWith("LUXURY_")) {
+                        const matched = brands.find((b) => b.code === item.code);
+                        setBrandId(matched ? String(matched.groupId) : "");
+                      }
+                    }}>
                     {item.label}
                   </button>
                 ))}
@@ -570,13 +579,27 @@ export default function SellPage({ editProductId }) {
           {/* 브랜드 */}
           <div className="sell-field">
             <div className="sell-field-label">브랜드</div>
-            <select className="sell-select" value={brandId}
-              onChange={(e) => setBrandId(e.target.value)}>
-              <option value="" disabled hidden>브랜드를 선택해주세요</option>
-              {brands.map((b) => (
-                <option key={b.groupId} value={b.groupId}>{b.name}</option>
-              ))}
-            </select>
+            {topCode === "LUXURY" ? (
+              // 럭셔리: 상세카테고리 선택 시 자동 표시 (직접 선택 불가)
+              <div className="sell-input sell-brand-readonly">
+                {brandId
+                  ? brands.find((b) => String(b.groupId) === String(brandId))?.name ?? "브랜드 선택 안 됨"
+                  : "상세 카테고리를 선택하면 자동 입력됩니다"}
+              </div>
+            ) : (
+              // 일반: LUXURY_* 항목 제외한 브랜드 드롭다운
+              <select className="sell-select" value={brandId}
+                onChange={(e) => setBrandId(e.target.value)}>
+                <option value="" disabled hidden>브랜드를 선택해주세요</option>
+                {brands
+                  .filter((b) => !b.code?.startsWith("LUXURY_"))
+                  .map((b) => (
+                    <option key={b.groupId} value={b.groupId}>{b.name}</option>
+                  ))
+                }
+                <option value="NOBRAND">브랜드 없음</option>
+              </select>
+            )}
           </div>
 
           {/* 판매가 + 기본 배송비 2열 */}

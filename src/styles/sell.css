@@ -368,6 +368,20 @@
 }
 .sell-select:focus { border-color: #151515; }
 
+/* 럭셔리 브랜드 자동입력 표시 (읽기전용) */
+.sell-brand-readonly {
+  height: 42px;
+  line-height: 42px;
+  padding: 0 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  color: #333;
+  font-size: 14px;
+  cursor: default;
+  box-sizing: border-box;
+}
+
 /* ── 배송비 / 판매가 ────────────────────────────────── */
 .sell-field-row {
   flex-direction: row;
