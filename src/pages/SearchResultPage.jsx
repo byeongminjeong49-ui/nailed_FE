@@ -14,6 +14,7 @@ function toCardShape(product) {
     brandName: product.brandName || null,
     size: product.size || null,
     wishlistCount: product.wishlistCount ?? 0,
+    productStatus: product.productStatus || null,
   };
 }
 
