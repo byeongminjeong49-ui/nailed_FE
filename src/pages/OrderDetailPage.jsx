@@ -173,10 +173,11 @@ export default function OrderDetail({ orderId }) {
         {order.orderStatus !== 'CANCELLED' && (
           <div style={s.steps}>
             {STATUS_STEPS.map((step, i) => {
-              const done = i < currentStep, active = i === currentStep;
+              const done = i <= currentStep;
+              const active = i === currentStep;
               return (
                 <div key={step.key} style={s.step}>
-                  {i < STATUS_STEPS.length - 1 && <div style={s.stepLine(done)} />}
+                 {i < STATUS_STEPS.length - 1 && <div style={s.stepLine(i < currentStep)} />}
                   <div style={{ width: '28px', height: '28px', borderRadius: '50%', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', background: done ? '#168f88' : '#fff', border: `2px solid ${done || active ? '#168f88' : '#ddd'}`, color: done ? '#fff' : active ? '#168f88' : '#ccc', fontWeight: '600' }}>
                     {done ? '✓' : i + 1}
                   </div>

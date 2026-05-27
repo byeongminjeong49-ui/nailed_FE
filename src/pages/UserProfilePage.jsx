@@ -428,7 +428,9 @@ function OrdersTab({ orders }) {
             <div className="up-order-info">
               <p className="up-order-title">{title}</p>
               <p className="up-order-meta">주문번호: {order.orderId || "-"}</p>
-              {order.shippedAt && <p className="up-order-meta">배송중: {order.shippedAt}</p>}
+              <p className="up-order-meta">
+              상태: {{ REQUESTED: '주문접수', PAID: '결제완료', SHIPPING: '배송중', DELIVERED: '배송완료', CANCELLED: '취소됨' }[order.orderStatus] || order.orderStatus || '-'}
+              </p>
             </div>
             <div className="up-order-right">
               <p className="up-order-price">{formatWon(order.finalPrice)}</p>
