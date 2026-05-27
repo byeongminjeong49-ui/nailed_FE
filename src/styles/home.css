@@ -18,7 +18,7 @@
 }
 
 .header-main {
-  max-width: var(--home-container-max);
+  max-width: 1210px;
   height: 66px;
   margin: 0 auto;
   padding: 0 var(--home-container-pad);
@@ -116,7 +116,7 @@
 }
 
 .category-nav {
-  max-width: var(--home-container-max);
+  max-width: 1210px;
   height: 46px;
   margin: 0 auto;
   padding: 0 var(--home-container-pad);
@@ -169,7 +169,7 @@
 
 .hero-copy {
   position: absolute;
-  left: max(32px, calc((100% - var(--home-container-max)) / 2 + var(--home-container-pad)));
+  left: max(var(--home-container-pad), calc((100% - 1210px) / 2 + var(--home-container-pad)));
   bottom: 34px;
   z-index: 2;
   max-width: min(460px, calc(100% - 150px));
@@ -244,11 +244,11 @@
 }
 
 .hero-arrow-left {
-  left: max(32px, calc((100% - var(--home-container-max)) / 2 + var(--home-container-pad)));
+  left: max(var(--home-container-pad), calc((100% - 1210px) / 2 + var(--home-container-pad)));
 }
 
 .hero-arrow-right {
-  right: max(32px, calc((100% - var(--home-container-max)) / 2 + var(--home-container-pad)));
+  right: max(var(--home-container-pad), calc((100% - 1210px) / 2 + var(--home-container-pad)));
 }
 
 .home-content {
