@@ -163,6 +163,12 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  overflow: hidden;
+}
+.up-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .up-profile-info { flex: 1; }
 .up-name-row {
@@ -199,6 +205,143 @@
 }
 .up-stats strong { color: #151515; font-weight: 700; }
 .up-stats-dot { color: #ccc; }
+
+.up-profile-edit-btn {
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid #d8d8d8;
+  border-radius: 6px;
+  background: #fff;
+  color: #333;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.up-profile-edit-btn:hover { border-color: #151515; }
+.up-shop-info {
+  max-width: 520px;
+  margin: 0 0 10px;
+  color: #333;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.up-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.45);
+}
+.up-profile-modal {
+  width: min(100%, 420px);
+  padding: 22px;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+}
+.up-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+.up-modal-head h2 {
+  margin: 0;
+  color: #151515;
+  font-size: 20px;
+  font-weight: 800;
+}
+.up-modal-close {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 6px;
+  background: #f5f5f5;
+  color: #333;
+  font-size: 22px;
+  cursor: pointer;
+}
+.up-edit-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 92px;
+  height: 92px;
+  margin: 0 auto 18px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  overflow: hidden;
+}
+.up-edit-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.up-edit-avatar span {
+  font-size: 34px;
+  font-weight: 900;
+}
+.up-hidden-file { display: none; }
+.up-edit-field {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.up-edit-field > span {
+  color: #333;
+  font-size: 13px;
+  font-weight: 800;
+}
+.up-edit-field input,
+.up-edit-field textarea {
+  width: 100%;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 10px 12px;
+  color: #151515;
+  font: inherit;
+  box-sizing: border-box;
+}
+.up-edit-field textarea { resize: vertical; }
+.up-edit-inline {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 92px;
+  gap: 8px;
+}
+.up-edit-inline button,
+.up-save-profile {
+  border: 0;
+  border-radius: 6px;
+  background: #151515;
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+.up-edit-inline button:disabled,
+.up-save-profile:disabled {
+  background: #c9c9c9;
+  cursor: not-allowed;
+}
+.up-edit-help {
+  margin: -4px 0 12px;
+  color: #777;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.up-edit-help.success { color: #0f766e; }
+.up-edit-help.error { color: #d32f2f; }
+.up-save-profile {
+  width: 100%;
+  height: 44px;
+  margin-top: 4px;
+}
 
 .up-profile-actions {
   display: flex;

@@ -473,4 +473,66 @@
   .mypage-row-actions {
     display: grid;
   }
+
+/* ── 판매 내역 카드 ── */
+.selling-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.selling-card .mypage-thumb {
+  aspect-ratio: 1;
+  height: auto;
+  width: 100%;
+}
+
+.selling-card-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 8px 0 8px;
+}
+
+.selling-card-title {
+  color: #151515;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.4;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.selling-card-info span {
+  color: #69717d;
+  font-size: 11px;
+  font-weight: 600;
+  margin: 0;
+  display: block;
+}
+
+.selling-card-price {
+  color: #151515 !important;
+  font-weight: 900 !important;
+  font-size: 13px !important;
+  margin-top: 3px !important;
+}
+
+.mypage-product-card.selling-card button.selling-card-btn {
+  width: 100%;
+  min-height: 34px;
+  border: none !important;
+  border-radius: 8px;
+  background: #168f88 !important;
+  color: #fff !important;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.mypage-product-card.selling-card button.selling-card-btn:hover {
+  opacity: 0.85;
+}
 }

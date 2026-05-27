@@ -36,6 +36,16 @@ export async function updateMyProfile(payload) {
   });
 }
 
+export async function uploadMyProfileImage(file) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  return request("/api/members/mypage/profile-image", {
+    method: "POST",
+    body: formData,
+  });
+}
+
 export async function fetchMyProducts(page = 0, size = 15) {
   return request(`/api/members/mypage/products?page=${page}&size=${size}`);
 }
