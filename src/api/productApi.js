@@ -45,14 +45,14 @@ export async function getPopularProducts() {
   return request("/api/products/popular");
 }
 
-export async function searchProducts({ categoryId, keyword, minPrice, maxPrice, conditionCode, size: sizeParam, sortBy = "latest", page = 0, size = 15 } = {}) {
+export async function searchProducts({ categoryId, keyword, minPrice, maxPrice, conditionCode, productSize, sortBy = "latest", page = 0, size = 15 } = {}) {
   const params = new URLSearchParams();
   if (categoryId !== undefined && categoryId !== null) params.append("categoryId", categoryId);
   if (keyword) params.append("keyword", keyword);
   if (minPrice !== undefined && minPrice !== null) params.append("minPrice", minPrice);
   if (maxPrice !== undefined && maxPrice !== null) params.append("maxPrice", maxPrice);
   if (conditionCode) params.append("conditionCode", conditionCode);
-  if (sizeParam) params.append("size", sizeParam);
+  if (productSize) params.append("productSize", productSize);
   params.append("sortBy", sortBy);
   params.append("page", page);
   params.append("size", size);

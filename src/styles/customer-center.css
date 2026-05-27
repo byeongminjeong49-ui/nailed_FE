@@ -4,19 +4,16 @@
 }
 
 .customer-hero {
-  min-height: 270px;
-  color: #fff;
-  background:
-    radial-gradient(circle at 22% 42%, rgba(173, 238, 213, 0.35), transparent 13%),
-    radial-gradient(circle at 78% 42%, rgba(223, 178, 103, 0.3), transparent 15%),
-    linear-gradient(120deg, #07110f 0%, #123b32 44%, #07110f 100%);
+  color: #111;
+  background: #f7f7f7;
+  border-bottom: 1px solid #ececec;
 }
 
 .customer-hero-inner {
   max-width: 1210px;
   margin: 0 auto;
-  padding: 20px 20px 48px;
-  text-align: center;
+  padding: 42px 20px 40px;
+  text-align: left;
 }
 
 .customer-hero-inner span {
@@ -30,45 +27,47 @@
 
 .customer-hero-inner h1 {
   margin: 0;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 58px;
-  line-height: 1.1;
-  text-shadow: 0 8px 20px rgba(0, 0, 0, 0.42);
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.2;
 }
 
 .customer-hero-inner p {
-  margin: 24px 0 0;
-  color: rgba(255, 255, 255, 0.88);
-  font-size: 18px;
-  font-weight: 700;
+  margin: 14px 0 0;
+  color: #555;
+  font-size: 15px;
+  font-weight: 500;
   line-height: 1.6;
 }
 
 .customer-center-content {
   max-width: 1210px;
   margin: 0 auto;
-  padding: 34px 20px 86px;
+  padding: 30px 20px 84px;
   display: grid;
   grid-template-columns: 260px 1fr;
-  gap: 38px;
+  gap: 32px;
 }
 
 .customer-tabs {
   height: fit-content;
-  padding: 18px 8px;
-  border: 1px solid #e2e5e4;
+  padding: 16px 8px;
+  border: 1px solid #e5e5e5;
   border-radius: 8px;
   background: #fff;
 }
 
 .customer-tabs h2 {
   margin: 0 10px 16px;
-  font-size: 18px;
+  color: #111;
+  font-size: 16px;
+  font-weight: 800;
 }
 
 .customer-tabs button {
   width: 100%;
-  min-height: 54px;
+  min-height: 50px;
   padding: 0 14px;
   display: grid;
   grid-template-columns: 28px 1fr 14px;
@@ -76,10 +75,10 @@
   gap: 10px;
   border: 0;
   border-radius: 6px;
-  color: #181818;
+  color: #333;
   background: transparent;
-  font-size: 15px;
-  font-weight: 800;
+  font-size: 14px;
+  font-weight: 700;
   text-align: left;
   cursor: pointer;
 }
@@ -89,8 +88,8 @@
 }
 
 .customer-tabs button.active {
-  color: #fff;
-  background: linear-gradient(135deg, #0c4c3c, #0a332b);
+  color: #111;
+  background: #f1f1f1;
 }
 
 .customer-tabs button span {
@@ -118,13 +117,16 @@
 
 .customer-panel-head h2 {
   margin: 0;
-  font-size: 25px;
+  color: #111;
+  font-size: 24px;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 .notice-tools {
   display: flex;
   height: 38px;
-  border: 1px solid #e0e3e2;
+  border: 1px solid #dedede;
   border-radius: 6px;
   overflow: hidden;
 }
@@ -134,13 +136,14 @@
   border: 0;
   outline: 0;
   background: #fff;
+  color: #222;
   font-size: 13px;
 }
 
 .notice-tools select {
   width: 86px;
   padding: 0 12px;
-  border-right: 1px solid #e0e3e2;
+  border-right: 1px solid #dedede;
 }
 
 .notice-tools input {
@@ -150,7 +153,7 @@
 
 .notice-table {
   overflow: hidden;
-  border: 1px solid #e1e4e3;
+  border: 1px solid #e4e4e4;
   border-radius: 8px;
   background: #fff;
 }
@@ -162,7 +165,7 @@
   grid-template-columns: minmax(0, 1fr) 160px 140px;
   align-items: center;
   gap: 24px;
-  border-top: 1px solid #eceeed;
+  border-top: 1px solid #eeeeee;
   color: #333;
   font-size: 14px;
 }
@@ -173,7 +176,7 @@
 
 .notice-head {
   min-height: 44px;
-  background: #fafafa;
+  background: #f8f8f8;
   color: #171717;
   font-weight: 800;
   text-align: center;
@@ -188,8 +191,8 @@
   min-width: 70px;
   padding: 6px 10px;
   border-radius: 999px;
-  color: #155342;
-  background: #e8f2ed;
+  color: #333;
+  background: #f1f1f1;
   text-align: center;
   font-size: 12px;
   font-weight: 800;
@@ -205,7 +208,7 @@
 .faq-categories button {
   min-height: 36px;
   padding: 0 15px;
-  border: 1px solid #dfe4e2;
+  border: 1px solid #dedede;
   border-radius: 999px;
   color: #333;
   background: #fff;
@@ -215,8 +218,8 @@
 
 .faq-categories button.active {
   color: #fff;
-  border-color: #0c4c3c;
-  background: #0c4c3c;
+  border-color: #111;
+  background: #111;
 }
 
 .faq-list,
@@ -227,7 +230,7 @@
 }
 
 .faq-item {
-  border: 1px solid #e1e4e3;
+  border: 1px solid #e4e4e4;
   border-radius: 8px;
   background: #fff;
 }
@@ -248,7 +251,7 @@
 }
 
 .faq-item button span {
-  color: #0c4c3c;
+  color: #555;
   font-size: 13px;
 }
 
@@ -275,7 +278,7 @@
 .inquiry-form select,
 .inquiry-form textarea {
   width: 100%;
-  border: 1px solid #dfe3e2;
+  border: 1px solid #dedede;
   border-radius: 8px;
   padding: 0 14px;
   color: #222;
@@ -299,7 +302,7 @@
   border: 0;
   border-radius: 8px;
   color: #fff;
-  background: #0c4c3c;
+  background: #111;
   font-weight: 800;
   cursor: pointer;
 }
@@ -308,8 +311,8 @@
   margin: 0;
   padding: 12px 14px;
   border-radius: 8px;
-  color: #0c4c3c;
-  background: #edf7f2;
+  color: #222;
+  background: #f3f3f3;
   font-weight: 800;
 }
 
@@ -322,11 +325,9 @@
   padding: 28px;
   display: flex;
   flex-direction: column;
-  border: 1px solid #e0e4e3;
+  border: 1px solid #e4e4e4;
   border-radius: 8px;
-  background:
-    linear-gradient(180deg, rgba(232, 242, 237, 0.82), rgba(255, 255, 255, 0) 48%),
-    #fff;
+  background: #fff;
 }
 
 .service-card-icon {
@@ -336,8 +337,8 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  color: #0c4c3c;
-  background: #e3f0ea;
+  color: #222;
+  background: #f2f2f2;
   font-size: 15px;
   font-weight: 900;
 }
@@ -358,8 +359,8 @@
   margin-top: auto;
   padding: 10px 16px;
   border-radius: 999px;
-  color: #fff;
-  background: #0c4c3c;
+  color: #111;
+  background: #f1f1f1;
   font-size: 14px;
   font-weight: 800;
 }
@@ -367,6 +368,22 @@
 @media (max-width: 900px) {
   .customer-center-content {
     grid-template-columns: 1fr;
+  }
+
+  .customer-panel-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .notice-tools {
+    width: 100%;
+  }
+
+  .notice-tools input {
+    width: auto;
+    flex: 1;
+    min-width: 0;
   }
 
   .notice-row {

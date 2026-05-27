@@ -1,33 +1,3 @@
-const footerGroups = [
-  {
-    title: "서비스",
-    links: ["판매하기", "이용안내", "수수료 안내", "배송 안내"],
-  },
-  {
-    title: "마이페이지",
-    links: ["주문내역", "위시리스트", "판매한 상품", "정산내역"],
-  },
-  {
-    title: "고객센터",
-    links: ["공지사항", "자주 묻는 질문", "1:1 문의", "서비스"],
-  },
-];
-
-const footerLinkMap = {
-  판매하기: "/sell",
-  이용안내: "/guide",
-  "수수료 안내": "/fees",
-  "배송 안내": "/shipping",
-  공지사항: "/customer-center?tab=notice",
-  "자주 묻는 질문": "/customer-center?tab=faq",
-  "1:1 문의": "/customer-center?tab=inquiry",
-  서비스: "/customer-center?tab=service",
-  주문내역: "/mypage/orders",
-  위시리스트: "/mypage/wishlist",
-  "판매한 상품": "/mypage/selling",
-  정산내역: "/mypage/settlements",
-};
-
 const socialIcons = {
   instagram: (
     <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
@@ -90,20 +60,15 @@ function Footer() {
             </a>
           </div>
         </div>
-        {footerGroups.map((group) => (
-          <div className="footer-links" key={group.title}>
-            <h2>{group.title}</h2>
-            {group.links.map((link) => (
-              <a href={footerLinkMap[link] || "/"} key={link}>
-                {link}
-              </a>
-            ))}
-          </div>
-        ))}
+        <div className="footer-company-info">
+          <p>
+            (주)네일드컴퍼니 · 대표이사 정병민 / 소재지: 경기도 용인시 수지구 탄천상로 29 201동 501호 / 대표 전화번호: 010-8005-7387 / 고객센터: 070-8654-1835 / 이메일 문의는 Nailed@support.com
+          </p>
+        </div>
         <div className="footer-contact">
           <h2>고객센터</h2>
           <strong>02-1234-5678</strong>
-          <h2>평일 10:00 - 18:00 <br></br>(주말/공휴일 휴무)</h2> 
+          <h2>평일 10:00 - 18:00 <br></br>(주말/공휴일 휴무)</h2>
           <h2>이메일</h2>
           <strong>Nailed@support.com</strong>
         </div>

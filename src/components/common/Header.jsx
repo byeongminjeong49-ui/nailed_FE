@@ -116,7 +116,7 @@ function Header() {
     const keyword = searchKeyword.trim();
     const hasSearchText = /[\p{L}\p{N}]/u.test(keyword);
 
-    if (!keyword || keyword.length < 2 || !hasSearchText) {
+    if (!keyword || !hasSearchText) {
       return;
     }
 
@@ -164,7 +164,7 @@ function Header() {
     <header className="site-header">
       <div className="header-main">
         <a className="header-logo" href="/" aria-label="Nailed 홈">
-          <img src="/images/logo/nailed-logo.png" alt="Nailed" />
+          Nailed
         </a>
         <form className="search-bar" onSubmit={handleSearchSubmit}>
           <label className="sr-only" htmlFor="home-search">
