@@ -572,7 +572,7 @@ export default function SellPage({ editProductId }) {
             <div className="sell-field-label">브랜드</div>
             <select className="sell-select" value={brandId}
               onChange={(e) => setBrandId(e.target.value)}>
-              <option value="">브랜드를 선택해주세요</option>
+              <option value="" disabled hidden>브랜드를 선택해주세요</option>
               {brands.map((b) => (
                 <option key={b.groupId} value={b.groupId}>{b.name}</option>
               ))}

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import Footer from "../components/common/Footer";
 import Header from "../components/common/Header";
 import ReportModal from "../components/ReportModal";
+import { toBrandNameEn } from "../utils/brandName";
 import { addWishlist, getProductDetail, getRandomProducts, getRelatedProducts, getSellerProducts, incrementViewCount, removeWishlist } from "../api/productApi";
 import { categoryCodeToUrl } from "../data/categories";
 import "../styles/product-detail.css";
@@ -170,14 +171,20 @@ function getRecentlyViewedIds(excludeId) {
 /* ── 상품 미니카드 & 섹션 ── */
 function ProductMiniCard({ product }) {
   const imgUrl = product.thumbnailUrl || getProductImageUrl(product);
-  const brand = product.brandName || null;
+  const brand = product.brandName ? toBrandNameEn(product.brandName) : null;
   const wishlistCount = product.wishlistCount ?? 0;
+  const isSold = product.productStatus === "SOLD";
   return (
     <article className="product-card" onClick={() => navigate(`/product/${product.productId}`)}>
       <div className="product-visual">
         {imgUrl
           ? <img className="product-image" src={imgUrl} alt={product.title} />
           : <div className="product-no-img" />}
+        {isSold && (
+          <div className="product-card-sold-overlay">
+            <span>SOLD</span>
+          </div>
+        )}
         <div className="product-heart-btn">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
@@ -405,7 +412,7 @@ function ProductDetailPage({ productId }) {
           {/* 오른쪽: 제목/가격/메타/설명/해시태그/CTA */}
           <div className="pd-info">
 
-            {product.brandName && <p className="pd-brand">{product.brandName}</p>}
+            {product.brandName && <p className="pd-brand">{toBrandNameEn(product.brandName)}</p>}
 
             {/* 제목 + 액션 (찜/신고) */}
             <div className="pd-info-top">
@@ -438,7 +445,7 @@ function ProductDetailPage({ productId }) {
             <p className="pd-price">{product.price.toLocaleString()}<span className="pd-price-won">원</span></p>
             <p className="pd-product-meta">
               {[
-                product.brandName,
+                toBrandNameEn(product.brandName),
                 product.categoryName + (product.size ? ` ${product.size}` : ""),
                 CONDITION_SHORT[product.conditionCode] || product.conditionDescription,
               ].filter(Boolean).join(" · ")}

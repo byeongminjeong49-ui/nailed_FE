@@ -4,7 +4,7 @@
 }
 
 :root {
-  --home-container-max: 1210px;
+  --home-container-max: 1480px;
   --home-container-pad: 18px;
 }
 
@@ -392,11 +392,29 @@
 .product-visual {
   position: relative;
   width: 100%;
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 3 / 4;
   border-radius: 8px;
   overflow: hidden;
   background: #f0f0f0;
   flex-shrink: 0;
+}
+.product-card-sold-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.38);
+  pointer-events: none;
+}
+.product-card-sold-overlay span {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  color: #fff;
+  background: #111;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  padding: 4px 10px;
+  border-radius: 4px;
 }
 
 .more-button {
