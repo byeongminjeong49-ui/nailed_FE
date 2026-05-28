@@ -39,11 +39,6 @@ export async function updateMyProfile(payload) {
 export async function uploadMyProfileImage(file) {
   const formData = new FormData();
   formData.append("file", file);
-
-  // return request("/api/members/mypage/profile-image", {
-  //   method: "POST",
-  //   body: formData,
-  // }); 
   return null;
 }
 
