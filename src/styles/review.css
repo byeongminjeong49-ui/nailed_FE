@@ -970,6 +970,62 @@
   color: #999;
 }
 
+/* ── 계정관리 탭 ── */
+.up-account-tab {
+  max-width: 720px;
+}
+
+.up-account-card {
+  padding: 24px 28px;
+  border: 1px solid #e7e7e7;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.up-account-card h3 {
+  margin: 0 0 18px;
+  color: #151515;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.up-withdraw-box {
+  padding: 18px;
+  border: 1px solid #ffd2d2;
+  border-radius: 8px;
+  background: #fff8f8;
+}
+
+.up-withdraw-title {
+  margin: 0;
+  color: #b42323;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.up-withdraw-desc {
+  margin: 8px 0 16px;
+  color: #6f7378;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.up-withdraw-btn {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 8px;
+  background: #b42323;
+  color: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.up-withdraw-btn:hover {
+  background: #941b1b;
+}
+
 /* ── 리뷰 탭 ── */
 .up-reviews-wrap { max-width: 720px; }
 

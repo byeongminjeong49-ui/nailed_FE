@@ -10,6 +10,7 @@ import {
   fetchWishlist,
   updateMyProfile,
   uploadMyProfileImage,
+  withdrawMe,
 } from "../api/myPageApi";
 import { fetchMyInquiries, fetchMyInquiryDetail } from "../api/inquiryApi";
 import { getSellerProducts, getUserHome } from "../api/productApi";
@@ -64,6 +65,7 @@ function getTabFromPath(pathname) {
   if (pathname === "/mypage/settlements") return "settlements";
   if (pathname === "/mypage/reviews") return "reviews";
   if (pathname === "/mypage/inquiries") return "inquiries";
+  if (pathname === "/mypage/account") return "account";
   return "products";
 }
 
@@ -74,6 +76,7 @@ function getPathFromTab(tab) {
   if (tab === "settlements") return "/mypage/settlements";
   if (tab === "reviews") return "/mypage/reviews";
   if (tab === "inquiries") return "/mypage/inquiries";
+  if (tab === "account") return "/mypage/account";
   return "/mypage";
 }
 
@@ -324,6 +327,7 @@ const PROFILE_TABS = [
   { key: "settlements",  label: "정산 내역" },
   { key: "reviews",      label: "리뷰" },
   { key: "inquiries",    label: "문의 내역" },
+  { key: "account",      label: "회원 탈퇴" },
 ];
 
 /* ── 사이드바 필터 ── */
@@ -960,6 +964,29 @@ function EmptyProfileTab({ label }) {
   );
 }
 
+function AccountTab({ onWithdraw }) {
+  return (
+    <div className="up-account-tab">
+      <section className="up-account-card">
+        <h3></h3>
+        <div className="up-withdraw-box">
+          <p className="up-withdraw-title">회원 탈퇴</p>
+          <p className="up-withdraw-desc">
+            회원 탈퇴 시 계정 상태가 탈퇴 처리되며, 다시 로그인할 수 없습니다.
+          </p>
+          <button
+            type="button"
+            className="up-withdraw-btn"
+            onClick={onWithdraw}
+          >
+            회원 탈퇴
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 /* ── 메인 페이지 ── */
 function UserProfilePage({
   memberId,
@@ -1140,6 +1167,32 @@ function UserProfilePage({
     }
   }
 
+  async function handleWithdraw() {
+    const firstConfirm = window.confirm(
+      "정말 회원 탈퇴하시겠습니까?\n탈퇴 후 계정 복구가 어려울 수 있습니다."
+    );
+    if (!firstConfirm) return;
+
+    const secondConfirm = window.confirm(
+      "회원 탈퇴를 진행하면 현재 계정으로 다시 로그인할 수 없습니다.\n정말 탈퇴하시겠습니까?"
+    );
+    if (!secondConfirm) return;
+
+    try {
+      await withdrawMe();
+
+      sessionStorage.removeItem("nailed_session");
+      sessionStorage.removeItem("accessToken");
+      localStorage.removeItem("nailed_session");
+      localStorage.removeItem("accessToken");
+
+      alert("회원 탈퇴가 완료되었습니다.");
+      window.location.href = "/";
+    } catch (error) {
+      showToast(error.message || "회원 탈퇴에 실패했습니다.");
+    }
+  }
+
   useEffect(() => {
     if (!memberId) return;
     if (hideFooter && currentTab !== "reviews") return;
@@ -1277,6 +1330,9 @@ function UserProfilePage({
             detailLoading={detailLoading}
             onSelectInquiry={handleSelectInquiry}
           />
+        )}
+        {!tabLoading && hideFooter && currentTab === "account" && (
+          <AccountTab onWithdraw={handleWithdraw} />
         )}
 
         {currentTab === "reviews" && (
