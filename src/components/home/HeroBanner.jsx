@@ -8,6 +8,7 @@ const BANNER_OBJECT_POSITIONS = {
   luxury: "center center",
   kawaii: "center center",
   itTech: "center center",
+  backpack: "center center",
 };
 
 function HeroBanner() {

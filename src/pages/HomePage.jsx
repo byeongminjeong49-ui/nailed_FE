@@ -18,6 +18,7 @@ const EDITOR_RECOMMENDATIONS = [
   { id: "luxury", title: "럭셔리" },
   { id: "kawaii", title: "액세서리" },
   { id: "itTech", title: "IT/테크" },
+  { id: "backpack", title: "Bag your Back" },
 ];
 const LUXURY_BRANDS = [
   { label: "Goyard", value: "goyard" },
@@ -180,7 +181,7 @@ function EditorRecommendationSection() {
             key={item.id}
             onClick={() => navigate(item.banner.link)}
           >
-            <img src={item.banner.imageUrl} alt="" />
+            <img src={item.banner.editorImageUrl || item.banner.imageUrl} alt="" />
             <span>{item.title}</span>
           </button>
         ))}

@@ -50,9 +50,10 @@ export function LoginPage({ onNavigate }) {
     setMessage({ type: "", text: "" });
 
     try {
-      await login({ userId: form.userId, password: form.password });
-      setMessage({ type: "success", text: "로그인되었습니다. 홈으로 이동합니다." });
-      window.setTimeout(() => onNavigate("/"), 600);
+      const session = await login({ userId: form.userId, password: form.password });
+      const nextPath = String(session?.role || "").toUpperCase() === "ADMIN" ? "/admin" : "/";
+      setMessage({ type: "success", text: "로그인되었습니다. 이동합니다." });
+      window.setTimeout(() => onNavigate(nextPath), 600);
     } catch (error) {
       setMessage({ type: "error", text: error.message || "로그인에 실패했습니다." });
     } finally {

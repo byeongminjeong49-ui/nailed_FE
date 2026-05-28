@@ -6,10 +6,13 @@ function toBannerImageUrl(path) {
   return `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
+const toEditorImageUrl = toBannerImageUrl;
+
 export const banners = [
   {
     id: "menswear",
     imageUrl: toBannerImageUrl("/images/banners/banner_menswear.png"),
+    editorImageUrl: toEditorImageUrl("/images/miniBanners/minibanner_menswear.png"),
     link: "/category/menswear",
     label: "menswear",
     title: "Menswear",
@@ -18,6 +21,7 @@ export const banners = [
   {
     id: "womenswear",
     imageUrl: toBannerImageUrl("/images/banners/banner_womenswear.png"),
+    editorImageUrl: toEditorImageUrl("/images/miniBanners/minibanner_womenswear.png"),
     link: "/category/womenswear",
     label: "womenswear",
     title: "Womenswear",
@@ -26,6 +30,7 @@ export const banners = [
   {
     id: "luxury",
     imageUrl: toBannerImageUrl("/images/banners/banner_luxury.png"),
+    editorImageUrl: toEditorImageUrl("/images/miniBanners/minibanner_luxury.png"),
     link: "/category/luxury",
     label: "luxury",
     title: "Luxury",
@@ -34,6 +39,7 @@ export const banners = [
   {
     id: "kawaii",
     imageUrl: toBannerImageUrl("/images/banners/banner_keyring.png"),
+    editorImageUrl: toEditorImageUrl("/images/miniBanners/minibanner_keyring.png"),
     link: "/category/accessory?subcategory=keyring",
     label: "kawaii",
     title: "Kawaii",
@@ -42,9 +48,20 @@ export const banners = [
   {
     id: "itTech",
     imageUrl: toBannerImageUrl("/images/banners/banner_it_tech.png"),
+    editorImageUrl: toEditorImageUrl("/images/miniBanners/minibanner_it_tech.png"),
     link: "/category/tech",
     label: "itTech",
     title: "IT/Tech",
     description: "필요한 순간 더 빛나는 스마트한 선택",
+  },
+  {
+    id: "backpack",
+    imageUrl: toBannerImageUrl("/images/banners/banner_backpack.png"),
+    editorImageUrl: toEditorImageUrl("/images/miniBanners/minibanner_backpack.png"),
+    link: "/search?keyword=%EB%B0%B1%ED%8C%A9",
+    label: "backpack",
+    title: "Bag your Back",
+    subTitle: "데일리부터 아웃도어까지, 지금 가장 필요한 백팩",
+    description: "데일리부터 아웃도어까지, 지금 가장 필요한 백팩",
   },
 ];

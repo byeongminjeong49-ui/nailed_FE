@@ -88,7 +88,7 @@ function hasAccessToken() {
 
 function getCurrentRole() {
   const session = readSession();
-  return session?.role || "";
+  return String(session?.role || "").toUpperCase();
 }
 
 function moveTo(path) {
