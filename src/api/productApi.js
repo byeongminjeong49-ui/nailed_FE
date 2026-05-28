@@ -114,12 +114,19 @@ async function requestWithOptionalAuth(path, options = {}) {
   }
 }
 
+function toAssetUrl(url) {
+  if (!url) return url;
+  if (/^https?:\/\//i.test(url) || url.startsWith("data:") || url.startsWith("blob:")) return url;
+  return `${API_BASE_URL}${url.startsWith("/") ? url : `/${url}`}`;
+}
+
 export async function getProductDetail(productId) {
   const data = await requestWithOptionalAuth(`/api/products/${encodeURIComponent(productId)}`);
   if (data && Array.isArray(data.imageUrls)) {
-    data.imageUrls = data.imageUrls.map((url) =>
-      url && !url.startsWith("http") ? `${API_BASE_URL}${url}` : url
-    );
+    data.imageUrls = data.imageUrls.map(toAssetUrl);
+  }
+  if (data?.seller?.profileImageUrl) {
+    data.seller.profileImageUrl = toAssetUrl(data.seller.profileImageUrl);
   }
   return data;
 }
@@ -194,10 +201,7 @@ export function fixSummaryImages(list) {
   if (!Array.isArray(list)) return list;
   return list.map((p) => ({
     ...p,
-    thumbnailUrl:
-      p.thumbnailUrl && !p.thumbnailUrl.startsWith("http")
-        ? `${API_BASE_URL}${p.thumbnailUrl}`
-        : p.thumbnailUrl,
+    thumbnailUrl: toAssetUrl(p.thumbnailUrl),
   }));
 }
 

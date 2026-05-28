@@ -383,7 +383,16 @@ function ProductDetailPage({ productId }) {
             )}
 
             <div className="pd-seller-card">
-              <div className="pd-seller-avatar">{product.seller.nickname.charAt(0)}</div>
+              <div className="pd-seller-avatar">
+                {product.seller.profileImageUrl ? (
+                  <img
+                    src={product.seller.profileImageUrl}
+                    alt={`${product.seller.nickname} 프로필`}
+                  />
+                ) : (
+                  product.seller.nickname.charAt(0)
+                )}
+              </div>
               <div className="pd-seller-info">
                 <span className="pd-seller-nickname">{product.seller.nickname}</span>
                 <div className="pd-seller-sub">

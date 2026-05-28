@@ -175,6 +175,13 @@
   justify-content: center;
   flex-shrink: 0;
   letter-spacing: -1px;
+  overflow: hidden;
+}
+.pd-seller-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 .pd-seller-info { flex: 1; min-width: 0; }
 .pd-seller-nickname {

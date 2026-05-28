@@ -847,6 +847,100 @@ function ProfileEditModal({ seller, onClose, onSave }) {
   }
 
 /* ── 리뷰 탭 ── */
+function ProfileSettingsModal({ seller, onClose, onSave }) {
+  const fileInputRef = useRef(null);
+  const [shopInfo, setShopInfo] = useState(seller.shopInfo || "");
+  const [profilePreview, setProfilePreview] = useState(seller.profileImageUrl || "");
+  const [profileFile, setProfileFile] = useState(null);
+  const [profilePreviewFailed, setProfilePreviewFailed] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  function handleImageChange(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!PROFILE_IMAGE_TYPES.includes(file.type)) {
+      alert("jpg/png 파일만 선택할 수 있습니다.");
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > PROFILE_IMAGE_MAX_SIZE) {
+      alert("파일 크기는 최대 5MB까지 가능합니다.");
+      event.target.value = "";
+      return;
+    }
+
+    setProfilePreview(URL.createObjectURL(file));
+    setProfilePreviewFailed(false);
+    setProfileFile(file);
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+
+    try {
+      setSaving(true);
+      await onSave({
+        shopInfo: shopInfo.trim(),
+        profileFile,
+      });
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="up-modal-backdrop" role="presentation" onMouseDown={onClose}>
+      <form className="up-profile-modal" onSubmit={handleSubmit} onMouseDown={(event) => event.stopPropagation()}>
+        <div className="up-modal-head">
+          <h2>프로필 수정</h2>
+          <button type="button" className="up-modal-close" onClick={onClose} aria-label="닫기">
+            ×
+          </button>
+        </div>
+
+        <button
+          type="button"
+          className="up-edit-avatar"
+          onClick={() => fileInputRef.current?.click()}
+          aria-label="프로필 이미지 선택"
+        >
+          {profilePreview && !profilePreviewFailed ? (
+            <img src={profilePreview} alt="" onError={() => setProfilePreviewFailed(true)} />
+          ) : (
+            <span>{seller.nickname.charAt(0)}</span>
+          )}
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="up-hidden-file"
+          accept="image/jpeg,image/png"
+          onChange={handleImageChange}
+        />
+
+        <label className="up-edit-field">
+          <span>상점 정보</span>
+          <textarea
+            value={shopInfo}
+            onChange={(event) => setShopInfo(event.target.value.slice(0, 500))}
+            rows={5}
+            maxLength={500}
+            placeholder="상점 소개를 입력하세요."
+          />
+        </label>
+        <p className="up-edit-help">{shopInfo.length}/500</p>
+
+        <button type="submit" className="up-save-profile" disabled={saving}>
+          {saving ? "저장 중..." : "저장"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
 function ReviewsTab({ reviews, totalPages, page, setPage, rvLoading }) {
   return (
     <div className="up-reviews-wrap">
@@ -1015,6 +1109,7 @@ function UserProfilePage({
   const [rvLoading, setRvLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("products");
   const [toast, setToast] = useState("");
+  const [profileEditOpen, setProfileEditOpen] = useState(false);
   const timerRef = useRef(null);
   const currentTab = hideFooter ? getTabFromPath(pathname) : activeTab;
   const profileTabs = hideFooter
@@ -1188,6 +1283,24 @@ function UserProfilePage({
   }
 };
 
+  async function handleSaveProfile({ shopInfo, profileFile }) {
+    try {
+      if (profileFile) {
+        await uploadMyProfileImage(profileFile);
+      }
+
+      await updateMyProfile({ shopInfo });
+
+      const profile = await fetchMyProfile();
+      const home = await getUserHome(profile?.memberId || memberId);
+      setSeller(mapProfileToSeller(home?.profile || profile, memberId, home));
+      showToast("프로필이 수정되었습니다.");
+    } catch (error) {
+      showToast(error.message || "프로필 수정에 실패했습니다.");
+      throw error;
+    }
+  }
+
   async function handleWithdraw() {
     const firstConfirm = window.confirm(
       "정말 회원 탈퇴하시겠습니까?\n탈퇴 후 계정 복구가 어려울 수 있습니다."
@@ -1272,13 +1385,24 @@ function UserProfilePage({
       {/* 프로필 헤더 */}
       <div className="up-profile-section">
         <div className="up-profile-inner">
-          <div className="up-avatar">{seller.nickname.charAt(0)}</div>
+          <div className="up-avatar">
+            {seller.profileImageUrl ? (
+              <img
+                src={seller.profileImageUrl}
+                alt={`${seller.nickname} 프로필`}
+                onError={() => setSeller((prev) => prev ? { ...prev, profileImageUrl: "" } : prev)}
+              />
+            ) : (
+              seller.nickname.charAt(0)
+            )}
+          </div>
           <div className="up-profile-info">
             <div className="up-name-row">
               <h1 className="up-nickname">{seller.nickname}</h1>
               <span className={`up-grade ${gradeClass}`}>{GRADE[seller.sellerGrade]}</span>
             </div>
             <p className="up-handle">@{seller.memberId}</p>
+            {seller.shopInfo && <p className="up-shop-info">{seller.shopInfo}</p>}
             <div className="up-stats">
               <span>판매 상품 <strong>{sellerProducts.length}</strong>건</span>
               <span className="up-stats-dot">·</span>
@@ -1298,6 +1422,13 @@ function UserProfilePage({
               )}
             </div>
           </div>
+          {hideFooter && (
+            <div className="up-profile-actions">
+              <button type="button" className="up-profile-edit-btn" onClick={() => setProfileEditOpen(true)}>
+                프로필 수정
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1376,6 +1507,14 @@ function UserProfilePage({
       </div>
 
       {!hideFooter && <Footer />}
+
+      {profileEditOpen && (
+        <ProfileSettingsModal
+          seller={seller}
+          onClose={() => setProfileEditOpen(false)}
+          onSave={handleSaveProfile}
+        />
+      )}
 
       {toast && <div className="pd-toast">{toast}</div>}
     </div>
