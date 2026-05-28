@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState} from 'react';
 import { createOrder } from '../api/orderApi';
 
 const s = {
@@ -72,6 +72,7 @@ export default function OrderForm() {
     if (key === 'receiverPhone' || key === 'zipcode') {
       val = val.replace(/[^0-9]/g, '');
     }
+    if (key === 'receiverPhone' && val.length > 11) return;
     if (key === 'receiverName') {
       val = val.replace(/[^가-힣ㄱ-ㅎㅏ-ㅣ\s]/g, '');
     }
@@ -121,14 +122,14 @@ window.dispatchEvent(new PopStateEvent('popstate'));
     }
   };
 
-  const fields = [
-    { key: 'receiverName',   label: '받는 분 성함을 입력하세요 *',      placeholder: '홍길동' },
-    { key: 'receiverPhone',  label: '- 없이 숫자만 입력 가능 *',       placeholder: '01012345678' },
-    { key: 'zipcode',        label: '우편번호 입력하세요',        placeholder: '12345' },
-    { key: 'address', label: '도로명 또는 지번 주소 *', placeholder: '클릭하여 주소 검색' },
-    { key: 'addressDetail',  label: '동·호수 등 상세 주소',       placeholder: '101동 202호' },
-    { key: 'deliveryRequest',label: '배송 요청사항',   placeholder: '문 앞에 놓아주세요' },
-  ];
+ const fields = [
+  { key: 'receiverName',    label: '받는 분 성함 *',           placeholder: '홍길동' },
+  { key: 'receiverPhone',   label: '연락처 * (숫자만, - 제외)', placeholder: '01012345678' },
+  { key: 'zipcode',         label: '우편번호',                 placeholder: '우편번호 검색' },
+  { key: 'address',         label: '주소 *',                  placeholder: '우편번호 검색 시 자동 입력됩니다' },
+  { key: 'addressDetail',   label: '상세 주소',                placeholder: '101동 202호' },
+  { key: 'deliveryRequest', label: '배송 요청사항',             placeholder: '문 앞에 놓아주세요' },
+];
 
   return (
     <div style={s.page}>
@@ -235,12 +236,6 @@ window.dispatchEvent(new PopStateEvent('popstate'));
           {paying ? '처리 중...' : `${totalPrice.toLocaleString()}원 안전결제`}
         </button>
         {!canPay && !agree1 && <p style={{ textAlign: 'center', fontSize: '12px', color: '#e05c5c', marginTop: '8px' }}>배송지 입력 및 필수 동의를 완료해 주세요.</p>}
-      {form.receiverPhone.length > 11 && (
-  <p style={{ textAlign: 'center', fontSize: '12px', color: '#e05c5c', marginTop: '4px' }}>숫자만 10~11자리 입력하세요</p>
-)}
-{form.zipcode.length > 5 && (
-  <p style={{ textAlign: 'center', fontSize: '12px', color: '#e05c5c', marginTop: '4px' }}>우편번호는 숫자 5자리입니다</p>
-)}
       </div>
     </div>
   );

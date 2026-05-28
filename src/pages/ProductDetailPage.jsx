@@ -499,6 +499,8 @@ function ProductDetailPage({ productId }) {
           shippingFee:   0,
           title:         product.title,
           imageUrl:      productImageUrls[0] ?? '',
+          sellerNickname:  product.seller.nickname,
+          sellerBadge:     product.seller.sellerGrade,
         }));
         navigate('/order/form');
       }}
