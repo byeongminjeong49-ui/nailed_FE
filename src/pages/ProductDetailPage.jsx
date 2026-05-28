@@ -70,15 +70,6 @@ function Gallery({ imageUrls, title, brandName, isSold }) {
           <span className="pd-gallery-counter">{cur + 1} / {count}</span>
         )}
       </div>
-      {hasImages && count > 1 && (
-        <div className="pd-gallery-thumbs">
-          {imageUrls.map((url, i) => (
-            <button key={i} className={`pd-thumb ${i === cur ? "active" : ""}`} onClick={() => setCur(i)}>
-              <img src={url} alt={`썸네일 ${i + 1}`} />
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
@@ -369,7 +360,7 @@ function ProductDetailPage({ productId }) {
               <div className="pd-related-strip">
                 <h3 className="pd-related-strip-title">비슷한 상품</h3>
                 <div className="pd-related-thumbs">
-                  {relatedProducts.slice(0, 5).map((p) => (
+                  {relatedProducts.slice(0, 4).map((p) => (
                     <button
                       key={p.productId}
                       className="pd-related-thumb"

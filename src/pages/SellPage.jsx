@@ -211,6 +211,7 @@ export default function SellPage({ editProductId }) {
   const [condition, setCondition]         = useState("");
   const [brandId, setBrandId]             = useState("");
   const [price, setPrice]                 = useState("");
+  const [shippingFee, setShippingFee]     = useState("");
   const [hashtags, setHashtags]           = useState("");
   const [productStatus, setProductStatus] = useState("ON_SALE");
   const [brands, setBrands]               = useState([]);
@@ -617,7 +618,9 @@ export default function SellPage({ editProductId }) {
             <div className="sell-field-col">
               <div className="sell-field-label">기본 배송비</div>
               <div className="sell-price-wrap">
-                <input type="text" className="sell-input" defaultValue={0} />
+                <input type="text" className="sell-input"
+                  placeholder="0" value={shippingFee}
+                  onChange={(e) => setShippingFee(e.target.value)} />
                 <span className="sell-unit">원</span>
               </div>
             </div>

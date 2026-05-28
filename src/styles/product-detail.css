@@ -924,14 +924,14 @@
 }
 .pd-related-thumbs {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 6px;
 }
 .pd-related-thumb {
   aspect-ratio: 1;
   border: 0;
   padding: 0;
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: hidden;
   cursor: pointer;
   background: #f0f0f0;
@@ -952,7 +952,7 @@
 .pd-related-more-card {
   aspect-ratio: 1;
   border: 1px solid #e0e0e0;
-  border-radius: 6px;
+  border-radius: 8px;
   background: #fafafa;
   cursor: pointer;
   font-size: 11px;
