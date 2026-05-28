@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { registerProduct, uploadImage, getBrands, getProductDetail, updateProduct, deleteProduct, changeProductStatus } from "../api/productApi";
+import { toBrandNameEn } from "../utils/brandName";
 import "../styles/sell.css";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
@@ -584,7 +585,7 @@ export default function SellPage({ editProductId }) {
               // 럭셔리: 상세카테고리 선택 시 자동 표시 (직접 선택 불가)
               <div className="sell-input sell-brand-readonly">
                 {brandId
-                  ? brands.find((b) => String(b.groupId) === String(brandId))?.name ?? "브랜드 선택 안 됨"
+                  ? toBrandNameEn(brands.find((b) => String(b.groupId) === String(brandId))?.name) ?? "브랜드 선택 안 됨"
                   : "상세 카테고리를 선택하면 자동 입력됩니다"}
               </div>
             ) : (
@@ -595,7 +596,7 @@ export default function SellPage({ editProductId }) {
                 {brands
                   .filter((b) => !b.code?.startsWith("LUXURY_"))
                   .map((b) => (
-                    <option key={b.groupId} value={b.groupId}>{b.name}</option>
+                    <option key={b.groupId} value={b.groupId}>{toBrandNameEn(b.name)}</option>
                   ))
                 }
                 <option value="NOBRAND">브랜드 없음</option>
@@ -648,7 +649,7 @@ export default function SellPage({ editProductId }) {
           {/* 해시태그 */}
           <div className="sell-field">
             <div className="sell-field-label">해시태그</div>
-            <input className="sell-input" placeholder="#태그1,#태그2 (쉼표로 구분)"
+            <input className="sell-input" placeholder="# 없이 쉼표로 구분해 입력"
               value={hashtags} maxLength={500}
               onChange={(e) => setHashtags(e.target.value)} />
           </div>
