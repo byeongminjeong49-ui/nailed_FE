@@ -40,10 +40,11 @@ export async function uploadMyProfileImage(file) {
   const formData = new FormData();
   formData.append("file", file);
 
-  return request("/api/members/mypage/profile-image", {
-    method: "POST",
-    body: formData,
-  });
+  // return request("/api/members/mypage/profile-image", {
+  //   method: "POST",
+  //   body: formData,
+  // }); 
+  return null;
 }
 
 export async function fetchMyProducts(page = 0, size = 15) {
