@@ -225,10 +225,10 @@ export default function PaymentPage() {
             <div style={s.methodGrid}>
               {METHODS.map(({ id, icon, label }) => (
                 <button key={id} style={s.methodBtn(selectedMethod === id)} onClick={() => setSelectedMethod(id)}>
-                  {typeof icon === 'string' && (icon.includes('data:') || icon.startsWith('/') || icon.startsWith('http'))
-                    ? <img src={icon} alt={label} style={{ width: '35px', height: '35px', display: 'block', margin: '0 auto 4px', objectFit: 'contain' }} />
-                    : <span style={s.methodIcon}>{icon}</span>
-                  }
+                {['kakao', 'naver', 'toss'].includes(id)
+                ? <img src={icon} alt={label} style={{ width: '35px', height: '35px', display: 'block', margin: '0 auto 4px', objectFit: 'contain' }} />
+  : <span style={s.methodIcon}>{icon}</span>
+}
                   <span>{label}</span>
                 </button>
               ))}
