@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import Footer from "../components/common/Footer";
 import Header from "../components/common/Header";
+import { checkNickname } from "../api/authApi";
 import {
   fetchMyProfile,
   fetchMyProducts,
   fetchOrders,
   fetchSettlements,
   fetchWishlist,
+  updateMyProfile,
+  uploadMyProfileImage,
 } from "../api/myPageApi";
 import { fetchMyInquiries, fetchMyInquiryDetail } from "../api/inquiryApi";
 import { getSellerProducts, getUserHome } from "../api/productApi";
@@ -15,6 +18,13 @@ import "../styles/review.css";
 import "../styles/product-detail.css";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+const DEFAULT_COMMISSION_RATE = 0.02;
+const PROFILE_IMAGE_MAX_SIZE = 5 * 1024 * 1024;
+const PROFILE_IMAGE_TYPES = ["image/jpeg", "image/png"];
+const NICKNAME_CHANGE_INTERVAL_DAYS = 30;
+const NICKNAME_CHANGED_KEY = "nailed_nickname_changed_at";
+const DEFAULT_PROFILE_IMAGE_URL = "/images/profileImg/default-profile.png";
+
 
 const GRADE = { BRONZE: "브론즈", SILVER: "실버", GOLD: "골드", DIAMOND: "다이아" };
 
@@ -50,6 +60,7 @@ function getProductImageUrl(product) {
 function getTabFromPath(pathname) {
   if (pathname === "/mypage/orders") return "orders";
   if (pathname === "/mypage/wishlist") return "wishlist";
+  if (pathname === "/mypage/selling") return "selling";
   if (pathname === "/mypage/settlements") return "settlements";
   if (pathname === "/mypage/reviews") return "reviews";
   if (pathname === "/mypage/inquiries") return "inquiries";
@@ -59,6 +70,7 @@ function getTabFromPath(pathname) {
 function getPathFromTab(tab) {
   if (tab === "orders") return "/mypage/orders";
   if (tab === "wishlist") return "/mypage/wishlist";
+  if (tab === "selling") return "/mypage/selling";
   if (tab === "settlements") return "/mypage/settlements";
   if (tab === "reviews") return "/mypage/reviews";
   if (tab === "inquiries") return "/mypage/inquiries";
@@ -74,6 +86,9 @@ function toList(data) {
   if (Array.isArray(data)) return data;
   return [];
 }
+function unwrapApiData(data) {
+  return data?.data ?? data ?? {};
+}
 
 function readTotalPages(data) {
   return Number(data?.totalPages ?? data?.data?.totalPages ?? 0);
@@ -82,6 +97,59 @@ function readTotalPages(data) {
 function readTotalElements(data) {
   return Number(data?.totalElements ?? data?.data?.totalElements ?? 0);
 }
+function formatDate(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("ko-KR");
+}
+
+function addDays(value, days) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  date.setDate(date.getDate() + days);
+  return date;
+}
+
+function getNicknameChangeKey(memberId) {
+  return `${NICKNAME_CHANGED_KEY}:${memberId || "me"}`;
+}
+
+function readLocalNicknameChangedAt(memberId) {
+  try {
+    return localStorage.getItem(getNicknameChangeKey(memberId));
+  } catch {
+    return "";
+  }
+}
+
+function saveLocalNicknameChangedAt(memberId) {
+  try {
+    localStorage.setItem(getNicknameChangeKey(memberId), new Date().toISOString());
+  } catch {
+    return;
+  }
+}
+
+function updateSessionNickname(nickname) {
+  try {
+    const session = JSON.parse(sessionStorage.getItem("nailed_session") || "null");
+    if (!session) return;
+    sessionStorage.setItem("nailed_session", JSON.stringify({ ...session, nickname }));
+    window.dispatchEvent(new Event("storage"));
+  } catch {
+    return;
+  }
+}
+
+function getNicknameAvailableDate(seller) {
+  const changedAt = seller?.nicknameUpdatedAt || readLocalNicknameChangedAt(seller?.memberId);
+  if (!changedAt) return null;
+
+  const availableAt = addDays(changedAt, NICKNAME_CHANGE_INTERVAL_DAYS);
+  if (!availableAt || availableAt <= new Date()) return null;
+  return availableAt;
+}
 
 function formatWon(value) {
   const amount = Number(value ?? 0);
@@ -89,12 +157,15 @@ function formatWon(value) {
 }
 
 function normalizeProduct(product) {
+  const isSold = Boolean(product?.isSold);
   return {
     ...product,
     productId: product?.productId,
     title: product?.title || product?.productTitle || "상품명 없음",
     price: Number(product?.price ?? product?.finalPrice ?? 0),
-    productStatus: product?.productStatus || product?.orderStatus || "",
+    productStatus: product?.productStatus || "",
+    orderStatus: product?.orderStatus || "",
+    isSold,
     conditionLabel: product?.conditionLabel || product?.conditionCode || "",
     brandName: product?.brandName || "",
     size: product?.size || "",
@@ -104,16 +175,19 @@ function normalizeProduct(product) {
     wishlistCount: product?.wishlistCount ?? 0,
   };
 }
+function getProfileImageUrl(profile) {
+  return toAssetUrl(profile?.profileImageUrl || DEFAULT_PROFILE_IMAGE_URL);
+}
 
 function normalizeOrder(order) {
   return {
     ...order,
-    orderId: order?.orderId || "",
-    productId: order?.productId,
+    orderId:      order?.orderId || "",
+    productId:    order?.productId,
     productTitle: order?.productTitle || order?.title || "상품명 없음",
-    finalPrice: Number(order?.finalPrice ?? order?.price ?? 0),
-    orderStatus: order?.orderStatus || "",
-    createdAt: order?.createdAt || "",
+    orderStatus:  order.order_status ?? order.orderStatus ?? "",
+    finalPrice:   Number(order?.finalPrice ?? order?.price ?? 0),
+    createdAt:    order?.createdAt || "",
   };
 }
 
@@ -183,6 +257,40 @@ function getInquiryCategoryLabel(category) {
 function getInquiryStatusLabel(status) {
   return INQUIRY_STATUS_LABELS[status] || status || "-";
 }
+function createSettlementFromSoldProduct(product) {
+  const normalized = normalizeProduct(product);
+  const commissionPercent = DEFAULT_COMMISSION_RATE * 100;
+  const settlementAmount = Math.floor(normalized.price * (1 - DEFAULT_COMMISSION_RATE));
+
+  return normalizeSettlement({
+    ...normalized,
+    productTitle: normalized.title,
+    thumbnailUrl: getProductImageUrl(normalized),
+    finalPrice: normalized.price,
+    sellerSettlementAmount: normalized.sellerSettlementAmount ?? settlementAmount,
+    commission: normalized.commission ?? commissionPercent,
+    orderStatus: normalized.orderStatus || normalized.productStatus || "SOLD",
+    createdAt: normalized.soldAt || normalized.updatedAt || normalized.createdAt || "",
+  });
+}
+
+function mergeSettlementsWithSoldProducts(settlements, products) {
+  const normalizedSettlements = settlements.map(normalizeSettlement);
+  const settlementProductIds = new Set(
+    normalizedSettlements
+      .map((settlement) => settlement.productId)
+      .filter(Boolean)
+      .map(String)
+  );
+
+  const missingSoldSettlements = products
+    .map(normalizeProduct)
+    .filter(isSoldProduct)
+    .filter((product) => product.productId && !settlementProductIds.has(String(product.productId)))
+    .map(createSettlementFromSoldProduct);
+
+  return [...normalizedSettlements, ...missingSoldSettlements];
+}
 
 function mapProfileToSeller(profile, fallbackMemberId, counts = {}) {
   const memberId = profile?.memberId || fallbackMemberId || "";
@@ -191,6 +299,9 @@ function mapProfileToSeller(profile, fallbackMemberId, counts = {}) {
     userid: profile?.userid || "",
     nickname: profile?.nickname || profile?.userid || memberId || "회원",
     name: profile?.name || "",
+    shopInfo: profile?.shopInfo || "",
+    profileImageUrl: getProfileImageUrl(profile),
+    nicknameUpdatedAt: profile?.nicknameUpdatedAt || profile?.nicknameChangedAt || "",
     sellerGrade: profile?.sellerGrade || "BRONZE",
     completedOrderCount: Number(counts?.soldProductCount ?? counts?.completedOrderCount ?? 0),
     averageRating: null,
@@ -208,7 +319,8 @@ const PRICE_PRESETS = [
 const PROFILE_TABS = [
   { key: "products",     label: "상품" },
   { key: "wishlist",     label: "위시리스트" },
-  { key: "orders",       label: "주문 내역" },
+  { key: "orders",       label: "구매 내역" },
+  { key: "selling",     label: "판매 내역" },
   { key: "settlements",  label: "정산 내역" },
   { key: "reviews",      label: "리뷰" },
   { key: "inquiries",    label: "문의 내역" },
@@ -219,7 +331,6 @@ function FilterSidebar({ filters, onApplyFilters }) {
   const [genderOpen, setGenderOpen] = useState(true);
   const [priceOpen, setPriceOpen] = useState(true);
   const [draftExcludeSold, setDraftExcludeSold] = useState(filters.excludeSold);
-  const [draftOnlyNew, setDraftOnlyNew] = useState(filters.onlyNew);
   const [draftGender, setDraftGender] = useState(filters.gender);
   const [minInput, setMinInput] = useState(filters.priceMin ? String(filters.priceMin) : "");
   const [maxInput, setMaxInput] = useState(filters.priceMax ? String(filters.priceMax) : "");
@@ -234,7 +345,6 @@ function FilterSidebar({ filters, onApplyFilters }) {
     const max = maxInput === "" ? 0 : Number(maxInput.replace(/,/g, ""));
     onApplyFilters({
       excludeSold: draftExcludeSold,
-      onlyNew: draftOnlyNew,
       gender: draftGender,
       priceMin: min,
       priceMax: max,
@@ -249,10 +359,6 @@ function FilterSidebar({ filters, onApplyFilters }) {
         <label>
           <input type="checkbox" checked={draftExcludeSold} onChange={(e) => setDraftExcludeSold(e.target.checked)} />
           품절 상품 제외
-        </label>
-        <label>
-          <input type="checkbox" checked={draftOnlyNew} onChange={(e) => setDraftOnlyNew(e.target.checked)} />
-          새상품만 보기
         </label>
       </div>
 
@@ -329,7 +435,6 @@ function FilterSidebar({ filters, onApplyFilters }) {
 function ProductsTab({ products, emptyMessage = "조건에 맞는 상품이 없습니다.", showOrderButton = false, orderIdMap = {} }) {
   const [filters, setFilters] = useState({
     excludeSold: false,
-    onlyNew: false,
     gender: "all",
     priceMin: 0,
     priceMax: 0,
@@ -337,8 +442,7 @@ function ProductsTab({ products, emptyMessage = "조건에 맞는 상품이 없�
   const [visible, setVisible] = useState(12);
 
   const filtered = products.map(normalizeProduct)
-    .filter((p) => !filters.excludeSold || p.productStatus !== "SOLD")
-    .filter((p) => !filters.onlyNew || isNewProduct(p))
+    .filter((p) => !filters.excludeSold || !p.isSold)
     .filter((p) => filters.gender === "all" || matchesGender(p, filters.gender))
     .filter((p) => filters.priceMin === 0 || p.price >= filters.priceMin)
     .filter((p) => filters.priceMax === 0 || p.price <= filters.priceMax);
@@ -377,7 +481,7 @@ function ProductsTab({ products, emptyMessage = "조건에 맞는 상품이 없�
                         <img className="product-image" src={getProductImageUrl(p)} alt={p.title} />
                       </div>
                     )}
-                    {p.productStatus === "SOLD" && <div className="up-card-sold">SOLD</div>}
+                    {p.isSold && <div className="up-card-sold">SOLD</div>}
                     <button className="up-card-wish" aria-label="찜하기" onClick={(e) => e.stopPropagation()}>
                       ♡ {p.wishlistCount}
                     </button>
@@ -432,13 +536,7 @@ function ProductsTab({ products, emptyMessage = "조건에 맞는 상품이 없�
 }
 
 function isSoldProduct(product) {
-  return String(product?.productStatus || "").toUpperCase() === "SOLD";
-}
-
-function isNewProduct(product) {
-  const conditionCode = String(product?.conditionCode || "").toUpperCase();
-  const conditionText = String(product?.conditionLabel || product?.conditionDescription || "");
-  return conditionCode === "S" || conditionText.includes("새");
+  return Boolean(product?.isSold);
 }
 
 function matchesGender(product, gender) {
@@ -505,68 +603,122 @@ function OrdersTab({ orders }) {
 }
 
 /* ── 내가 판매한 상품 탭 ── */
+
 function SellingTab() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchOrders(0, 50, 'SELL')
-      .then((data) => {
-        setOrders(toList(data).map(normalizeOrder));
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
+      fetchOrders(0, 50, 'SELL')
+    .then((data) => {
+      const filtered = toList(data)
+        .map(normalizeOrder)
+        .filter((o) => ['PAID', 'SHIPPING', 'DELIVERED'].includes(o.orderStatus));
+      setOrders(filtered);
+      setLoading(false);
+    })
+    .catch(() => setLoading(false));
+}, []);
+
+  const STATUS_LABEL = {
+    REQUESTED: '주문접수',
+    PAID: '결제완료',
+    SHIPPING: '배송중',
+    DELIVERED: '배송완료',
+    CANCELLED: '취소됨',
+  };
 
   if (loading) return <p className="up-empty">불러오는 중...</p>;
   if (orders.length === 0) return <p className="up-empty">판매한 상품이 없습니다.</p>;
 
   return (
-    <div className="up-order-list">
-      {orders.map((o) => (
-        <div key={o.orderId || o.productId} className="up-order-item">
-          <div className="up-order-info">
-            <p className="up-order-title">{o.productTitle}</p>
-            <p className="up-order-meta">주문번호: {o.orderId || "-"}</p>
-            <p className="up-order-meta">
-              {formatWon(o.finalPrice)}
-              {o.orderStatus ? ` · ${o.orderStatus}` : ""}
-            </p>
-            <p className="up-order-meta">{o.createdAt || ""}</p>
-          </div>
-          <div className="up-order-right">
-            {o.orderStatus === 'PAID' && (
-              <button
-                style={{
-                  padding: "8px 16px",
-                  background: "#168f88",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontSize: "13px",
-                  cursor: "pointer",
-                }}
-                onClick={() => navigate(`/order/detail/${o.orderId}`)}
-              >
-                운송장 등록
-              </button>
-            )}
-          </div>
-        </div>
-      ))}
+        <div className="up-product-grid">
+      {orders.map((o) => {
+        const imageUrl = getProductImageUrl(o);
+        const isPaid = o.orderStatus === 'PAID';
+
+        return (
+     <article
+  key={o.orderId || o.productId}
+  className="up-card"
+  onClick={() => navigate(`/product/${o.productId}`)}
+>
+  <div className="up-card-img-wrap">
+    {imageUrl
+      ? <div className="product-visual"><img className="product-image" src={imageUrl} alt={o.productTitle} /></div>
+      : <div className="product-visual" style={{ background: '#eef2f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa', fontSize: '12px' }}>NO IMAGE</div>
+    }
+    {o.orderStatus === 'DELIVERED' && <div className="up-card-sold">SOLD</div>}
+  </div>
+  <div className="up-card-body">
+    <p className="up-card-name">{o.productTitle}</p>
+    <p className="up-card-name" style={{ fontSize: '11px', color: '#69717d', fontWeight: 600 }}>주문번호: {o.orderId || '-'}</p>
+    <p className="up-card-name" style={{ fontSize: '11px', color: '#69717d', fontWeight: 600 }}>상태: {STATUS_LABEL[o.orderStatus] || o.orderStatus || '-'}</p>
+    <p className="up-card-price">{formatWon(o.finalPrice)}</p>
+   {o.orderStatus === 'PAID' && (
+  <button
+    style={{
+      marginTop: '8px',
+      width: '100%',
+      padding: '7px 0',
+      background: '#168f88',
+      color: '#fff',
+      border: 'none',
+      borderRadius: '6px',
+      fontSize: '13px',
+      fontWeight: 700,
+      cursor: 'pointer',
+    }}
+    onClick={(e) => {
+      e.stopPropagation();
+      navigate(`/order/detail/${o.orderId}`);
+    }}
+  >
+    운송장 등록
+  </button>
+)}
+{o.orderStatus === 'SHIPPING' && (
+  <button
+    style={{
+      marginTop: '8px',
+      width: '100%',
+      padding: '7px 0',
+      background: '#fff',
+      color: '#168f88',
+      border: '1.5px solid #168f88',
+      borderRadius: '6px',
+      fontSize: '13px',
+      fontWeight: 700,
+      cursor: 'pointer',
+    }}
+    onClick={(e) => {
+      e.stopPropagation();
+      navigate(`/order/detail/${o.orderId}`);
+    }}
+  >
+    운송장 조회하기
+  </button>
+)}
+  </div>
+</article>
+        );
+      })}
     </div>
   );
 }
 
 /* ── 정산 내역 탭 ── */
 function SettlementTab({ settlements }) {
-  const normalizedSettlements = settlements.map(normalizeSettlement);
+  const normalizedSettlements = settlements
+  .map(normalizeSettlement)
+  .filter((settlement) => ["SHIPPING", "DELIVERED"].includes(settlement.orderStatus));
 
   if (normalizedSettlements.length === 0) return <p className="up-empty">정산 내역 정보가 없습니다.</p>;
 
   const getSettlementLabel = (status) => {
     if (status === 'DELIVERED') return { text: '정산 완료', color: '#2e7d32', bg: '#e8f5e9' };
-    return { text: '정산 예정', color: '#1565c0', bg: '#e3f2fd' };
+       if (status === 'SHIPPING') return { text: '정산 예정', color: '#1565c0', bg: '#e3f2fd' };
+    return { text: '-', color: '#666', bg: '#f5f5f5' };
   };
 
   return (
@@ -601,6 +753,92 @@ function SettlementTab({ settlements }) {
     </div>
   );
 }
+
+function ProfileEditModal({ seller, onClose, onSave }) {
+  const fileInputRef = useRef(null);
+  const nicknameAvailableDate = getNicknameAvailableDate(seller);
+  const nicknameLocked = Boolean(nicknameAvailableDate);
+  const [nickname, setNickname] = useState(seller.nickname || "");
+  const [shopInfo, setShopInfo] = useState(seller.shopInfo || "");
+  const [profilePreview, setProfilePreview] = useState(seller.profileImageUrl || "");
+  const [profileFile, setProfileFile] = useState(null);
+  const [profilePreviewFailed, setProfilePreviewFailed] = useState(false);
+  const [nicknameChecked, setNicknameChecked] = useState(false);
+  const [nicknameMessage, setNicknameMessage] = useState("");
+  const [saving, setSaving] = useState(false);
+  const nicknameChanged = nickname.trim() !== (seller.nickname || "");
+}
+
+ function handleImageChange(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!PROFILE_IMAGE_TYPES.includes(file.type)) {
+      alert("jpg/png 파일만 선택할 수 있습니다.");
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > PROFILE_IMAGE_MAX_SIZE) {
+      alert("파일 크기 초과(최대 5MB)");
+      event.target.value = "";
+      return;
+    }
+
+    setProfilePreview(URL.createObjectURL(file));
+    setProfilePreviewFailed(false);
+    setProfileFile(file);
+  }
+
+  async function handleCheckNickname() {
+    const value = nickname.trim();
+    if (!value) {
+      setNicknameMessage("닉네임을 입력해주세요.");
+      setNicknameChecked(false);
+      return;
+    }
+
+    if (!nicknameChanged) {
+      setNicknameMessage("현재 사용 중인 닉네임입니다.");
+      setNicknameChecked(true);
+      return;
+    }
+
+    if (nicknameLocked) {
+      setNicknameMessage(`${formatDate(nicknameAvailableDate)} 이후 변경할 수 있습니다.`);
+      setNicknameChecked(false);
+      return;
+    }
+
+    try {
+      const result = await checkNickname(value);
+      if (!result.available) {
+        setNicknameMessage("이미 사용 중인 닉네임입니다.");
+        setNicknameChecked(false);
+        return;
+      }
+      setNicknameMessage("사용 가능한 닉네임입니다.");
+      setNicknameChecked(true);
+    } catch (error) {
+      setNicknameMessage(error.message || "닉네임 중복 확인에 실패했습니다.");
+      setNicknameChecked(false);
+    }
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    const nextNickname = nickname.trim();
+
+    if (!nextNickname) {
+      setNicknameMessage("닉네임을 입력해주세요.");
+      return;
+    }
+
+    if (nicknameChanged && nicknameLocked) {
+      setNicknameMessage(`${formatDate(nicknameAvailableDate)} 이후 변경할 수 있습니다.`);
+      return;
+    }
+  }
 
 /* ── 리뷰 탭 ── */
 function ReviewsTab({ reviews, totalPages, page, setPage, rvLoading }) {
@@ -968,7 +1206,7 @@ function UserProfilePage({
             </div>
             <p className="up-handle">@{seller.memberId}</p>
             <div className="up-stats">
-              <span>판매 <strong>{sellerProducts.length}</strong>건</span>
+              <span>판매 상품 <strong>{sellerProducts.length}</strong>건</span>
               <span className="up-stats-dot">·</span>
               <span>거래완료 <strong>{seller.completedOrderCount}</strong>건</span>
               {totalElements > 0 && (
@@ -1024,6 +1262,7 @@ function UserProfilePage({
 
         {/* hideFooter(마이페이지) 전용 탭들 */}
         {!tabLoading && hideFooter && currentTab === "orders" && <OrdersTab orders={orders} />}
+        {!tabLoading && hideFooter && currentTab === "selling" && <SellingTab />}
         {!tabLoading && hideFooter && currentTab === "wishlist" && (
           <ProductsTab
             products={wishlist}
