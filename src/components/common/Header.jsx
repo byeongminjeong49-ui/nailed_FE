@@ -100,6 +100,28 @@ function Header() {
     return () => window.removeEventListener("storage", syncLoginState);
   }, []);
 
+  useEffect(() => {
+    const closeCategoryMenu = () => {
+      setActiveCategory(null);
+    };
+
+    const closeCategoryMenuOnOutsideClick = (event) => {
+      if (event.target.closest(".category-menu-area")) {
+        return;
+      }
+
+      setActiveCategory(null);
+    };
+
+    window.addEventListener("popstate", closeCategoryMenu);
+    document.addEventListener("click", closeCategoryMenuOnOutsideClick);
+
+    return () => {
+      window.removeEventListener("popstate", closeCategoryMenu);
+      document.removeEventListener("click", closeCategoryMenuOnOutsideClick);
+    };
+  }, []);
+
   const handleMenuClick = async (event, item) => {
     if (item.label !== "로그아웃") {
       return;
