@@ -535,4 +535,17 @@
 .mypage-product-card.selling-card button.selling-card-btn:hover {
   opacity: 0.85;
 }
+
+.up-order-cancel-btn {
+  margin-top: 6px;
+  width: 100%;
+  padding: 7px 0;
+  background: #fff;
+  color: #e05c5c;
+  border: 1.5px solid #e05c5c;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
 }

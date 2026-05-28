@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import Footer from "../components/common/Footer";
 import Header from "../components/common/Header";
 import { checkNickname } from "../api/authApi";
+import { cancelOrder } from "../api/orderApi";
 import {
   fetchMyProfile,
   fetchMyProducts,
@@ -563,7 +564,7 @@ function matchesGender(product, gender) {
 }
 
 /* ── 주문 내역 탭 ── */
-function OrdersTab({ orders }) {
+function OrdersTab({ orders, onCancelOrder }) {
   const normalizedOrders = orders.map(normalizeOrder);
 
   if (normalizedOrders.length === 0) return <p className="up-empty">주문 내역 정보가 없습니다.</p>;
@@ -703,6 +704,7 @@ function SellingTab() {
     운송장 조회하기
   </button>
 )}
+
   </div>
 </article>
         );
@@ -1166,6 +1168,25 @@ function UserProfilePage({
       setDetailLoading(false);
     }
   }
+  async function handleCancelOrder(orderId) {
+  if (!window.confirm("이 주문을 취소하시겠습니까?")) return;
+  const session = JSON.parse(sessionStorage.getItem("nailed_session") || "null");
+  const buyerId = session?.member_id ?? session?.memberId ?? null;
+  if (!buyerId) { showToast("로그인이 필요합니다."); return; }
+  try {
+    const result = await cancelOrder(orderId, buyerId);
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.orderId === orderId
+          ? { ...o, orderStatus: "CANCELLED", cancelledAt: result.cancelledAt }
+          : o
+      )
+    );
+    showToast("주문이 취소되었습니다.");
+  } catch (error) {
+    showToast(error.message || "주문 취소에 실패했습니다.");
+  }
+};
 
   async function handleWithdraw() {
     const firstConfirm = window.confirm(
@@ -1314,7 +1335,7 @@ function UserProfilePage({
         )}
 
         {/* hideFooter(마이페이지) 전용 탭들 */}
-        {!tabLoading && hideFooter && currentTab === "orders" && <OrdersTab orders={orders} />}
+       {!tabLoading && hideFooter && currentTab === "orders" && <OrdersTab orders={orders} onCancelOrder={handleCancelOrder} />}
         {!tabLoading && hideFooter && currentTab === "selling" && <SellingTab />}
         {!tabLoading && hideFooter && currentTab === "wishlist" && (
           <ProductsTab

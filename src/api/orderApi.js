@@ -22,3 +22,5 @@ export const confirmDelivery   = (orderId) =>
 
 export const mockPay           = (orderId) =>
   req(`${BASE}/${orderId}/pay`, { method: 'PATCH' });
+export const cancelOrder = (orderId, buyerId) =>
+  req(`${BASE}/${orderId}/cancel?buyerId=${buyerId}`, { method: 'POST' });

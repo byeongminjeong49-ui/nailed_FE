@@ -67,8 +67,11 @@ function navigate(path) {
 }
 
 function getProductImageUrl(product) {
-  if (product?.imageUrl) return product.imageUrl;
-  if (Array.isArray(product?.imageUrls)) return product.imageUrls.find(Boolean) ?? '';
+  const base = 'http://localhost:8080';
+  if (product?.imageUrl) return `${base}${product.imageUrl}`;
+  if (Array.isArray(product?.imageUrls) && product.imageUrls.length > 0) {
+    return `${base}${product.imageUrls[0]}`;
+  }
   return '';
 }
 
@@ -86,25 +89,23 @@ export default function OrderDetail({ orderId }) {
   const session = (() => { try { return JSON.parse(sessionStorage.getItem('nailed_session') ?? 'null'); } catch { return null; } })();
   const currentMemberId = session?.member_id ?? session?.memberId ?? null;
 
-  const completed = (() => { try { return JSON.parse(sessionStorage.getItem('completedOrder') || 'null'); } catch { return null; } })();
-  const productId = completed?.productId;
+ const completed = (() => { try { return JSON.parse(sessionStorage.getItem('completedOrder') || 'null'); } catch { return null; } })();
+const productId = completed?.productId;
 
-  useEffect(() => {
-    if (!orderId) { setError('주문 번호가 없습니다.'); setLoading(false); return; }
-    const fetchOrder   = axios.get(`/api/orders/${orderId}`);
-    const fetchProduct = productId ? axios.get(`/api/products/${productId}`) : Promise.resolve(null);
-    Promise.all([fetchOrder, fetchProduct])
-      .then(([orderRes, productRes]) => {
-        setOrder(orderRes.data);
-        if (productRes) setProduct(productRes.data);
-      })
-      .catch(() => {
-        axios.get(`/api/orders/${orderId}`)
-          .then((res) => setOrder(res.data))
-          .catch(() => setError('주문 정보를 불러오지 못했습니다.'));
-      })
-      .finally(() => setLoading(false));
-  }, [orderId]);
+useEffect(() => {
+  if (!orderId) { setError('주문 번호가 없습니다.'); setLoading(false); return; }
+  
+  axios.get(`/api/orders/${orderId}`)
+    .then((orderRes) => {
+      setOrder(orderRes.data);
+      const pid = completed?.productId || orderRes.data?.productId;
+      if (pid) {
+        return axios.get(`/api/products/${pid}`).then((res) =>  setProduct(res.data.data ?? res.data));
+      }
+    })
+    .catch(() => setError('주문 정보를 불러오지 못했습니다.'))
+    .finally(() => setLoading(false));
+}, [orderId]);
 
   const handleShip = async () => {
     if (!carrierCode || !trackingNumber) return;
@@ -144,6 +145,16 @@ export default function OrderDetail({ orderId }) {
       setConfirming(false);
     }
   };
+  const handleCancel = async () => {
+  if (!window.confirm('정말 취소하시겠습니까?')) return;
+  try {
+    await axios.post(`/api/orders/${orderId}/cancel?buyerId=${currentMemberId}`);
+    alert('주문이 취소되었습니다.');
+    window.location.reload();
+  } catch (e) {
+    alert('주문 취소에 실패했습니다.');
+  }
+};
 
   if (loading) return <div style={s.page}><div style={{ textAlign: 'center', padding: '80px', color: '#888' }}>로딩 중...</div></div>;
 
@@ -159,11 +170,11 @@ export default function OrderDetail({ orderId }) {
 
   const currentStep = STATUS_STEPS.findIndex((s) => s.key === order.orderStatus);
   const imageUrl = getProductImageUrl(product);
-  const title = completed?.title || product?.title || '-';
+  const title = product?.title || completed?.title || '-';
   const isSeller = currentMemberId && currentMemberId === order.sellerId;
-  const isBuyer = currentMemberId && currentMemberId === order.buyerId; // ← 추가
+  const isBuyer = currentMemberId && currentMemberId === order.buyerId; 
   const canShip = isSeller && order.orderStatus === 'PAID';
-  const canConfirmDelivery = isBuyer && order.orderStatus === 'SHIPPING'; // ← 추가
+  const canConfirmDelivery = isBuyer && order.orderStatus === 'SHIPPING'; 
 
   return (
     <div style={s.page}>
@@ -308,12 +319,14 @@ export default function OrderDetail({ orderId }) {
           {!order.createdAt && <div style={{ color: '#bbb', fontSize: '13px', textAlign: 'center' }}>타임라인 정보가 없습니다.</div>}
         </div>
 
-        <button
-  style={{ ...s.backBtn, background: '#168f88', color: '#fff', border: 'none' }}
-  onClick={() => navigate('/mypage/orders')}
->
-  주문내역 확인하기
-</button>
+ {isBuyer && (order.orderStatus === 'PAID' || order.orderStatus === 'REQUESTED') && (
+          <button
+            style={{ ...s.backBtn, background: '#e05c5c', color: '#fff', border: 'none' }}
+            onClick={handleCancel}
+          >
+            주문 취소하기
+          </button>
+        )}      
 <button
   style={{ ...s.backBtn, marginTop: '8px' }}
   onClick={() => navigate('/')}
