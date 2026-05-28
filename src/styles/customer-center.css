@@ -186,6 +186,19 @@
   font-size: 14px;
 }
 
+.notice-link-row {
+  cursor: pointer;
+}
+
+.notice-link-row:hover {
+  background: #fafafa;
+}
+
+.notice-link-row:focus-visible {
+  outline: 2px solid #111;
+  outline-offset: -2px;
+}
+
 .notice-badge {
   width: fit-content;
   min-width: 70px;
@@ -196,6 +209,102 @@
   text-align: center;
   font-size: 12px;
   font-weight: 800;
+}
+
+.notice-empty {
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  border-top: 1px solid #eeeeee;
+  color: #666;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.notice-pagination,
+.faq-pagination {
+  margin-top: 18px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.notice-pagination button,
+.faq-pagination button {
+  width: 36px;
+  height: 36px;
+  border: 1px solid #dedede;
+  border-radius: 6px;
+  color: #333;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.notice-pagination button.active,
+.faq-pagination button.active {
+  color: #fff;
+  border-color: #111;
+  background: #111;
+}
+
+.notice-detail {
+  padding: 28px 30px;
+  border: 1px solid #e4e4e4;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.notice-detail-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #eeeeee;
+}
+
+.notice-detail-top time {
+  color: #666;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.notice-detail h3 {
+  margin: 22px 0 18px;
+  color: #111;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.notice-detail-content {
+  padding: 22px 0 28px;
+  border-top: 1px solid #eeeeee;
+  color: #444;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.notice-detail-content p {
+  margin: 0;
+}
+
+.notice-detail-content p + p {
+  margin-top: 6px;
+}
+
+.notice-list-button {
+  min-width: 96px;
+  height: 38px;
+  border: 0;
+  border-radius: 6px;
+  color: #fff;
+  background: #111;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
 }
 
 .faq-categories {
@@ -260,6 +369,18 @@
   padding: 0 20px 18px 102px;
   color: #555;
   line-height: 1.7;
+}
+
+.faq-empty {
+  min-height: 160px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #e4e4e4;
+  border-radius: 8px;
+  color: #666;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 700;
 }
 
 .inquiry-form {
@@ -389,6 +510,10 @@
   .notice-row {
     grid-template-columns: minmax(0, 1fr) 110px 100px;
     padding: 0 16px;
+  }
+
+  .notice-detail {
+    padding: 24px 18px;
   }
 
   .service-card-list {
