@@ -22,6 +22,10 @@ const STATUS_CLASS_NAMES = {
   BANNED: "red",
 };
 
+const PAGE_SIZE = 10;
+const MEMBER_ROLE = "USER";
+const MEMBER_SORT = "memberId,asc";
+
 function formatDate(value) {
   if (!value) return "-";
   if (typeof value === "string" && value.length >= 10) return value.slice(0, 10);
@@ -45,13 +49,15 @@ function getPageNumbers(currentPage, totalPages) {
   );
 }
 
+function sortByIdAsc(items, field) {
+  return [...items].sort((a, b) => Number(a?.[field] ?? 0) - Number(b?.[field] ?? 0));
+}
+
 function AdminMembersPage() {
   const [keyword, setKeyword] = useState("");
   const [appliedKeyword, setAppliedKeyword] = useState("");
-  const [role, setRole] = useState("");
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(0);
-  const [size, setSize] = useState(10);
   const [members, setMembers] = useState([]);
   const [pageInfo, setPageInfo] = useState({
     pageNumber: 0,
@@ -79,18 +85,20 @@ function AdminMembersPage() {
       try {
         const data = await fetchAdminMembers({
           page,
-          size,
+          size: PAGE_SIZE,
           keyword: appliedKeyword,
-          role,
+          role: MEMBER_ROLE,
           status,
+          sort: MEMBER_SORT,
         });
 
         if (ignore) return;
 
-        setMembers(Array.isArray(data?.content) ? data.content : []);
+        const content = Array.isArray(data?.content) ? data.content : [];
+        setMembers(sortByIdAsc(content.filter((member) => member?.role !== "ADMIN"), "memberId"));
         setPageInfo({
           pageNumber: data?.pageNumber ?? page,
-          pageSize: data?.pageSize ?? size,
+          pageSize: data?.pageSize ?? PAGE_SIZE,
           totalElements: data?.totalElements ?? 0,
           totalPages: data?.totalPages ?? 0,
           first: data?.first ?? true,
@@ -119,7 +127,7 @@ function AdminMembersPage() {
     return () => {
       ignore = true;
     };
-  }, [appliedKeyword, page, role, size, status]);
+  }, [appliedKeyword, page, status]);
 
   function handleSearchSubmit(event) {
     event.preventDefault();
@@ -130,23 +138,12 @@ function AdminMembersPage() {
   function handleReset() {
     setKeyword("");
     setAppliedKeyword("");
-    setRole("");
     setStatus("");
-    setPage(0);
-  }
-
-  function handleRoleChange(event) {
-    setRole(event.target.value);
     setPage(0);
   }
 
   function handleStatusChange(event) {
     setStatus(event.target.value);
-    setPage(0);
-  }
-
-  function handleSizeChange(event) {
-    setSize(Number(event.target.value));
     setPage(0);
   }
 
@@ -159,7 +156,7 @@ function AdminMembersPage() {
 
       <div className="admin-content-main">
         <section className="admin-card search-filter-card">
-          <form className="filter-row" onSubmit={handleSearchSubmit}>
+          <form className="filter-row admin-filter-row-compact" onSubmit={handleSearchSubmit}>
             <div className="filter-field search-field">
               <label htmlFor="admin-member-search">회원 검색</label>
               <div className="filter-input">
@@ -171,15 +168,6 @@ function AdminMembersPage() {
                   onChange={(event) => setKeyword(event.target.value)}
                 />
               </div>
-            </div>
-
-            <div className="filter-field">
-              <label htmlFor="admin-member-role">권한</label>
-              <select id="admin-member-role" value={role} onChange={handleRoleChange}>
-                <option value="">전체</option>
-                <option value="USER">일반회원</option>
-                <option value="ADMIN">관리자</option>
-              </select>
             </div>
 
             <div className="filter-field">
@@ -311,11 +299,6 @@ function AdminMembersPage() {
             >
               다음
             </button>
-            <select value={size} onChange={handleSizeChange} disabled={loading}>
-              <option value="10">10개씩 보기</option>
-              <option value="20">20개씩 보기</option>
-              <option value="50">50개씩 보기</option>
-            </select>
           </div>
         </section>
       </div>

@@ -6,6 +6,7 @@ export async function fetchAdminMembers({
   keyword = "",
   role = "",
   status = "",
+  sort = "",
 } = {}) {
   const params = new URLSearchParams({
     page,
@@ -15,6 +16,7 @@ export async function fetchAdminMembers({
   if (keyword) params.set("keyword", keyword);
   if (role) params.set("role", role);
   if (status) params.set("status", status);
+  if (sort) params.set("sort", sort);
 
   return authRequest(`/api/admin/members?${params.toString()}`);
 }
@@ -29,6 +31,7 @@ export async function getAdminProducts({
   brandCode = "",
   brandName = "",
   sellerKeyword = "",
+  sort = "",
 } = {}) {
   const params = new URLSearchParams({
     page,
@@ -42,6 +45,7 @@ export async function getAdminProducts({
   if (brandCode) params.set("brandCode", brandCode);
   if (brandName) params.set("brandName", brandName);
   if (sellerKeyword) params.set("sellerKeyword", sellerKeyword);
+  if (sort) params.set("sort", sort);
 
   return authRequest(`/api/admin/products?${params.toString()}`);
 }
@@ -53,6 +57,7 @@ export async function getAdminOrders({
   orderStatus = "",
   dateFrom = "",
   dateTo = "",
+  sort = "",
 } = {}) {
   const params = new URLSearchParams({
     page,
@@ -63,6 +68,7 @@ export async function getAdminOrders({
   if (orderStatus) params.set("orderStatus", orderStatus);
   if (dateFrom) params.set("dateFrom", dateFrom);
   if (dateTo) params.set("dateTo", dateTo);
+  if (sort) params.set("sort", sort);
 
   return authRequest(`/api/admin/orders?${params.toString()}`);
 }
@@ -76,6 +82,7 @@ export async function getAdminReports({
   status = "",
   dateFrom = "",
   dateTo = "",
+  sort = "",
 } = {}) {
   const params = new URLSearchParams({
     page,
@@ -88,6 +95,7 @@ export async function getAdminReports({
   if (status) params.set("status", status);
   if (dateFrom) params.set("dateFrom", dateFrom);
   if (dateTo) params.set("dateTo", dateTo);
+  if (sort) params.set("sort", sort);
 
   return authRequest(`/api/admin/reports?${params.toString()}`);
 }

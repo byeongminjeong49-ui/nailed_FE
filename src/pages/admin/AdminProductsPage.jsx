@@ -15,6 +15,9 @@ const PRODUCT_STATUS_CLASS_NAMES = {
   DELETED: "gray",
 };
 
+const PAGE_SIZE = 10;
+const PRODUCT_SORT = "productId,asc";
+
 function toAssetUrl(url) {
   if (!url) return "";
   if (/^https?:\/\//i.test(url) || url.startsWith("data:") || url.startsWith("blob:")) {
@@ -50,6 +53,10 @@ function getPageNumbers(currentPage, totalPages) {
     { length: end - adjustedStart + 1 },
     (_, index) => adjustedStart + index,
   );
+}
+
+function sortByIdAsc(items, field) {
+  return [...items].sort((a, b) => Number(a?.[field] ?? 0) - Number(b?.[field] ?? 0));
 }
 
 function ProductThumbnail({ product }) {
@@ -100,7 +107,6 @@ function AdminProductsPage() {
   const [appliedKeyword, setAppliedKeyword] = useState("");
   const [productStatus, setProductStatus] = useState("");
   const [page, setPage] = useState(0);
-  const [size, setSize] = useState(10);
   const [products, setProducts] = useState([]);
   const [pageInfo, setPageInfo] = useState({
     pageNumber: 0,
@@ -128,17 +134,19 @@ function AdminProductsPage() {
       try {
         const data = await getAdminProducts({
           page,
-          size,
+          size: PAGE_SIZE,
           keyword: appliedKeyword,
           productStatus,
+          sort: PRODUCT_SORT,
         });
 
         if (ignore) return;
 
-        setProducts(Array.isArray(data?.content) ? data.content : []);
+        const content = Array.isArray(data?.content) ? data.content : [];
+        setProducts(sortByIdAsc(content, "productId"));
         setPageInfo({
           pageNumber: data?.pageNumber ?? page,
-          pageSize: data?.pageSize ?? size,
+          pageSize: data?.pageSize ?? PAGE_SIZE,
           totalElements: data?.totalElements ?? 0,
           totalPages: data?.totalPages ?? 0,
           first: data?.first ?? true,
@@ -167,7 +175,7 @@ function AdminProductsPage() {
     return () => {
       ignore = true;
     };
-  }, [appliedKeyword, page, productStatus, size]);
+  }, [appliedKeyword, page, productStatus]);
 
   function handleSearchSubmit(event) {
     event.preventDefault();
@@ -187,11 +195,6 @@ function AdminProductsPage() {
     setPage(0);
   }
 
-  function handleSizeChange(event) {
-    setSize(Number(event.target.value));
-    setPage(0);
-  }
-
   return (
     <div className="admin-page">
       <div className="admin-page-title">
@@ -201,7 +204,7 @@ function AdminProductsPage() {
 
       <div className="admin-content-main">
         <section className="admin-card search-filter-card">
-          <form className="filter-row" onSubmit={handleSearchSubmit}>
+          <form className="filter-row admin-filter-row-compact" onSubmit={handleSearchSubmit}>
             <div className="filter-field search-field">
               <label htmlFor="admin-product-search">상품 검색</label>
               <div className="filter-input">
@@ -354,11 +357,6 @@ function AdminProductsPage() {
             >
               다음
             </button>
-            <select value={size} onChange={handleSizeChange} disabled={loading}>
-              <option value="10">10개씩 보기</option>
-              <option value="20">20개씩 보기</option>
-              <option value="50">50개씩 보기</option>
-            </select>
           </div>
         </section>
       </div>

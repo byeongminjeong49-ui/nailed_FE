@@ -25,11 +25,14 @@ export async function fetchMyInquiryDetail(inquiryId) {
   return authRequest(`/api/inquiries/my/${encodeURIComponent(inquiryId)}`);
 }
 
-export async function fetchAdminInquiries({ status = "", page = 0, size = 10 } = {}) {
+export async function fetchAdminInquiries({ status = "", page = 0, size = 10, sort = "" } = {}) {
   const params = new URLSearchParams({ page, size });
 
   if (status) {
     params.set("status", status);
+  }
+  if (sort) {
+    params.set("sort", sort);
   }
 
   return authRequest(`/api/admin/inquiries?${params.toString()}`);

@@ -1,5 +1,4 @@
 import AdminSidebar from "./AdminSidebar";
-import AdminStatusBar from "./AdminStatusBar";
 import AdminTopbar from "./AdminTopbar";
 
 function AdminLayout({ activePage, children, onNavigate }) {
@@ -9,7 +8,6 @@ function AdminLayout({ activePage, children, onNavigate }) {
       <div className="admin-main-shell">
         <AdminTopbar />
         <main className="admin-main">{children}</main>
-        <AdminStatusBar />
       </div>
     </div>
   );

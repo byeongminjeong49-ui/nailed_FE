@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   answerAdminInquiry,
   fetchAdminInquiries,
@@ -25,6 +25,9 @@ const STATUS_FILTERS = [
   { value: "ANSWERED", label: "답변 완료" },
 ];
 
+const PAGE_SIZE = 10;
+const INQUIRY_SORT = "inquiryId,asc";
+
 function toList(data) {
   if (Array.isArray(data?.content)) return data.content;
   if (Array.isArray(data?.data?.content)) return data.data.content;
@@ -33,6 +36,36 @@ function toList(data) {
   if (Array.isArray(data?.data)) return data.data;
   if (Array.isArray(data)) return data;
   return [];
+}
+
+function getPageNumbers(currentPage, totalPages) {
+  if (totalPages <= 0) return [];
+
+  const start = Math.max(0, currentPage - 2);
+  const end = Math.min(totalPages - 1, start + 4);
+  const adjustedStart = Math.max(0, end - 4);
+
+  return Array.from(
+    { length: end - adjustedStart + 1 },
+    (_, index) => adjustedStart + index,
+  );
+}
+
+function getPageInfo(data, fallbackPage) {
+  const pageData = data?.data || data || {};
+
+  return {
+    pageNumber: pageData.pageNumber ?? pageData.number ?? fallbackPage,
+    pageSize: pageData.pageSize ?? pageData.size ?? PAGE_SIZE,
+    totalElements: pageData.totalElements ?? toList(data).length,
+    totalPages: pageData.totalPages ?? 1,
+    first: pageData.first ?? fallbackPage === 0,
+    last: pageData.last ?? (pageData.totalPages ? fallbackPage >= pageData.totalPages - 1 : true),
+  };
+}
+
+function sortByIdAsc(items, field) {
+  return [...items].sort((a, b) => Number(a?.[field] ?? 0) - Number(b?.[field] ?? 0));
 }
 
 function normalizeInquiry(inquiry) {
@@ -74,6 +107,7 @@ function getStatusLabel(status) {
 
 function AdminInquiriesPage() {
   const [statusFilter, setStatusFilter] = useState("");
+  const [page, setPage] = useState(0);
   const [inquiries, setInquiries] = useState([]);
   const [selectedInquiry, setSelectedInquiry] = useState(null);
   const [answerContent, setAnswerContent] = useState("");
@@ -81,25 +115,52 @@ function AdminInquiriesPage() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [answerLoading, setAnswerLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [pageInfo, setPageInfo] = useState({
+    pageNumber: 0,
+    pageSize: PAGE_SIZE,
+    totalElements: 0,
+    totalPages: 0,
+    first: true,
+    last: true,
+  });
 
-  async function loadInquiries(nextStatus = statusFilter) {
+  const pageNumbers = useMemo(
+    () => getPageNumbers(pageInfo.pageNumber, pageInfo.totalPages),
+    [pageInfo.pageNumber, pageInfo.totalPages],
+  );
+
+  async function loadInquiries(nextStatus = statusFilter, nextPage = page) {
     setLoading(true);
     setMessage("");
 
     try {
-      const data = await fetchAdminInquiries({ status: nextStatus, page: 0, size: 10 });
-      setInquiries(toList(data).map(normalizeInquiry));
+      const data = await fetchAdminInquiries({
+        status: nextStatus,
+        page: nextPage,
+        size: PAGE_SIZE,
+        sort: INQUIRY_SORT,
+      });
+      setInquiries(sortByIdAsc(toList(data).map(normalizeInquiry), "inquiryId"));
+      setPageInfo(getPageInfo(data, nextPage));
     } catch (error) {
       setMessage(error.message || "문의 목록을 불러올 수 없습니다.");
       setInquiries([]);
+      setPageInfo((current) => ({
+        ...current,
+        pageNumber: 0,
+        totalElements: 0,
+        totalPages: 0,
+        first: true,
+        last: true,
+      }));
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    loadInquiries(statusFilter);
-  }, [statusFilter]);
+    loadInquiries(statusFilter, page);
+  }, [page, statusFilter]);
 
   async function handleSelectInquiry(inquiryId) {
     if (!inquiryId) return;
@@ -150,7 +211,7 @@ function AdminInquiriesPage() {
             : item,
         ),
       );
-      await loadInquiries(statusFilter);
+      await loadInquiries(statusFilter, page);
       setMessage("답변이 등록되었습니다.");
     } catch (error) {
       setMessage(error.message || "답변 등록에 실패했습니다.");
@@ -175,6 +236,7 @@ function AdminInquiriesPage() {
               key={filter.value || "ALL"}
               onClick={() => {
                 setStatusFilter(filter.value);
+                setPage(0);
                 setSelectedInquiry(null);
                 setAnswerContent("");
               }}
@@ -191,7 +253,7 @@ function AdminInquiriesPage() {
         <section className="admin-card table-card admin-inquiry-list-card">
           <div className="table-card-header">
             <h2>
-              문의 목록 <span>(총 {inquiries.length}건)</span>
+              문의 목록 <span>(총 {pageInfo.totalElements}건)</span>
             </h2>
           </div>
           <div className="admin-table-wrap">
@@ -237,6 +299,33 @@ function AdminInquiriesPage() {
                 )}
               </tbody>
             </table>
+          </div>
+          <div className="table-pagination">
+            <button
+              type="button"
+              disabled={pageInfo.first || loading}
+              onClick={() => setPage((current) => Math.max(0, current - 1))}
+            >
+              이전
+            </button>
+            {pageNumbers.map((pageNumber) => (
+              <button
+                className={pageInfo.pageNumber === pageNumber ? "is-active" : ""}
+                type="button"
+                key={pageNumber}
+                disabled={loading}
+                onClick={() => setPage(pageNumber)}
+              >
+                {pageNumber + 1}
+              </button>
+            ))}
+            <button
+              type="button"
+              disabled={pageInfo.last || loading}
+              onClick={() => setPage((current) => current + 1)}
+            >
+              다음
+            </button>
           </div>
         </section>
 

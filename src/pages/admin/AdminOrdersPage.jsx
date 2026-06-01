@@ -19,6 +19,9 @@ const ORDER_STATUS_CLASS_NAMES = {
   CANCELLED: "red",
 };
 
+const PAGE_SIZE = 10;
+const ORDER_SORT = "orderId,asc";
+
 function toAssetUrl(url) {
   if (!url) return "";
   if (/^https?:\/\//i.test(url) || url.startsWith("data:") || url.startsWith("blob:")) {
@@ -54,6 +57,10 @@ function getPageNumbers(currentPage, totalPages) {
     { length: end - adjustedStart + 1 },
     (_, index) => adjustedStart + index,
   );
+}
+
+function sortByIdAsc(items, field) {
+  return [...items].sort((a, b) => Number(a?.[field] ?? 0) - Number(b?.[field] ?? 0));
 }
 
 function OrderThumbnail({ order }) {
@@ -108,7 +115,6 @@ function AdminOrdersPage() {
   const [appliedDateFrom, setAppliedDateFrom] = useState("");
   const [appliedDateTo, setAppliedDateTo] = useState("");
   const [page, setPage] = useState(0);
-  const [size, setSize] = useState(10);
   const [orders, setOrders] = useState([]);
   const [pageInfo, setPageInfo] = useState({
     pageNumber: 0,
@@ -136,19 +142,21 @@ function AdminOrdersPage() {
       try {
         const data = await getAdminOrders({
           page,
-          size,
+          size: PAGE_SIZE,
           keyword: appliedKeyword,
           orderStatus,
           dateFrom: appliedDateFrom,
           dateTo: appliedDateTo,
+          sort: ORDER_SORT,
         });
 
         if (ignore) return;
 
-        setOrders(Array.isArray(data?.content) ? data.content : []);
+        const content = Array.isArray(data?.content) ? data.content : [];
+        setOrders(sortByIdAsc(content, "orderId"));
         setPageInfo({
           pageNumber: data?.pageNumber ?? page,
-          pageSize: data?.pageSize ?? size,
+          pageSize: data?.pageSize ?? PAGE_SIZE,
           totalElements: data?.totalElements ?? 0,
           totalPages: data?.totalPages ?? 0,
           first: data?.first ?? true,
@@ -177,7 +185,7 @@ function AdminOrdersPage() {
     return () => {
       ignore = true;
     };
-  }, [appliedDateFrom, appliedDateTo, appliedKeyword, orderStatus, page, size]);
+  }, [appliedDateFrom, appliedDateTo, appliedKeyword, orderStatus, page]);
 
   function handleSearchSubmit(event) {
     event.preventDefault();
@@ -203,11 +211,6 @@ function AdminOrdersPage() {
     setPage(0);
   }
 
-  function handleSizeChange(event) {
-    setSize(Number(event.target.value));
-    setPage(0);
-  }
-
   return (
     <div className="admin-page">
       <div className="admin-page-title">
@@ -217,7 +220,7 @@ function AdminOrdersPage() {
 
       <div className="admin-content-main">
         <section className="admin-card search-filter-card">
-          <form className="filter-row" onSubmit={handleSearchSubmit}>
+          <form className="filter-row admin-filter-row-date" onSubmit={handleSearchSubmit}>
             <div className="filter-field search-field">
               <label htmlFor="admin-order-search">주문 검색</label>
               <div className="filter-input">
@@ -397,11 +400,6 @@ function AdminOrdersPage() {
             >
               다음
             </button>
-            <select value={size} onChange={handleSizeChange} disabled={loading}>
-              <option value="10">10개씩 보기</option>
-              <option value="20">20개씩 보기</option>
-              <option value="50">50개씩 보기</option>
-            </select>
           </div>
         </section>
       </div>
