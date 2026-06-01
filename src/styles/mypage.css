@@ -555,7 +555,7 @@
   color: #168f88;
   border: 1px solid #b2e4e0;
   border-radius: 4px;
-  padding: 2px 8px;
+  padding: 2px 4px;
   font-size: 11px;
   font-weight: 10;
   cursor: pointer;
@@ -565,15 +565,18 @@
 }
 
 .up-withdraw-btn {
-  padding: 2px 14px;
-  font-size: 9px;
-  font-weight: 100;
+  min-height: unset !important;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
   border-radius: 6px;
   border: 1px solid #e05c5c;
   background: #e05c5c;
   color: #fff;
   cursor: pointer;
+  line-height: 1;
 }
+
 .up-withdraw-btn:hover {
   background: #c94f4f;
 }

@@ -1010,19 +1010,20 @@
 }
 
 .up-withdraw-btn {
-  min-height: 42px;
-  padding: 0 16px;
-  border: 0;
-  border-radius: 8px;
-  background: #b42323;
+  min-height: unset !important;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid #e05c5c;
+  background: #e05c5c;
   color: #fff;
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 800;
+  line-height: 1;
 }
 
 .up-withdraw-btn:hover {
-  background: #941b1b;
+  background: #c94f4f;
 }
 
 /* ── 리뷰 탭 ── */
