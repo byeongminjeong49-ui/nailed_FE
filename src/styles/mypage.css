@@ -537,9 +537,9 @@
 }
 
 .up-order-cancel-btn {
-  margin-top: 6px;
+  margin-top: 5px;
   width: 100%;
-  padding: 7px 0;
+  padding: 6px 0;
   background: #fff;
   color: #e05c5c;
   border: 1.5px solid #e05c5c;
@@ -554,13 +554,27 @@
   background-color: #e0f5f3;
   color: #168f88;
   border: 1px solid #b2e4e0;
-  border-radius: 6px;
-  padding: 6px 14px;
-  font-size: 13px;
-  font-weight: 600;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 10;
   cursor: pointer;
 }
 .up-profile-edit-btn:hover {
   background-color: #c5ede9;
+}
+
+.up-withdraw-btn {
+  padding: 2px 14px;
+  font-size: 9px;
+  font-weight: 100;
+  border-radius: 6px;
+  border: 1px solid #e05c5c;
+  background: #e05c5c;
+  color: #fff;
+  cursor: pointer;
+}
+.up-withdraw-btn:hover {
+  background: #c94f4f;
 }
 

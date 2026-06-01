@@ -273,6 +273,7 @@
   transition: border-color 0.15s;
   font-family: inherit;
   -moz-appearance: textfield;
+  appearance: textfield;
 }
 .sell-input::-webkit-outer-spin-button,
 .sell-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }

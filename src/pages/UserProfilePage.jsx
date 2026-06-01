@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from 'react-router-dom';
 import Footer from "../components/common/Footer";
 import Header from "../components/common/Header";
 import { checkNickname } from "../api/authApi";
@@ -492,9 +493,12 @@ function ProductsTab({ products, emptyMessage = "조건에 맞는 상품이 없�
                       </div>
                     )}
                     {p.isSold && <div className="up-card-sold">SOLD</div>}
-                    <button className="up-card-wish" aria-label="찜하기" onClick={(e) => e.stopPropagation()}>
-                      ♡ {p.wishlistCount}
-                    </button>
+                    <div className="product-heart-btn" onClick={(e) => e.stopPropagation()}>
+       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+       <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+      </svg>
+      <span className="product-heart-count">{p.wishlistCount}</span>
+</div>
                   </div>
                   <div className="up-card-body">
                     {(p.brandName || p.size) && (
@@ -719,7 +723,8 @@ function SellingTab() {
 }
 
 /* ── 정산 내역 탭 ── */
-function SettlementTab({ settlements }) {
+  function SettlementTab({ settlements }) {
+  
   const normalizedSettlements = settlements
   .map(normalizeSettlement)
   .filter((settlement) => ["SHIPPING", "DELIVERED"].includes(settlement.orderStatus));
@@ -739,13 +744,17 @@ function SettlementTab({ settlements }) {
         const imageUrl = getProductImageUrl(s);
         return (
           <article key={s.orderId || s.productId} className="up-settlement-card">
-            <div className="up-settlement-img-wrap">
-              {imageUrl ? (
-                <img className="up-settlement-img" src={imageUrl} alt={s.productTitle} />
-              ) : (
-                <div className="up-settlement-no-img">NO IMAGE</div>
-              )}
-            </div>
+            <div
+     className="up-settlement-img-wrap"
+    onClick={() => s.productId && navigate(`/product/${s.productId}`)}
+   style={{ cursor: s.productId ? 'pointer' : 'default' }}
+  >
+  {imageUrl ? (
+    <img className="up-settlement-img" src={imageUrl} alt={s.productTitle} />
+  ) : (
+    <div className="up-settlement-no-img">NO IMAGE</div>
+  )}
+</div>
 
             <div className="up-settlement-body">
               <p className="up-settlement-title">{s.productTitle}</p>
@@ -1065,8 +1074,8 @@ function EmptyProfileTab({ label }) {
   );
 }
 
-function AccountTab() {
   // 정산 계좌 관리만
+  function AccountTab() {
   const BANK_OPTIONS = [
     { value: "", label: "은행 선택" },
     { value: "KB", label: "KB국민" },
@@ -1074,22 +1083,35 @@ function AccountTab() {
     { value: "WOORI", label: "우리" },
   ];
 
+  const BANK_LABELS = { KB: "KB국민은행", SHINHAN: "신한은행", WOORI: "우리은행" };
+
   const [accountForm, setAccountForm] = useState({
     bankCode: "",
     accountNumber: "",
     depositorName: "",
   });
+  const [savedAccount, setSavedAccount] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
   const [accountLoading, setAccountLoading] = useState(false);
   const [accountSaved, setAccountSaved] = useState(false);
 
   useEffect(() => {
     fetchAccountInfo().then((data) => {
-      setAccountForm({
-        bankCode: data?.bankCode || "",
-        accountNumber: "",
-        depositorName: data?.depositorName || "",
-      });
-    }).catch(() => {});
+      if (data?.bankCode) {
+        setSavedAccount({
+          bankCode: data.bankCode,
+          accountNumber: data.accountNumber,
+          depositorName: data.depositorName,
+        });
+        setAccountForm({
+          bankCode: data.bankCode,
+          accountNumber: data.accountNumber || "",
+          depositorName: data.depositorName || "",
+        });
+      } else {
+        setIsEditing(true);
+      }
+    }).catch(() => { setIsEditing(true); });
   }, []);
 
   async function handleAccountSave() {
@@ -1100,7 +1122,9 @@ function AccountTab() {
     setAccountLoading(true);
     try {
       await updateAccountInfo(accountForm);
+      setSavedAccount({ ...accountForm });
       setAccountSaved(true);
+      setIsEditing(false);
       setTimeout(() => setAccountSaved(false), 2000);
     } catch {
       alert("저장 실패. 다시 시도해주세요.");
@@ -1109,48 +1133,103 @@ function AccountTab() {
     }
   }
 
+  async function handleDelete() {
+    if (!window.confirm("계좌 정보를 삭제하시겠습니까?")) return;
+    setAccountLoading(true);
+    try {
+      await updateAccountInfo({ bankCode: null, accountNumber: null, depositorName: null });
+      setSavedAccount(null);
+      setAccountForm({ bankCode: "", accountNumber: "", depositorName: "" });
+      setIsEditing(true);
+    } catch {
+      alert("삭제 실패. 다시 시도해주세요.");
+    } finally {
+      setAccountLoading(false);
+    }
+  }
+
   return (
     <div className="up-account-tab">
       <section className="up-account-card">
-        <h3>내 계좌 관리</h3>
-        <div className="up-account-form">
-          <div className="up-form-row">
-            <label>은행</label>
-            <select
-              value={accountForm.bankCode}
-              onChange={(e) => setAccountForm({ ...accountForm, bankCode: e.target.value })}
-            >
-              {BANK_OPTIONS.map((b) => (
-                <option key={b.value} value={b.value}>{b.label}</option>
-              ))}
-            </select>
+        <h3>계좌 관리</h3>
+
+        {savedAccount && !isEditing ? (
+          <div className="up-account-saved">
+            <div className="up-account-saved-info">
+              <span className="up-account-bank-icon">🏦</span>
+              <span className="up-account-bank-name">{BANK_LABELS[savedAccount.bankCode] || savedAccount.bankCode}</span>
+            </div>
+            <p className="up-account-number">{savedAccount.accountNumber} · {savedAccount.depositorName}</p>
+            <div className="up-account-actions">
+              <button
+                className="up-account-edit-btn"
+                onClick={() => setIsEditing(true)}
+              >
+                수정
+              </button>
+              <span className="up-account-divider">|</span>
+              <button
+                className="up-account-delete-btn"
+                onClick={handleDelete}
+                disabled={accountLoading}
+              >
+                삭제
+              </button>
+            </div>
           </div>
-          <div className="up-form-row">
-            <label>계좌번호</label>
-            <input
-              type="text"
-              placeholder="계좌번호 입력"
-              value={accountForm.accountNumber}
-              onChange={(e) => setAccountForm({ ...accountForm, accountNumber: e.target.value })}
-            />
+        ) : (
+          <div className="up-account-form">
+            <div className="up-form-row">
+              <label>은행</label>
+              <select
+                value={accountForm.bankCode}
+                onChange={(e) => setAccountForm({ ...accountForm, bankCode: e.target.value })}
+              >
+                {BANK_OPTIONS.map((b) => (
+                  <option key={b.value} value={b.value}>{b.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="up-form-row">
+              <label>계좌번호</label>
+              <input
+                type="text"
+                placeholder="계좌번호 입력"
+                value={accountForm.accountNumber}
+                onChange={(e) => setAccountForm({ ...accountForm, accountNumber: e.target.value })}
+              />
+            </div>
+            <div className="up-form-row">
+              <label>예금주</label>
+              <input
+                type="text"
+                placeholder="예금주명 입력"
+                value={accountForm.depositorName}
+                onChange={(e) => setAccountForm({ ...accountForm, depositorName: e.target.value })}
+              />
+            </div>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button
+                className="up-btn-save"
+                onClick={handleAccountSave}
+                disabled={accountLoading}
+              >
+                {accountSaved ? "저장됨 ✓" : accountLoading ? "저장 중..." : "저장"}
+              </button>
+              {savedAccount && (
+                <button
+                  className="up-account-cancel-btn"
+                  onClick={() => {
+                    setAccountForm({ ...savedAccount });
+                    setIsEditing(false);
+                  }}
+                >
+                  취소
+                </button>
+              )}
+            </div>
           </div>
-          <div className="up-form-row">
-            <label>예금주</label>
-            <input
-              type="text"
-              placeholder="예금주명 입력"
-              value={accountForm.depositorName}
-              onChange={(e) => setAccountForm({ ...accountForm, depositorName: e.target.value })}
-            />
-          </div>
-          <button
-            className="up-btn-save"
-            onClick={handleAccountSave}
-            disabled={accountLoading}
-          >
-            {accountSaved ? "저장됨 ✓" : accountLoading ? "저장 중..." : "저장"}
-          </button>
-        </div>
+        )}
       </section>
     </div>
   );
@@ -1228,6 +1307,15 @@ function UserProfilePage({
           if (!ignore) {
             setSeller(mapProfileToSeller(home?.profile || profile, memberId, home));
           }
+          // 리뷰 요약 (헤더용)
+          try {
+            const rvData = await getSellerReviews(profile?.memberId || memberId, 0, 1);
+            const reviewPage = rvData?.reviews ?? rvData?.data?.reviews ?? {};
+            if (!ignore) {
+              setAvgRating(rvData?.averageRating ?? rvData?.data?.averageRating ?? null);
+              setTotalElements(readTotalElements(reviewPage));
+            }
+        } catch (_) {}
         } catch (error) {
           if (!ignore) {
             showToast(error.message || "프로필 정보를 불러올 수 없습니다.");

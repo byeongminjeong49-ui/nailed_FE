@@ -1084,3 +1084,83 @@
   .up-buy-order-list,
   .up-settlement-grid { grid-template-columns: repeat(2, 1fr); }
 }
+.up-account-saved {
+  padding: 16px;
+  border: 1px solid #e0efec;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.up-account-saved-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.up-account-bank-icon {
+  font-size: 18px;
+}
+
+.up-account-bank-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #151515;
+}
+
+.up-account-number {
+  margin: 0 0 12px;
+  color: #555;
+  font-size: 14px;
+}
+
+.up-account-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.up-account-edit-btn {
+  background: none;
+  border: 0;
+  color: #168f88;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.up-account-edit-btn:hover {
+  text-decoration: underline;
+}
+
+.up-account-divider {
+  color: #ddd;
+  font-size: 13px;
+}
+
+.up-account-delete-btn {
+  background: none;
+  border: 0;
+  color: #b42323;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.up-account-delete-btn:hover {
+  text-decoration: underline;
+}
+
+.up-account-cancel-btn {
+  height: 36px;
+  padding: 0 16px;
+  border: 1px solid #d4d4d4;
+  border-radius: 6px;
+  background: #fff;
+  color: #333;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
