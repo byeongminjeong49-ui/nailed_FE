@@ -128,6 +128,9 @@ export async function getProductDetail(productId) {
   if (data?.seller?.profileImageUrl) {
     data.seller.profileImageUrl = toAssetUrl(data.seller.profileImageUrl);
   }
+  if (data && data.shippingFee == null && data.shipping_fee != null) {
+    data.shippingFee = data.shipping_fee;
+  }
   return data;
 }
 

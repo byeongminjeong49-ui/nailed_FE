@@ -448,6 +448,59 @@
 .pd-safe-inline svg { flex-shrink: 0; }
 
 /* ?? CTA 踰꾪듉 ?? */
+/* ── 상태 배지 + 태그 묶음 ── */
+.pd-meta-tags {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 20px;
+}
+.pd-size-tag {
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+  background: #f0f0f0;
+  border-radius: 4px;
+  padding: 4px 10px;
+}
+.pd-category-tag {
+  font-size: 12px;
+  font-weight: 500;
+  color: #999;
+  background: #f8f8f8;
+  border-radius: 4px;
+  padding: 4px 10px;
+}
+
+/* ── 배송정보 인라인 ── */
+.pd-shipping-info {
+  border: 1px solid #ececec;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 14px;
+}
+.pd-shipping-row {
+  display: flex;
+  align-items: center;
+  padding: 13px 16px;
+  gap: 16px;
+  font-size: 13px;
+}
+.pd-shipping-row + .pd-shipping-row {
+  border-top: 1px solid #f4f4f4;
+}
+.pd-shipping-label {
+  width: 60px;
+  flex-shrink: 0;
+  color: #aaa;
+  font-weight: 600;
+}
+.pd-shipping-value {
+  color: #333;
+  font-weight: 500;
+}
+
 .pd-actions {
   display: flex;
   align-items: stretch;
@@ -1068,6 +1121,165 @@
   .pd-related-grid { grid-template-columns: repeat(2, 1fr); }
   .pd-five-grid { grid-template-columns: repeat(2, 1fr); }
   .pd-safe-icons { gap: 20px; }
+}
+
+/* ── 가격 아래 메타 스트립 (사이즈·상태 pill + 시간·찜수) ── */
+.pd-meta-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 18px;
+}
+.pd-meta-pills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.pd-strip-pill {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 11px;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+  color: #444;
+  background: #fafafa;
+}
+.pd-strip-pill--size {
+  border-color: var(--accent, #168f88);
+  color: var(--accent, #168f88);
+  background: rgba(22,143,136,0.06);
+}
+.pd-strip-pill--cond {
+  border-color: #d0d0d0;
+  color: #555;
+  background: #f5f5f5;
+}
+.pd-meta-right {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: #bbb;
+}
+.pd-meta-time-sm { color: #bbb; }
+.pd-meta-wish-sm {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  color: #bbb;
+}
+
+/* ── 카테고리 브레드크럼 블록 ── */
+.pd-cat-breadcrumb-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+.pd-cat-breadcrumb {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0;
+  text-decoration: none;
+}
+.pd-cat-seg {
+  font-size: 13px;
+  color: #999;
+  font-weight: 500;
+  transition: color 0.15s;
+}
+.pd-cat-breadcrumb:hover .pd-cat-seg { color: #666; }
+.pd-cat-arrow {
+  font-size: 13px;
+  color: #aaa;
+}
+.pd-cat-time {
+  font-size: 12px;
+  color: #bbb;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.pd-cat-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: #151515;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── 카테고리 / 배송정보 블록 ── */
+.pd-detail-block {
+  margin-top: 28px;
+  padding-top: 22px;
+  border-top: 1px solid #f0f0f0;
+}
+.pd-detail-block-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #151515;
+  margin: 0 0 12px;
+  letter-spacing: -0.2px;
+}
+
+/* ── 배송 박스 ── */
+.pd-ship-box {
+  border: 1px solid #ececec;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.pd-ship-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  font-size: 13px;
+}
+.pd-ship-row + .pd-ship-row { border-top: 1px solid #f4f4f4; }
+.pd-ship-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #f5f5f5;
+  flex-shrink: 0;
+  color: #555;
+}
+.pd-ship-label {
+  width: 56px;
+  flex-shrink: 0;
+  font-weight: 600;
+  color: #666;
+}
+.pd-ship-value {
+  color: #222;
+  font-weight: 500;
+}
+
+/* ── 안전결제 경고 문구 ── */
+.pd-safe-notice {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: #e53935;
+}
+
+/* ── 시간/조회수 하단 ── */
+.pd-info-time-row {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+}
+.pd-info-time-row .pd-info-time {
+  font-size: 12px;
+  color: #bbb;
 }
 
 

@@ -409,12 +409,12 @@ function ProductDetailPage({ productId }) {
             </div>
           </div>
 
-          {/* 오른쪽: 제목/가격/메타/설명/해시태그/CTA */}
+          {/* 오른쪽: 제목/가격/메타/설명/배송정보 */}
           <div className="pd-info">
 
             {product.brandName && <p className="pd-brand">{toBrandNameEn(product.brandName)}</p>}
 
-            {/* 제목 + 액션 (찜/신고) */}
+            {/* 제목 + 찜/신고 */}
             <div className="pd-info-top">
               <h1 className="pd-title">{product.title}</h1>
               <div className="pd-info-icons">
@@ -442,19 +442,82 @@ function ProductDetailPage({ productId }) {
               </div>
             </div>
 
+            {/* 가격 */}
             <p className="pd-price">{product.price.toLocaleString()}<span className="pd-price-won">원</span></p>
-            <p className="pd-product-meta">
-              {[
-                toBrandNameEn(product.brandName),
-                product.categoryName + (product.size ? ` ${product.size}` : ""),
-                CONDITION_SHORT[product.conditionCode] || product.conditionDescription,
-              ].filter(Boolean).join(" · ")}
-            </p>
+
+            {/* 사이즈 · 상태 태그 + 시간/찜 수 */}
+            <div className="pd-meta-strip">
+              <div className="pd-meta-pills">
+                {product.size && <span className="pd-strip-pill pd-strip-pill--size">{product.size}</span>}
+                {product.conditionCode && (
+                  <span className="pd-strip-pill pd-strip-pill--cond">
+                    {CONDITION_SHORT[product.conditionCode] || product.conditionDescription}
+                  </span>
+                )}
+              </div>
+              <div className="pd-meta-right">
+                <span className="pd-meta-time-sm">{timeAgo(product.createdAt)}</span>
+                <span className="pd-meta-dot">·</span>
+                <span className="pd-meta-time-sm">조회 {product.viewCount}</span>
+              </div>
+            </div>
+
+            {/* 안전결제 버튼 */}
+            <div className="pd-actions">
+              {isMine ? (
+                <button className="pd-edit-btn" onClick={() => navigate(`/sell?edit=${product.productId}`)}>
+                  수정하기
+                </button>
+              ) : (
+                <button
+                  className="pd-buy-btn"
+                  onClick={() => {
+                    if (!currentMemberId) { navigate('/login'); return; }
+                    sessionStorage.setItem('pendingOrder', JSON.stringify({
+                      productId:      product.productId,
+                      sellerId:       product.seller.memberId,
+                      buyerId:        currentMemberId,
+                      productAmount:  product.price,
+                      finalPrice:     product.price,
+                      shippingFee:    product.shippingFee || 0,
+                      title:          product.title,
+                      imageUrl:       productImageUrls[0] ?? '',
+                      sellerNickname: product.seller.nickname,
+                      sellerBadge:    product.seller.sellerGrade,
+                    }));
+                    navigate('/order/form');
+                  }}
+                  disabled={isSold}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  </svg>
+                  {isSold ? "판매완료" : "Nailed 안전결제"}
+                </button>
+              )}
+            </div>
 
             <hr className="pd-info-divider" />
 
             {/* 상품 설명 */}
             <DescriptionBox text={product.description} />
+
+            {/* 카테고리 + 기간 */}
+            <div className="pd-cat-breadcrumb-block">
+              <span className="pd-cat-label">카테고리</span>
+              <a
+                href={categoryCodeToUrl(product.categoryCode)}
+                className="pd-cat-breadcrumb"
+                onClick={(e) => { e.preventDefault(); navigate(categoryCodeToUrl(product.categoryCode)); }}
+              >
+                {(product.categoryPath || product.categoryName)?.split(">").map((seg, i, arr) => (
+                  <span key={i}>
+                    <span className="pd-cat-seg">{seg.trim()}</span>
+                    {i < arr.length - 1 && <span className="pd-cat-arrow"> &gt; </span>}
+                  </span>
+                ))}
+              </a>
+            </div>
 
             {/* 해시태그 */}
             {tags.length > 0 && (
@@ -463,56 +526,33 @@ function ProductDetailPage({ productId }) {
               </div>
             )}
 
-            {/* 카테고리 링크 + 시간/조회수 */}
-            <div className="pd-info-footer">
-              <a
-                href={categoryCodeToUrl(product.categoryCode)}
-                className="pd-cat-link"
-                onClick={(e) => { e.preventDefault(); navigate(categoryCodeToUrl(product.categoryCode)); }}
-              >
-                {product.categoryPath || product.categoryName}
-              </a>
-              <span className="pd-info-time">
-                {timeAgo(product.createdAt)}
-                <span className="pd-meta-dot"> · </span>
-                조회 {product.viewCount}
-              </span>
+            {/* 배송정보 */}
+            <div className="pd-detail-block">
+              <h3 className="pd-detail-block-title">배송정보</h3>
+              <div className="pd-ship-box">
+                <div className="pd-ship-row">
+                  <span className="pd-ship-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+                    </svg>
+                  </span>
+                  <span className="pd-ship-label">배송방법</span>
+                  <span className="pd-ship-value">판매자 직접 배송</span>
+                </div>
+                <div className="pd-ship-row">
+                  <span className="pd-ship-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
+                    </svg>
+                  </span>
+                  <span className="pd-ship-label">배송비</span>
+                  <span className="pd-ship-value">
+                    {product.shippingFee > 0 ? `${product.shippingFee.toLocaleString()}원` : "무료"}
+                  </span>
+                </div>
+              </div>
             </div>
 
-            {/* 하단 CTA */}
-<div className="pd-actions">
-  {isMine ? (
-    <button className="pd-edit-btn" onClick={() => navigate(`/sell?edit=${product.productId}`)}>
-      수정하기
-    </button>
-  ) : (
-    <button
-      className="pd-buy-btn"
-      onClick={() => {
-        if (!currentMemberId) { navigate('/login'); return; }
-        sessionStorage.setItem('pendingOrder', JSON.stringify({
-          productId:     product.productId,
-          sellerId:      product.seller.memberId,
-          buyerId:       currentMemberId,
-          productAmount: product.price,
-          finalPrice:    product.price,
-          shippingFee:   0,
-          title:         product.title,
-          imageUrl:      productImageUrls[0] ?? '',
-          sellerNickname:  product.seller.nickname,
-          sellerBadge:     product.seller.sellerGrade,
-        }));
-        navigate('/order/form');
-      }}
-      disabled={isSold}
-    >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-      </svg>
-      {isSold ? "판매완료" : "Nailed 안전결제"}
-    </button>
-  )}
-</div>
           </div>
         </div>
 

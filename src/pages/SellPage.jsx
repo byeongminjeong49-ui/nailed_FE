@@ -355,6 +355,7 @@ export default function SellPage({ editProductId }) {
       categoryId:    codeToGroupId[itemCode],
       brandId:       (brandId && brandId !== "NOBRAND") ? Number(brandId) : null,
       price:         Number(price),
+      shippingFee:   Number(shippingFee) || 0,
       description:   description.trim(),
       conditionCode: condition,
       size:          selectedSize || null,
