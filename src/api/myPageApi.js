@@ -39,7 +39,10 @@ export async function updateMyProfile(payload) {
 export async function uploadMyProfileImage(file) {
   const formData = new FormData();
   formData.append("file", file);
-  return null;
+  return authRequest("/api/members/mypage/profile/image", {
+    method: "POST",
+    body: formData,
+  });
 }
 
 export async function fetchMyProducts(page = 0, size = 15) {
@@ -75,6 +78,18 @@ export async function fetchOrders(page = 0, size = 15, type = "BUY") {
 
 export async function fetchSettlements(page = 0, size = 20) {
   return request(`/api/members/mypage/settlements?page=${page}&size=${size}`);
+}
+
+export async function fetchAccountInfo() {
+  const data = await request("/api/members/mypage/account-info");
+  return data?.data ?? data;
+}
+
+export async function updateAccountInfo(payload) {
+  return request("/api/members/mypage/account-info", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
 }
 
 export async function withdrawMe() {

@@ -548,4 +548,19 @@
   font-weight: 700;
   cursor: pointer;
 }
+
 }
+.up-profile-edit-btn {
+  background-color: #e0f5f3;
+  color: #168f88;
+  border: 1px solid #b2e4e0;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.up-profile-edit-btn:hover {
+  background-color: #c5ede9;
+}
+

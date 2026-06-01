@@ -207,14 +207,13 @@
 .up-stats-dot { color: #ccc; }
 
 .up-profile-edit-btn {
-  height: 28px;
-  padding: 0 10px;
-  border: 1px solid #d8d8d8;
+  background-color: #e0f5f3;
+  color: #168f88;
+  border: 1px solid #b2e4e0;
   border-radius: 6px;
-  background: #fff;
-  color: #333;
-  font-size: 12px;
-  font-weight: 700;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
 }
 .up-profile-edit-btn:hover { border-color: #151515; }
@@ -979,7 +978,7 @@
   padding: 24px 28px;
   border: 1px solid #e7e7e7;
   border-radius: 8px;
-  background: #fff;
+  background: #f0faf9;
 }
 
 .up-account-card h3 {

@@ -12,6 +12,8 @@ import {
   updateMyProfile,
   uploadMyProfileImage,
   withdrawMe,
+  fetchAccountInfo,
+  updateAccountInfo,
 } from "../api/myPageApi";
 import { fetchMyInquiries, fetchMyInquiryDetail } from "../api/inquiryApi";
 import { getSellerProducts, getUserHome } from "../api/productApi";
@@ -67,6 +69,7 @@ function getTabFromPath(pathname) {
   if (pathname === "/mypage/reviews") return "reviews";
   if (pathname === "/mypage/inquiries") return "inquiries";
   if (pathname === "/mypage/account") return "account";
+  if (pathname === "/mypage/withdraw") return "withdraw";
   return "products";
 }
 
@@ -78,6 +81,7 @@ function getPathFromTab(tab) {
   if (tab === "reviews") return "/mypage/reviews";
   if (tab === "inquiries") return "/mypage/inquiries";
   if (tab === "account") return "/mypage/account";
+  if (tab === "withdraw") return "/mypage/withdraw";
   return "/mypage";
 }
 
@@ -207,6 +211,8 @@ function normalizeSettlement(settlement) {
     sellerSettlementAmount: Number(settlement?.sellerSettlementAmount ?? 0),
     orderStatus: settlement?.orderStatus || "",
     createdAt: settlement?.createdAt || "",
+    bankCode: settlement?.bankCode || "",
+    depositorName: settlement?.depositorName || "",
   };
 }
 
@@ -328,7 +334,6 @@ const PROFILE_TABS = [
   { key: "settlements",  label: "정산 내역" },
   { key: "reviews",      label: "리뷰" },
   { key: "inquiries",    label: "문의 내역" },
-  { key: "account",      label: "회원 탈퇴" },
 ];
 
 /* ── 사이드바 필터 ── */
@@ -565,8 +570,8 @@ function matchesGender(product, gender) {
 
 /* ── 주문 내역 탭 ── */
 function OrdersTab({ orders, onCancelOrder }) {
-  const normalizedOrders = orders.map(normalizeOrder);
-
+  const normalizedOrders = orders.map(normalizeOrder)
+  .filter((o) => o.orderStatus !== 'CANCELLED');
   if (normalizedOrders.length === 0) return <p className="up-empty">주문 내역 정보가 없습니다.</p>;
 
   return (
@@ -1060,11 +1065,101 @@ function EmptyProfileTab({ label }) {
   );
 }
 
-function AccountTab({ onWithdraw }) {
+function AccountTab() {
+  // 정산 계좌 관리만
+  const BANK_OPTIONS = [
+    { value: "", label: "은행 선택" },
+    { value: "KB", label: "KB국민" },
+    { value: "SHINHAN", label: "신한" },
+    { value: "WOORI", label: "우리" },
+  ];
+
+  const [accountForm, setAccountForm] = useState({
+    bankCode: "",
+    accountNumber: "",
+    depositorName: "",
+  });
+  const [accountLoading, setAccountLoading] = useState(false);
+  const [accountSaved, setAccountSaved] = useState(false);
+
+  useEffect(() => {
+    fetchAccountInfo().then((data) => {
+      setAccountForm({
+        bankCode: data?.bankCode || "",
+        accountNumber: "",
+        depositorName: data?.depositorName || "",
+      });
+    }).catch(() => {});
+  }, []);
+
+  async function handleAccountSave() {
+    if (!accountForm.bankCode || !accountForm.accountNumber || !accountForm.depositorName) {
+      alert("모든 항목을 입력해주세요.");
+      return;
+    }
+    setAccountLoading(true);
+    try {
+      await updateAccountInfo(accountForm);
+      setAccountSaved(true);
+      setTimeout(() => setAccountSaved(false), 2000);
+    } catch {
+      alert("저장 실패. 다시 시도해주세요.");
+    } finally {
+      setAccountLoading(false);
+    }
+  }
+
   return (
     <div className="up-account-tab">
       <section className="up-account-card">
-        <h3></h3>
+        <h3>내 계좌 관리</h3>
+        <div className="up-account-form">
+          <div className="up-form-row">
+            <label>은행</label>
+            <select
+              value={accountForm.bankCode}
+              onChange={(e) => setAccountForm({ ...accountForm, bankCode: e.target.value })}
+            >
+              {BANK_OPTIONS.map((b) => (
+                <option key={b.value} value={b.value}>{b.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className="up-form-row">
+            <label>계좌번호</label>
+            <input
+              type="text"
+              placeholder="계좌번호 입력"
+              value={accountForm.accountNumber}
+              onChange={(e) => setAccountForm({ ...accountForm, accountNumber: e.target.value })}
+            />
+          </div>
+          <div className="up-form-row">
+            <label>예금주</label>
+            <input
+              type="text"
+              placeholder="예금주명 입력"
+              value={accountForm.depositorName}
+              onChange={(e) => setAccountForm({ ...accountForm, depositorName: e.target.value })}
+            />
+          </div>
+          <button
+            className="up-btn-save"
+            onClick={handleAccountSave}
+            disabled={accountLoading}
+          >
+            {accountSaved ? "저장됨 ✓" : accountLoading ? "저장 중..." : "저장"}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function WithdrawTab({ onWithdraw }) {
+  return (
+    <div className="up-account-tab">
+      <section className="up-account-card">
         <div className="up-withdraw-box">
           <p className="up-withdraw-title">회원 탈퇴</p>
           <p className="up-withdraw-desc">
@@ -1214,7 +1309,10 @@ function UserProfilePage({
 
         if (currentTab === "orders") {
           const data = await fetchOrders(0, 15, "BUY");
-          if (!ignore) setOrders(toList(data).map(normalizeOrder));
+          if (!ignore) setOrders(toList(data)
+          .map(normalizeOrder)
+          .filter((o) => o.orderStatus !== 'CANCELLED')
+        );
         }
 
         if (currentTab === "wishlist") {
@@ -1285,16 +1383,20 @@ function UserProfilePage({
 
   async function handleSaveProfile({ shopInfo, profileFile }) {
     try {
+      let profileImageUrl = null;
+
       if (profileFile) {
-        await uploadMyProfileImage(profileFile);
+        const result = await uploadMyProfileImage(profileFile);
+        profileImageUrl = typeof result === "string" ? result : result?.data ?? result;
       }
 
-      await updateMyProfile({ shopInfo });
+      await updateMyProfile({
+        shopInfo,
+        ...(profileImageUrl && { profileImageUrl }),
+      });
 
-      const profile = await fetchMyProfile();
-      const home = await getUserHome(profile?.memberId || memberId);
-      setSeller(mapProfileToSeller(home?.profile || profile, memberId, home));
-      showToast("프로필이 수정되었습니다.");
+      alert("프로필이 수정되었습니다.");
+      window.location.reload();
     } catch (error) {
       showToast(error.message || "프로필 수정에 실패했습니다.");
       throw error;
@@ -1400,6 +1502,11 @@ function UserProfilePage({
             <div className="up-name-row">
               <h1 className="up-nickname">{seller.nickname}</h1>
               <span className={`up-grade ${gradeClass}`}>{GRADE[seller.sellerGrade]}</span>
+              {hideFooter && (
+              <button type="button" className="up-profile-edit-btn"   onClick={() => setProfileEditOpen(true)}>
+              프로필 수정
+            </button>
+              )}
             </div>
             <p className="up-handle">@{seller.memberId}</p>
             {seller.shopInfo && <p className="up-shop-info">{seller.shopInfo}</p>}
@@ -1423,12 +1530,23 @@ function UserProfilePage({
             </div>
           </div>
           {hideFooter && (
-            <div className="up-profile-actions">
-              <button type="button" className="up-profile-edit-btn" onClick={() => setProfileEditOpen(true)}>
-                프로필 수정
-              </button>
-            </div>
-          )}
+  <div className="up-profile-actions">
+    <button
+      type="button"
+      className="up-profile-edit-btn"
+      onClick={() => { if (onNavigate) onNavigate("/mypage/account"); }}
+    >
+      정산 계좌
+    </button>
+    <button
+      type="button"
+      className="up-withdraw-btn"
+      onClick={() => { if (onNavigate) onNavigate("/mypage/withdraw"); }}
+    >
+      회원 탈퇴
+    </button>
+  </div>
+)}
         </div>
       </div>
 
@@ -1483,9 +1601,12 @@ function UserProfilePage({
             onSelectInquiry={handleSelectInquiry}
           />
         )}
-        {!tabLoading && hideFooter && currentTab === "account" && (
-          <AccountTab onWithdraw={handleWithdraw} />
-        )}
+         {!tabLoading && hideFooter && currentTab === "account" && (
+  <AccountTab />
+)}
+{!tabLoading && hideFooter && currentTab === "withdraw" && (
+  <WithdrawTab onWithdraw={handleWithdraw} />
+)}
 
         {currentTab === "reviews" && (
           <ReviewsTab
