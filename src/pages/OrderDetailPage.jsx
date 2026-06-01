@@ -10,8 +10,8 @@ const STATUS_LABEL = {
 };
 
 const STATUS_STEPS = [
-  { key: 'REQUESTED', label: '주문접수' },
   { key: 'PAID',      label: '결제완료' },
+  { key: 'REQUESTED', label: '주문접수' },
   { key: 'SHIPPING',  label: '배송중'   },
   { key: 'DELIVERED', label: '배송완료' },
 ];
@@ -168,7 +168,7 @@ useEffect(() => {
     </div>
   );
 
-  const currentStep = STATUS_STEPS.findIndex((s) => s.key === order.orderStatus);
+  const currentStep = STATUS_STEPS.findIndex((step) => step.key === order.orderStatus);
   const imageUrl = getProductImageUrl(product);
   const title = product?.title || completed?.title || '-';
   const isSeller = currentMemberId && currentMemberId === order.sellerId;
@@ -305,8 +305,8 @@ useEffect(() => {
         <div style={s.card}>
           <div style={s.cardTitle}>주문 타임라인</div>
           {[
-            { label: '주문접수', val: order.createdAt },
             { label: '결제완료', val: order.paidAt },
+            { label: '주문접수', val: order.requestedAt },
             { label: '배송중',   val: order.shippedAt },
             { label: '배송완료', val: order.deliveredAt },
             { label: '취소됨',  val: order.cancelledAt },
@@ -316,7 +316,7 @@ useEffect(() => {
               <span style={{ ...s.rowValue, fontFamily: 'monospace', fontSize: '12px' }}>{fmt(t.val)}</span>
             </div>
           ))}
-          {!order.createdAt && <div style={{ color: '#bbb', fontSize: '13px', textAlign: 'center' }}>타임라인 정보가 없습니다.</div>}
+          {!order.paidAt && <div style={{ color: '#bbb', fontSize: '13px', textAlign: 'center' }}>타임라인 정보가 없습니다.</div>}
         </div>
 
  {isBuyer && (order.orderStatus === 'PAID' || order.orderStatus === 'REQUESTED') && (
