@@ -7,7 +7,7 @@ const TARGET_TYPE_LABELS = {
 
 const REASON_LABELS = {
   FRAUD: "사기 의심",
-  ABUSE: "욕설/비방",
+  MISLEADING_INFO: "상품 정보 허위/불일치",
   PROHIBITED_ITEM: "금지 품목",
   ETC: "기타",
 };
@@ -423,7 +423,7 @@ function AdminReportsPage() {
               <select id="admin-report-reason" value={reasonCode} onChange={handleReasonChange}>
                 <option value="">전체</option>
                 <option value="FRAUD">사기 의심</option>
-                <option value="ABUSE">욕설/비방</option>
+                <option value="MISLEADING_INFO">상품 정보 허위/불일치</option>
                 <option value="PROHIBITED_ITEM">금지 품목</option>
                 <option value="ETC">기타</option>
               </select>

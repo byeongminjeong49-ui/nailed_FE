@@ -2,7 +2,7 @@ import { authRequest } from "./authApi";
 
 export const REPORT_REASONS = [
   { code: "FRAUD", label: "사기" },
-  { code: "ABUSE", label: "욕설/비방" },
+  { code: "MISLEADING_INFO", label: "상품 정보 허위/불일치" },
   { code: "PROHIBITED_ITEM", label: "금지상품" },
   { code: "ETC", label: "기타" },
 ];
