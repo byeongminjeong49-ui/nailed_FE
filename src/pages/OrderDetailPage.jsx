@@ -156,6 +156,16 @@ useEffect(() => {
   }
 };
 
+const handleConfirmOrder = async () => {
+  try {
+    await axios.patch(`/api/orders/${orderId}/confirm?sellerId=${currentMemberId}`);
+    alert('주문이 확인되었습니다.');
+    window.location.reload();
+  } catch (e) {
+    alert('주문 확인에 실패했습니다.');
+  }
+};
+
   if (loading) return <div style={s.page}><div style={{ textAlign: 'center', padding: '80px', color: '#888' }}>로딩 중...</div></div>;
 
   if (error || !order) return (
@@ -172,8 +182,9 @@ useEffect(() => {
   const imageUrl = getProductImageUrl(product);
   const title = product?.title || completed?.title || '-';
   const isSeller = currentMemberId && currentMemberId === order.sellerId;
-  const isBuyer = currentMemberId && currentMemberId === order.buyerId; 
-  const canShip = isSeller && order.orderStatus === 'PAID';
+  const isBuyer = currentMemberId && currentMemberId === order.buyerId;
+  const canConfirmOrder = isSeller && order.orderStatus === 'PAID';
+  const canShip = isSeller && order.orderStatus === 'REQUESTED';
   const canConfirmDelivery = isBuyer && order.orderStatus === 'SHIPPING'; 
 
   return (
@@ -243,7 +254,20 @@ useEffect(() => {
           {order.deliveryRequest && <div style={{ ...s.row, borderBottom: 'none' }}><span style={s.rowLabel}>배송 요청</span><span style={s.rowValue}>{order.deliveryRequest}</span></div>}
         </div>
 
-        {/* 운송장 입력 - 판매자 + PAID 상태일 때만 */}
+        {/* 주문 확인 - 판매자 + 결제완료 상태일 때만 */}
+{canConfirmOrder && (
+    <div style={{ ...s.card, border: '1.5px solid #168f88' }}>
+        <div style={s.cardTitle}>주문 확인</div>
+        <p style={{ fontSize: '13px', color: '#888', margin: '0 0 14px' }}>
+            주문을 확인하고 배송을 준비해주세요.
+        </p>
+        <button style={s.shipBtn} onClick={handleConfirmOrder}>
+            주문 확인
+        </button>
+    </div>
+)}
+
+        {/* 운송장 입력 - 판매자 + 주문접수 상태일 때만 */}
         {canShip && (
           <div style={{ ...s.card, border: '1.5px solid #168f88' }}>
             <div style={s.cardTitle}>운송장 등록</div>
@@ -319,7 +343,7 @@ useEffect(() => {
           {!order.paidAt && <div style={{ color: '#bbb', fontSize: '13px', textAlign: 'center' }}>타임라인 정보가 없습니다.</div>}
         </div>
 
- {isBuyer && (order.orderStatus === 'PAID' || order.orderStatus === 'REQUESTED') && (
+ {isBuyer && (order.orderStatus === 'PAID') && (
           <button
             style={{ ...s.backBtn, background: '#e05c5c', color: '#fff', border: 'none' }}
             onClick={handleCancel}

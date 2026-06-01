@@ -627,7 +627,7 @@ function SellingTab() {
     .then((data) => {
       const filtered = toList(data)
         .map(normalizeOrder)
-        .filter((o) => ['PAID', 'SHIPPING', 'DELIVERED'].includes(o.orderStatus));
+        .filter((o) => ['PAID', 'REQUESTED', 'SHIPPING', 'DELIVERED'].includes(o.orderStatus));
       setOrders(filtered);
       setLoading(false);
     })
@@ -669,7 +669,31 @@ function SellingTab() {
     <p className="up-card-name" style={{ fontSize: '11px', color: '#69717d', fontWeight: 600 }}>주문번호: {o.orderId || '-'}</p>
     <p className="up-card-name" style={{ fontSize: '11px', color: '#69717d', fontWeight: 600 }}>상태: {STATUS_LABEL[o.orderStatus] || o.orderStatus || '-'}</p>
     <p className="up-card-price">{formatWon(o.finalPrice)}</p>
-   {o.orderStatus === 'PAID' && (
+
+{o.orderStatus === 'PAID' && (
+  <button
+    style={{
+      marginTop: '8px',
+      width: '100%',
+      padding: '7px 0',
+      background: '#168f88',
+      color: '#fff',
+      border: 'none',
+      borderRadius: '6px',
+      fontSize: '13px',
+      fontWeight: 700,
+      cursor: 'pointer',
+    }}
+    onClick={(e) => {
+      e.stopPropagation();
+      navigate(`/order/detail/${o.orderId}`);
+    }}
+  >
+    주문 확인
+  </button>
+)}
+
+   {o.orderStatus === 'REQUESTED' && (
   <button
     style={{
       marginTop: '8px',
