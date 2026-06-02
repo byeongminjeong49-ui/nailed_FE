@@ -26,8 +26,33 @@ const REPORT_STATUS_CLASS_NAMES = {
   DONE: "blue",
 };
 
+const ORDER_STATUS_LABELS = {
+  PAID: "결제완료",
+  REQUESTED: "주문접수",
+  SHIPPING: "배송중",
+  DELIVERED: "배송완료",
+  CANCELLED: "취소",
+};
+
+const MEMBER_STATUS_LABELS = {
+  ACTIVE: "정상",
+  LOCKED: "잠금",
+  WITHDRAWN: "탈퇴",
+  SUSPEND: "기간정지",
+  BANNED: "영구정지",
+};
+
+const SELLER_GRADE_LABELS = {
+  BRONZE: "브론즈",
+  SILVER: "실버",
+  GOLD: "골드",
+  DIAMOND: "다이아몬드",
+};
+
 const PAGE_SIZE = 10;
-const DETAIL_SUMMARY_SIZE = 5;
+const DETAIL_SUMMARY_FETCH_SIZE = 30;
+const DETAIL_SUMMARY_PAGE_SIZE = 3;
+const DETAIL_REPORT_HISTORY_SIZE = 100;
 const REPORT_TARGET_TYPE = "MEMBER";
 const REPORT_SORT = "reportId,asc";
 const PRODUCT_SORT = "productId,asc";
@@ -76,6 +101,36 @@ function getListContent(data) {
   return [];
 }
 
+function getTotalPages(data) {
+  return Number(data?.totalPages ?? data?.data?.totalPages ?? 1) || 1;
+}
+
+async function fetchTargetReportHistory(targetKeyword) {
+  const request = (pageNumber) =>
+    getAdminReports({
+      page: pageNumber,
+      size: DETAIL_REPORT_HISTORY_SIZE,
+      keyword: targetKeyword,
+      targetType: REPORT_TARGET_TYPE,
+      sort: REPORT_SORT,
+    });
+
+  const firstPageData = await request(0);
+  const totalPages = getTotalPages(firstPageData);
+  const firstPageContent = getListContent(firstPageData);
+
+  if (totalPages <= 1) return firstPageContent;
+
+  const otherPages = await Promise.all(
+    Array.from({ length: totalPages - 1 }, (_, index) => request(index + 1)),
+  );
+
+  return [
+    ...firstPageContent,
+    ...otherPages.flatMap((pageData) => getListContent(pageData)),
+  ];
+}
+
 function getTargetKeyword(report) {
   return String(
     report?.targetUserid ||
@@ -87,6 +142,112 @@ function getTargetKeyword(report) {
   ).trim();
 }
 
+function getFirstValue(source, fields) {
+  for (const field of fields) {
+    const value = source?.[field];
+    if (value !== undefined && value !== null && value !== "") return value;
+  }
+
+  return "";
+}
+
+function getTargetMemberId(report) {
+  return getFirstValue(report, ["targetMemberId", "target_member_id", "targetId", "target_id"]);
+}
+
+function getTargetMemberName(report) {
+  return getFirstValue(report, ["targetUserid", "targetUserId", "target_userid", "targetName", "target_name"]);
+}
+
+function getReportedProductId(report) {
+  return getFirstValue(report, [
+    "productId",
+    "targetProductId",
+    "reportedProductId",
+    "product_id",
+    "target_product_id",
+    "reported_product_id",
+  ]);
+}
+
+function getTargetMemberStatus(report) {
+  return getFirstValue(report, [
+    "targetMemberStatus",
+    "target_member_status",
+    "memberStatus",
+    "member_status",
+    "targetStatus",
+    "target_status",
+  ]);
+}
+
+function getTargetSellerGrade(report) {
+  return getFirstValue(report, [
+    "targetSellerGrade",
+    "target_seller_grade",
+    "sellerGrade",
+    "seller_grade",
+  ]);
+}
+
+function isSameReportTarget(report, targetReport) {
+  const selectedId = String(getTargetMemberId(report) || "").trim();
+  const selectedName = String(getTargetMemberName(report) || "").trim();
+  const targetId = String(getTargetMemberId(targetReport) || "").trim();
+  const targetName = String(getTargetMemberName(targetReport) || "").trim();
+
+  if (selectedId && targetId && selectedId === targetId) return true;
+  if (selectedName && targetName && selectedName === targetName) return true;
+
+  return false;
+}
+
+function getReportHistorySummary(report, targetReports) {
+  const matchedReports = targetReports.filter((targetReport) => isSameReportTarget(report, targetReport));
+  const counts = matchedReports.reduce((acc, item) => {
+    const reasonCode = item?.reasonCode || "ETC";
+    acc[reasonCode] = (acc[reasonCode] || 0) + 1;
+    return acc;
+  }, {});
+
+  return {
+    total: matchedReports.length,
+    counts,
+    available: matchedReports.length > 0,
+  };
+}
+
+function getPagedItems(items, page) {
+  const start = page * DETAIL_SUMMARY_PAGE_SIZE;
+  return items.slice(start, start + DETAIL_SUMMARY_PAGE_SIZE);
+}
+
+function SummaryPagination({ page, totalPages, onChange }) {
+  if (totalPages <= 1) return null;
+
+  return (
+    <div className="report-summary-pagination">
+      {Array.from({ length: totalPages }, (_, index) => (
+        <button
+          className={page === index ? "is-active" : ""}
+          key={index}
+          type="button"
+          onClick={() => onChange(index)}
+        >
+          {index + 1}
+        </button>
+      ))}
+      <button
+        type="button"
+        disabled={page >= totalPages - 1}
+        onClick={() => onChange(Math.min(totalPages - 1, page + 1))}
+      >
+        다음
+      </button>
+    </div>
+  );
+}
+
 function DetailItem({ label, value }) {
   return (
     <div>
@@ -96,8 +257,24 @@ function DetailItem({ label, value }) {
   );
 }
 
-function ReportDetailPanel({ report, products, orders, loading, message, onClose }) {
+function ReportDetailPanel({ report, products, orders, targetReports, loading, message, onClose }) {
+  const [productPage, setProductPage] = useState(0);
+  const [orderPage, setOrderPage] = useState(0);
+
+  useEffect(() => {
+    setProductPage(0);
+    setOrderPage(0);
+  }, [report?.reportId]);
+
   if (!report) return null;
+
+  const memberStatus = getTargetMemberStatus(report);
+  const sellerGrade = getTargetSellerGrade(report);
+  const reportHistory = getReportHistorySummary(report, targetReports);
+  const productTotalPages = Math.ceil(products.length / DETAIL_SUMMARY_PAGE_SIZE);
+  const orderTotalPages = Math.ceil(orders.length / DETAIL_SUMMARY_PAGE_SIZE);
+  const pagedProducts = getPagedItems(products, productPage);
+  const pagedOrders = getPagedItems(orders, orderPage);
 
   return (
     <section className="admin-card report-detail-panel">
@@ -111,11 +288,11 @@ function ReportDetailPanel({ report, products, orders, loading, message, onClose
 
       <div className="report-detail-grid">
         <section className="report-detail-section">
-          <h3>신고 기본 정보</h3>
+          <h3>신고자 기본 정보</h3>
           <dl className="report-detail-list">
             <DetailItem label="신고번호" value={report.reportId} />
             <DetailItem label="신고자" value={report.reporterNickname || report.reporterUserid} />
-            <DetailItem label="신고 대상 회원" value={report.targetName || report.targetUserid || report.targetId} />
+            <DetailItem label="신고 상품 ID" value={getReportedProductId(report)} />
             <DetailItem label="신고 사유" value={REASON_LABELS[report.reasonCode] || report.reasonCode} />
             <DetailItem label="신고 상태" value={REPORT_STATUS_LABELS[report.status] || report.status} />
             <DetailItem label="신고일" value={formatDate(report.createdAt)} />
@@ -129,12 +306,29 @@ function ReportDetailPanel({ report, products, orders, loading, message, onClose
         <section className="report-detail-section">
           <h3>신고 대상 회원 정보</h3>
           <dl className="report-detail-list">
-            <DetailItem label="member_id" value={report.targetMemberId || report.targetId} />
-            <DetailItem label="userid / nickname" value={report.targetUserid || report.targetUserId || report.targetName} />
-            <DetailItem label="회원 상태" value={report.targetStatus || report.targetMemberStatus} />
-            <DetailItem label="가입일" value={formatDate(report.targetCreatedAt || report.targetJoinedAt)} />
-            <DetailItem label="판매자 등급" value={report.targetSellerGrade || report.sellerGrade} />
+            <DetailItem label="member_id" value={getTargetMemberId(report)} />
+            <DetailItem label="userid / nickname" value={getTargetMemberName(report)} />
+            <DetailItem label="회원 상태" value={MEMBER_STATUS_LABELS[memberStatus] || memberStatus} />
+            <DetailItem label="판매자 등급" value={SELLER_GRADE_LABELS[sellerGrade] || sellerGrade} />
           </dl>
+          <div className="report-history-box">
+            <div className="report-history-head">
+              <span>신고 누적 이력</span>
+              <strong>{reportHistory.available ? `총 신고 ${reportHistory.total}회` : "확인 필요"}</strong>
+            </div>
+            {reportHistory.available ? (
+              <ul>
+                {Object.keys(REASON_LABELS).map((reasonCode) => (
+                  <li key={reasonCode}>
+                    <span>{REASON_LABELS[reasonCode]}</span>
+                    <strong>{reportHistory.counts[reasonCode] || 0}회</strong>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>기존 신고 API 응답에서 대상 회원의 누적 신고 이력을 확인할 수 없습니다.</p>
+            )}
+          </div>
         </section>
       </div>
 
@@ -161,7 +355,7 @@ function ReportDetailPanel({ report, products, orders, loading, message, onClose
                     <td colSpan="5" className="admin-inquiry-empty">기존 API 응답에서 표시할 판매글이 없습니다.</td>
                   </tr>
                 ) : (
-                  products.map((product) => (
+                  pagedProducts.map((product) => (
                     <tr key={String(product.productId)}>
                       <td>{product.productId ?? "-"}</td>
                       <td title={product.title || ""}>{product.title || "-"}</td>
@@ -174,6 +368,7 @@ function ReportDetailPanel({ report, products, orders, loading, message, onClose
               </tbody>
             </table>
           </div>
+          <SummaryPagination page={productPage} totalPages={productTotalPages} onChange={setProductPage} />
         </section>
 
         <section className="report-detail-section">
@@ -187,7 +382,7 @@ function ReportDetailPanel({ report, products, orders, loading, message, onClose
                   <th>구매자</th>
                   <th>판매자</th>
                   <th>상태</th>
-                  <th>주문일</th>
+                  <th>결제일</th>
                 </tr>
               </thead>
               <tbody>
@@ -196,20 +391,21 @@ function ReportDetailPanel({ report, products, orders, loading, message, onClose
                     <td colSpan="6" className="admin-inquiry-empty">기존 API 응답에서 표시할 주문이 없습니다.</td>
                   </tr>
                 ) : (
-                  orders.map((order) => (
+                  pagedOrders.map((order) => (
                     <tr key={String(order.orderId)}>
                       <td>{order.orderId ?? "-"}</td>
                       <td title={order.productTitle || ""}>{order.productTitle || "-"}</td>
                       <td>{order.buyerNickname || order.buyerUserid || "-"}</td>
                       <td>{order.sellerNickname || order.sellerUserid || "-"}</td>
-                      <td>{order.orderStatus || "-"}</td>
-                      <td>{formatDate(order.createdAt)}</td>
+                      <td>{ORDER_STATUS_LABELS[order.orderStatus] || order.orderStatus || "-"}</td>
+                      <td>{formatDate(order.paidAt)}</td>
                     </tr>
                   ))
                 )}
               </tbody>
             </table>
           </div>
+          <SummaryPagination page={orderPage} totalPages={orderTotalPages} onChange={setOrderPage} />
         </section>
       </div>
     </section>
@@ -230,6 +426,7 @@ function AdminReportsPage() {
   const [selectedReport, setSelectedReport] = useState(null);
   const [targetProducts, setTargetProducts] = useState([]);
   const [targetOrders, setTargetOrders] = useState([]);
+  const [targetReports, setTargetReports] = useState([]);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailMessage, setDetailMessage] = useState("");
   const [pageInfo, setPageInfo] = useState({
@@ -312,6 +509,7 @@ function AdminReportsPage() {
       if (!selectedReport) {
         setTargetProducts([]);
         setTargetOrders([]);
+        setTargetReports([]);
         setDetailMessage("");
         return;
       }
@@ -320,6 +518,7 @@ function AdminReportsPage() {
       if (!targetKeyword) {
         setTargetProducts([]);
         setTargetOrders([]);
+        setTargetReports([]);
         setDetailMessage("신고 대상 회원 식별 필드가 부족해 판매글/주문 요약을 조회할 수 없습니다.");
         return;
       }
@@ -328,29 +527,32 @@ function AdminReportsPage() {
       setDetailMessage("");
 
       try {
-        const [productsData, ordersData] = await Promise.all([
+        const [productsData, ordersData, reportHistory] = await Promise.all([
           getAdminProducts({
             page: 0,
-            size: DETAIL_SUMMARY_SIZE,
+            size: DETAIL_SUMMARY_FETCH_SIZE,
             sellerKeyword: targetKeyword,
             sort: PRODUCT_SORT,
           }),
           getAdminOrders({
             page: 0,
-            size: DETAIL_SUMMARY_SIZE,
+            size: DETAIL_SUMMARY_FETCH_SIZE,
             keyword: targetKeyword,
             sort: ORDER_SORT,
           }),
+          fetchTargetReportHistory(targetKeyword),
         ]);
 
         if (ignore) return;
 
         setTargetProducts(sortByIdAsc(getListContent(productsData), "productId"));
         setTargetOrders(sortByIdAsc(getListContent(ordersData), "orderId"));
+        setTargetReports(sortByIdAsc(reportHistory, "reportId"));
       } catch (error) {
         if (ignore) return;
         setTargetProducts([]);
         setTargetOrders([]);
+        setTargetReports([]);
         setDetailMessage(error.message || "신고 대상 회원 관련 정보를 기존 API로 불러오지 못했습니다.");
       } finally {
         if (!ignore) setDetailLoading(false);
@@ -604,6 +806,7 @@ function AdminReportsPage() {
           report={selectedReport}
           products={targetProducts}
           orders={targetOrders}
+          targetReports={targetReports}
           loading={detailLoading}
           message={detailMessage}
           onClose={() => setSelectedReport(null)}

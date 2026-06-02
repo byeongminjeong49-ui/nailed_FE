@@ -4,7 +4,7 @@ import { getAdminOrders } from "../../api/adminApi";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 const ORDER_STATUS_LABELS = {
-  REQUESTED: "주문요청",
+  REQUESTED: "주문접수",
   PAID: "결제완료",
   SHIPPING: "배송중",
   DELIVERED: "배송완료",
@@ -212,7 +212,7 @@ function AdminOrdersPage() {
   }
 
   return (
-    <div className="admin-page">
+    <div className="admin-page admin-orders-page">
       <div className="admin-page-title">
         <h1>주문 관리</h1>
         <p>주문 정보를 조회하고 주문 상태와 기간 기준으로 확인합니다.</p>
@@ -238,7 +238,7 @@ function AdminOrdersPage() {
               <label htmlFor="admin-order-status">주문 상태</label>
               <select id="admin-order-status" value={orderStatus} onChange={handleStatusChange}>
                 <option value="">전체</option>
-                <option value="REQUESTED">주문요청</option>
+                <option value="REQUESTED">주문접수</option>
                 <option value="PAID">결제완료</option>
                 <option value="SHIPPING">배송중</option>
                 <option value="DELIVERED">배송완료</option>
@@ -311,7 +311,7 @@ function AdminOrdersPage() {
           {errorMessage && <p className="admin-inquiry-message">{errorMessage}</p>}
 
           <div className="admin-table-wrap">
-            <table className="admin-table" style={{ minWidth: 1180 }}>
+            <table className="admin-table admin-order-table">
               <thead>
                 <tr>
                   <th>주문번호</th>
@@ -322,7 +322,7 @@ function AdminOrdersPage() {
                   <th>주문상태</th>
                   <th>상품금액</th>
                   <th>최종결제금액</th>
-                  <th>주문일</th>
+                  <th>결제일</th>
                   <th>완료일</th>
                   <th>수정일</th>
                 </tr>
@@ -362,9 +362,9 @@ function AdminOrdersPage() {
                           {ORDER_STATUS_LABELS[order.orderStatus] || order.orderStatus || "-"}
                         </span>
                       </td>
-                      <td>{formatPrice(order.orderAmount)}</td>
-                      <td>{formatPrice(order.paymentAmount)}</td>
-                      <td>{formatDate(order.createdAt)}</td>
+                      <td>{formatPrice(order.product?.price)}</td>
+                      <td>{formatPrice(order.finalPrice)}</td>
+                      <td>{formatDate(order.paidAt)}</td>
                       <td>{formatDate(order.completedAt)}</td>
                       <td>{formatDate(order.updatedAt)}</td>
                     </tr>

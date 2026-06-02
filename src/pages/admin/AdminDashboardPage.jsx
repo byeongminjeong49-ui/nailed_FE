@@ -17,8 +17,8 @@ const PRODUCT_STATUS_LABELS = {
 };
 
 const ORDER_STATUS_LABELS = {
-  REQUESTED: "주문요청",
   PAID: "결제완료",
+  REQUESTED: "주문접수",
   SHIPPING: "배송중",
   DELIVERED: "배송완료",
   CANCELLED: "취소",
@@ -255,11 +255,11 @@ function AdminDashboardPage() {
       title: "주문 상태 비율",
       total: totalOrders,
       rows: buildRows(
-        ["REQUESTED", "PAID", "SHIPPING", "DELIVERED", "CANCELLED"],
+        ["PAID", "REQUESTED", "SHIPPING", "DELIVERED", "CANCELLED"],
         ORDER_STATUS_LABELS,
         {
-          REQUESTED: orders.requestedOrders,
           PAID: orders.paidOrders,
+          REQUESTED: orders.requestedOrders,
           SHIPPING: orders.shippingOrders,
           DELIVERED: orders.deliveredOrders,
           CANCELLED: orders.cancelledOrders,

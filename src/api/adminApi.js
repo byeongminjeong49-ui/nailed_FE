@@ -6,6 +6,7 @@ export async function fetchAdminMembers({
   keyword = "",
   role = "",
   status = "",
+  sellerGrade = "",
   sort = "",
 } = {}) {
   const params = new URLSearchParams({
@@ -16,6 +17,7 @@ export async function fetchAdminMembers({
   if (keyword) params.set("keyword", keyword);
   if (role) params.set("role", role);
   if (status) params.set("status", status);
+  if (sellerGrade) params.set("sellerGrade", sellerGrade);
   if (sort) params.set("sort", sort);
 
   return authRequest(`/api/admin/members?${params.toString()}`);

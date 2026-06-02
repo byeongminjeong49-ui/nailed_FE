@@ -22,6 +22,13 @@ const STATUS_CLASS_NAMES = {
   BANNED: "red",
 };
 
+const SELLER_GRADE_LABELS = {
+  BRONZE: "브론즈",
+  SILVER: "실버",
+  GOLD: "골드",
+  DIAMOND: "다이아몬드",
+};
+
 const PAGE_SIZE = 10;
 const MEMBER_ROLE = "USER";
 const MEMBER_SORT = "memberId,asc";
@@ -57,6 +64,7 @@ function AdminMembersPage() {
   const [keyword, setKeyword] = useState("");
   const [appliedKeyword, setAppliedKeyword] = useState("");
   const [status, setStatus] = useState("");
+  const [sellerGrade, setSellerGrade] = useState("");
   const [page, setPage] = useState(0);
   const [members, setMembers] = useState([]);
   const [pageInfo, setPageInfo] = useState({
@@ -89,6 +97,7 @@ function AdminMembersPage() {
           keyword: appliedKeyword,
           role: MEMBER_ROLE,
           status,
+          sellerGrade,
           sort: MEMBER_SORT,
         });
 
@@ -127,7 +136,7 @@ function AdminMembersPage() {
     return () => {
       ignore = true;
     };
-  }, [appliedKeyword, page, status]);
+  }, [appliedKeyword, page, sellerGrade, status]);
 
   function handleSearchSubmit(event) {
     event.preventDefault();
@@ -139,6 +148,7 @@ function AdminMembersPage() {
     setKeyword("");
     setAppliedKeyword("");
     setStatus("");
+    setSellerGrade("");
     setPage(0);
   }
 
@@ -147,8 +157,13 @@ function AdminMembersPage() {
     setPage(0);
   }
 
+  function handleSellerGradeChange(event) {
+    setSellerGrade(event.target.value);
+    setPage(0);
+  }
+
   return (
-    <div className="admin-page">
+    <div className="admin-page admin-members-page">
       <div className="admin-page-title">
         <h1>회원 관리</h1>
         <p>회원 정보를 조회하고 권한과 상태 기준으로 확인합니다.</p>
@@ -156,7 +171,7 @@ function AdminMembersPage() {
 
       <div className="admin-content-main">
         <section className="admin-card search-filter-card">
-          <form className="filter-row admin-filter-row-compact" onSubmit={handleSearchSubmit}>
+          <form className="filter-row admin-filter-row-member" onSubmit={handleSearchSubmit}>
             <div className="filter-field search-field">
               <label htmlFor="admin-member-search">회원 검색</label>
               <div className="filter-input">
@@ -179,6 +194,16 @@ function AdminMembersPage() {
                 <option value="WITHDRAWN">탈퇴</option>
                 <option value="SUSPEND">기간정지</option>
                 <option value="BANNED">영구정지</option>
+              </select>
+            </div>
+
+            <div className="filter-field">
+              <label htmlFor="admin-member-seller-grade">판매등급</label>
+              <select id="admin-member-seller-grade" value={sellerGrade} onChange={handleSellerGradeChange}>
+                <option value="">전체</option>
+                {Object.entries(SELLER_GRADE_LABELS).map(([value, label]) => (
+                  <option value={value} key={value}>{label}</option>
+                ))}
               </select>
             </div>
 

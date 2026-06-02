@@ -196,7 +196,7 @@ function AdminProductsPage() {
   }
 
   return (
-    <div className="admin-page">
+    <div className="admin-page admin-products-page">
       <div className="admin-page-title">
         <h1>상품 관리</h1>
         <p>등록된 상품을 조회하고 판매 상태 기준으로 확인합니다.</p>
@@ -273,7 +273,7 @@ function AdminProductsPage() {
           {errorMessage && <p className="admin-inquiry-message">{errorMessage}</p>}
 
           <div className="admin-table-wrap">
-            <table className="admin-table" style={{ minWidth: 1180 }}>
+            <table className="admin-table admin-product-table">
               <thead>
                 <tr>
                   <th>이미지</th>
