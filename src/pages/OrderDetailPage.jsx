@@ -283,6 +283,7 @@ const handleConfirmOrder = async () => {
                 style={s.input}
                 type="text"
                 placeholder="숫자만 입력하세요"
+                maxLength={13}
                 value={trackingNumber}
                 onChange={(e) => setTrackingNumber(e.target.value.replace(/[^0-9]/g, ''))}
                 onFocus={(e) => e.target.style.borderColor = '#168f88'}
@@ -290,12 +291,12 @@ const handleConfirmOrder = async () => {
               />
             </div>
             <button
-              style={carrierCode && trackingNumber ? s.shipBtn : s.shipBtnDisabled}
-              onClick={handleShip}
-              disabled={!carrierCode || !trackingNumber || submitting}
-            >
-              {submitting ? '등록 중...' : '운송장 등록'}
-            </button>
+            style={carrierCode && trackingNumber.length >= 10 ? s.shipBtn : s.shipBtnDisabled}
+            onClick={handleShip}
+            disabled={!carrierCode || trackingNumber.length < 10 || submitting}
+>
+  {submitting ? '등록 중...' : '운송장 등록'}
+</button>
           </div>
         )}
 
