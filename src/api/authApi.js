@@ -108,9 +108,7 @@ function saveAuthFields(data) {
 
   sessionStorage.setItem(ACCESS_TOKEN_KEY, data.accessToken);
 
-  if (data.refreshToken) {
-    sessionStorage.setItem(REFRESH_TOKEN_KEY, data.refreshToken);
-  }
+  // refreshToken은 쿠키로 관리 (BE에서 HttpOnly 쿠키로 내려줌)
   if (data.tokenType) {
     sessionStorage.setItem(TOKEN_TYPE_KEY, data.tokenType);
   }
@@ -193,17 +191,12 @@ export function clearAuthStorage({ redirect = false } = {}) {
 }
 
 async function refreshAccessToken() {
-  const refreshToken = getRefreshToken();
-  if (!refreshToken) {
-    throw new Error(SESSION_EXPIRED_MESSAGE);
-  }
-
   const response = await fetch(buildUrl("/api/auth/refresh"), {
     method: "POST",
+    credentials: "include", // HttpOnly 쿠키의 refreshToken 자동 전송
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ refreshToken }),
   });
   const data = await parseResponseData(response);
 
@@ -368,6 +361,7 @@ export async function login({ userId, password }) {
       userid: normalizeUserId(userId),
       password,
     }),
+     credentials: "include",
   });
 
   return saveLoginResult(data);
@@ -388,15 +382,13 @@ export async function findPassword({ userId }) {
 }
 
 export async function logout() {
-  const refreshToken = getRefreshToken();
-
   try {
     await fetch(buildUrl("/api/auth/logout"), {
       method: "POST",
+      credentials: "include", // HttpOnly 쿠키의 refreshToken 자동 전송
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ refreshToken }),
     });
   } finally {
     clearAuthStorage();

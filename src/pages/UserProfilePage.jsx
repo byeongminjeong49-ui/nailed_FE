@@ -693,7 +693,7 @@ function SellingTab() {
       navigate(`/order/detail/${o.orderId}`);
     }}
   >
-    주문 확인
+    주문 상세
   </button>
 )}
 
@@ -1699,12 +1699,15 @@ function UserProfilePage({
             <p className="up-handle">@{seller.memberId}</p>
             {seller.shopInfo && <p className="up-shop-info">{seller.shopInfo}</p>}
             <div className="up-stats">
-              <span>판매 상품 <strong>{sellerProducts.length}</strong>건</span>
-              <span className="up-stats-dot">·</span>
-              <span>거래완료 <strong>{seller.completedOrderCount}</strong>건</span>
+              
+               {seller.completedOrderCount > 0 && (
+    <span>판매 완료 <strong>{seller.completedOrderCount}</strong>건</span>
+  )}
+
               {totalElements > 0 && (
                 <>
                   <span className="up-stats-dot">·</span>
+
                   <span>리뷰 <strong>{totalElements}</strong>건</span>
                 </>
               )}
