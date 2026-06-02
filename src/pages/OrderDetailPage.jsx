@@ -344,20 +344,37 @@ const handleConfirmOrder = async () => {
           {!order.paidAt && <div style={{ color: '#bbb', fontSize: '13px', textAlign: 'center' }}>타임라인 정보가 없습니다.</div>}
         </div>
 
- {isBuyer && (order.orderStatus === 'PAID') && (
-          <button
-            style={{ ...s.backBtn, background: '#e05c5c', color: '#fff', border: 'none' }}
-            onClick={handleCancel}
-          >
-            주문 취소하기
-          </button>
-        )}      
-<button
-  style={{ ...s.backBtn, marginTop: '8px' }}
-  onClick={() => navigate('/')}
->
-  쇼핑 계속하기
-</button>
+        {isBuyer ? (
+  <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+    <button
+      style={{ ...s.backBtn, marginTop: '0', flex: 1 }}
+      onClick={() => navigate('/')}
+    >
+      쇼핑 계속하기
+    </button>
+    <button
+      style={{ ...s.backBtn, marginTop: '0', flex: 1, background: '#168f88', color: '#fff', border: 'none', fontWeight: '700' }}
+      onClick={() => navigate('/mypage/orders')}
+    >
+      구매 내역으로
+    </button>
+  </div>
+) : isSeller ? (
+  <button
+    style={{ ...s.backBtn, marginTop: '8px', background: '#168f88', color: '#fff', border: 'none', fontWeight: '700' }}
+    onClick={() => navigate('/mypage/selling')}
+  >
+    판매 내역으로
+  </button>
+) : (
+  <button
+    style={{ ...s.backBtn, marginTop: '8px' }}
+    onClick={() => navigate('/')}
+  >
+    홈으로
+  </button>
+)}
+
       </div>
     </div>
   );
