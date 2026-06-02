@@ -207,15 +207,17 @@
 .up-stats-dot { color: #ccc; }
 
 .up-profile-edit-btn {
-  background-color: #e0f5f3;
-  color: #168f88;
-  border: 1px solid #b2e4e0;
+  background-color: #e0f5f303;
+  color: #0f1010;
+  border: 1px solid #3e7261;
   border-radius: 6px;
-  padding: 6px 14px;
-  font-size: 13px;
+  padding: 6px 8px;
+  font-size: 10px;
   font-weight: 600;
   cursor: pointer;
+  line-height: 1;
 }
+
 .up-profile-edit-btn:hover { border-color: #151515; }
 .up-shop-info {
   max-width: 520px;
@@ -1011,7 +1013,7 @@
 
 .up-withdraw-btn {
   min-height: unset !important;
-  padding: 8px 14px;
+  padding: 6px 8px;
   font-size: 13px;
   font-weight: 600;
   border-radius: 6px;

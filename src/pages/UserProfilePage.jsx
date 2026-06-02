@@ -71,6 +71,7 @@ function getTabFromPath(pathname) {
   if (pathname === "/mypage/inquiries") return "inquiries";
   if (pathname === "/mypage/account") return "account";
   if (pathname === "/mypage/withdraw") return "withdraw";
+  if (pathname === "/mypage/refunds") return "refunds";
   return "products";
 }
 
@@ -83,6 +84,7 @@ function getPathFromTab(tab) {
   if (tab === "inquiries") return "/mypage/inquiries";
   if (tab === "account") return "/mypage/account";
   if (tab === "withdraw") return "/mypage/withdraw";
+  if (tab === "refunds") return "/mypage/refunds";
   return "/mypage";
 }
 
@@ -195,6 +197,7 @@ function normalizeOrder(order) {
     productId:    order?.productId,
     productTitle: order?.productTitle || order?.title || "상품명 없음",
     orderStatus:  order.order_status ?? order.orderStatus ?? "",
+    previousStatus: order.previous_status ?? order.previousStatus ?? "",
     finalPrice:   Number(order?.finalPrice ?? order?.price ?? 0),
     createdAt:    order?.createdAt || "",
   };
@@ -335,6 +338,7 @@ const PROFILE_TABS = [
   { key: "settlements",  label: "정산 내역" },
   { key: "reviews",      label: "리뷰" },
   { key: "inquiries",    label: "문의 내역" },
+  { key: "refunds", label: "환불 내역" },
 ];
 
 /* ── 사이드바 필터 ── */
@@ -1089,6 +1093,48 @@ function InquiriesTab({
     </div>
   );
 }
+function RefundTab({ refunds }) {
+  if (refunds.length === 0)
+    return <p className="up-empty">환불 내역이 없습니다.</p>;
+
+  return (
+    <div className="up-order-list up-buy-order-list">
+      {refunds.map((order) => {
+        const imageUrl = getProductImageUrl(order);
+        return (
+          <div key={order.orderId} className="up-order-item up-buy-order-card">
+            {imageUrl && (
+              <div className="up-card-img-wrap up-order-img-wrap">
+                <div className="product-visual">
+                  <img className="product-image" src={imageUrl} alt={order.productTitle} />
+                </div>
+              </div>
+            )}
+            <div className="up-order-info">
+              <p className="up-order-title">{order.productTitle}</p>
+              <p className="up-order-meta">주문번호: {order.orderId || "-"}</p>
+              <p className="up-order-meta">결제금액: {formatWon(order.finalPrice)}</p>
+              <p className="up-order-meta">취소일: {formatDate(order.cancelledAt)}</p>
+            </div>
+            <div className="up-order-right">
+              <span style={{
+                display: "inline-block",
+                padding: "4px 10px",
+                borderRadius: "20px",
+                fontSize: "12px",
+                fontWeight: 600,
+                background: "#fdecea",
+                color: "#c62828",
+              }}>
+                환불완료
+              </span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 function EmptyProfileTab({ label }) {
   return (
@@ -1180,7 +1226,6 @@ function EmptyProfileTab({ label }) {
         {savedAccount && !isEditing ? (
           <div className="up-account-saved">
             <div className="up-account-saved-info">
-              <span className="up-account-bank-icon">🏦</span>
               <span className="up-account-bank-name">{BANK_LABELS[savedAccount.bankCode] || savedAccount.bankCode}</span>
             </div>
             <p className="up-account-number">{savedAccount.accountNumber} · {savedAccount.depositorName}</p>
@@ -1203,56 +1248,76 @@ function EmptyProfileTab({ label }) {
           </div>
         ) : (
           <div className="up-account-form">
-            <div className="up-form-row">
-              <label>은행</label>
-              <select
-                value={accountForm.bankCode}
-                onChange={(e) => setAccountForm({ ...accountForm, bankCode: e.target.value })}
-              >
-                {BANK_OPTIONS.map((b) => (
-                  <option key={b.value} value={b.value}>{b.label}</option>
-                ))}
-              </select>
-            </div>
-            <div className="up-form-row">
-              <label>계좌번호</label>
-              <input
-                type="text"
-                placeholder="계좌번호 입력"
-                value={accountForm.accountNumber}
-                onChange={(e) => setAccountForm({ ...accountForm, accountNumber: e.target.value })}
-              />
-            </div>
-            <div className="up-form-row">
-              <label>예금주</label>
-              <input
-                type="text"
-                placeholder="예금주명 입력"
-                value={accountForm.depositorName}
-                onChange={(e) => setAccountForm({ ...accountForm, depositorName: e.target.value })}
-              />
-            </div>
-            <div style={{ display: "flex", gap: "8px" }}>
+  <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 10px" }}>
+    <tbody>
+      <tr>
+        <td style={{ width: "80px", color: "#555", fontSize: "13px", fontWeight: 600, paddingRight: "12px" }}>은행</td>
+        <td>
+          <select
+            style={{ height: "36px", padding: "0 8px", border: "1px solid #cfd8e3", borderRadius: "6px", fontSize: "13px" }}
+            value={accountForm.bankCode}
+            onChange={(e) => setAccountForm({ ...accountForm, bankCode: e.target.value })}
+          >
+            {BANK_OPTIONS.map((b) => (
+              <option key={b.value} value={b.value}>{b.label}</option>
+            ))}
+          </select>
+        </td>
+      </tr>
+      <tr>
+        <td style={{ color: "#555", fontSize: "13px", fontWeight: 600, paddingRight: "12px" }}>계좌번호</td>
+        <td>
+          <input
+            type="text"
+            placeholder="계좌번호 입력"
+            style={{ height: "36px", padding: "0 10px", border: "1px solid #cfd8e3", borderRadius: "6px", fontSize: "13px", width: "100%" }}
+            value={accountForm.accountNumber}
+            onChange={(e) => setAccountForm({ ...accountForm, accountNumber: e.target.value })}
+          />
+        </td>
+      </tr>
+      <tr>
+        <td style={{ color: "#555", fontSize: "13px", fontWeight: 600, paddingRight: "12px" }}>예금주</td>
+        <td>
+          <input
+            type="text"
+            placeholder="예금주명 입력"
+            style={{ height: "36px", padding: "0 10px", border: "1px solid #cfd8e3", borderRadius: "6px", fontSize: "13px", width: "100%" }}
+            value={accountForm.depositorName}
+            onChange={(e) => setAccountForm({ ...accountForm, depositorName: e.target.value })}
+          />
+        </td>
+      </tr>
+      <tr>
+        <td></td>
+        <td style={{ paddingTop: "6px" }}>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button
+              className="up-btn-save"
+              onClick={handleAccountSave}
+              disabled={accountLoading}
+              style={{ height: "36px", padding: "0 20px", background: "#168f88", color: "#fff", border: "none", borderRadius: "6px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
+            >
+              {accountSaved ? "저장됨 ✓" : accountLoading ? "저장 중..." : "저장"}
+            </button>
+            {savedAccount && (
               <button
-                className="up-btn-save"
-                onClick={handleAccountSave}
-                disabled={accountLoading}
+                className="up-account-cancel-btn"
+                onClick={() => {
+                  setAccountForm({ ...savedAccount });
+                  setIsEditing(false);
+                }}
+                style={{ height: "36px", padding: "0 16px", border: "1px solid #d4d4d4", borderRadius: "6px", background: "#fff", color: "#333", fontSize: "13px", cursor: "pointer" }}
               >
-                {accountSaved ? "저장됨 ✓" : accountLoading ? "저장 중..." : "저장"}
+                취소
               </button>
-              {savedAccount && (
-                <button
-                  className="up-account-cancel-btn"
-                  onClick={() => {
-                    setAccountForm({ ...savedAccount });
-                    setIsEditing(false);
-                  }}
-                >
-                  취소
-                </button>
-              )}
-            </div>
+            )}
           </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
         )}
       </section>
     </div>
@@ -1295,6 +1360,7 @@ function UserProfilePage({
   const [wishlist, setWishlist] = useState([]);
   const [settlements, setSettlements] = useState([]);
   const [inquiries, setInquiries] = useState([]);
+  const [refunds, setRefunds] = useState([]);
   const [selectedInquiry, setSelectedInquiry] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [sellOrderMap, setSellOrderMap] = useState({});
@@ -1444,6 +1510,16 @@ function UserProfilePage({
             setSelectedInquiry(null);
           }
         }
+        if (currentTab === "refunds") {
+          const data = await fetchOrders(0, 50, "BUY");
+          if (!ignore) {
+            setRefunds(
+              toList(data)
+              .map(normalizeOrder)
+              .filter((o) => o.orderStatus === "CANCELLED" && o.previousStatus === "PAID")
+              );
+            }
+          }
       } catch (error) {
         if (!ignore) {
           showToast(error.message || "목록을 불러올 수 없습니다.");
@@ -1650,13 +1726,61 @@ function UserProfilePage({
     >
       정산 계좌
     </button>
-    <button
-      type="button"
-      className="up-withdraw-btn"
-      onClick={() => { if (onNavigate) onNavigate("/mypage/withdraw"); }}
-    >
-      회원 탈퇴
-    </button>
+    <div style={{ position: "relative" }}>
+      <button
+        type="button"
+        style={{
+          background: "none",
+          border: "1px solid #3e7261",
+          borderRadius: "6px",
+          padding: "2px 10px",
+          cursor: "pointer",
+          fontSize: "13px",
+          color: "#555",
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          const menu = e.currentTarget.nextSibling;
+          menu.style.display = menu.style.display === "block" ? "none" : "block";
+        }}
+      >
+        •••
+      </button>
+      <div
+        style={{
+          display: "none",
+          position: "absolute",
+          right: 0,
+          top: "110%",
+          background: "#fff",
+          border: "1px solid #e0e0e0",
+          borderRadius: "8px",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+          zIndex: 100,
+          minWidth: "120px",
+          padding: "6px 0",
+        }}
+      >
+        <button
+          type="button"
+          style={{
+            display: "block",
+            width: "100%",
+            padding: "10px 16px",
+            background: "none",
+            border: "none",
+            textAlign: "left",
+            fontSize: "13px",
+            color: "#e05c5c",
+            cursor: "pointer",
+            fontWeight: 600,
+          }}
+          onClick={() => { if (onNavigate) onNavigate("/mypage/withdraw"); }}
+        >
+          회원 탈퇴
+        </button>
+      </div>
+    </div>
   </div>
 )}
         </div>
@@ -1713,6 +1837,9 @@ function UserProfilePage({
             onSelectInquiry={handleSelectInquiry}
           />
         )}
+        {!tabLoading && hideFooter && currentTab === "refunds" && (
+         <RefundTab refunds={refunds} />
+          )}
          {!tabLoading && hideFooter && currentTab === "account" && (
   <AccountTab />
 )}

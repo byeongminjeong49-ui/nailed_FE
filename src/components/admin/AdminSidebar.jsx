@@ -1,5 +1,5 @@
-import { adminNavItems } from "../../data/adminDummyData";
-import AdminIcon from "./AdminIcon";
+// import { adminNavItems } from "../../data/adminDummyData";
+// import AdminIcon from "./AdminIcon";
 
 function AdminSidebar({ activePage, onNavigate }) {
   return (
