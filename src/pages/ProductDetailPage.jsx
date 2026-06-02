@@ -464,7 +464,6 @@ function ProductDetailPage({ productId }) {
                       sellerId:       product.seller.memberId,
                       buyerId:        currentMemberId,
                       productAmount:  product.price,
-                      finalPrice:     product.price,
                       shippingFee:    product.shippingFee || 0,
                       title:          product.title,
                       imageUrl:       productImageUrls[0] ?? '',

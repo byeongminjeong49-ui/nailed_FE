@@ -51,7 +51,6 @@ const s = {
 };
 
 const STEPS = ['주문서', '결제', '완료'];
-const COMMISSION_RATE = 0.02;
 
 const METHODS = [
   { id: 'card',  icon: '💳',      label: '신용/체크카드' },
@@ -112,12 +111,13 @@ export default function PaymentPage() {
 
   if (!pendingPayment) return <div style={s.page}><div style={{ textAlign: 'center', padding: '80px', color: '#888' }}>로딩 중...</div></div>;
 
-  const { orderId, finalPrice, title } = pendingPayment;
-  const productAmount = pendingOrder?.productAmount || 0;
-  const shippingFee   = pendingOrder?.shippingFee   || 0;
-  const commission    = Math.floor(productAmount * COMMISSION_RATE);
-  const sellerNick    = pendingOrder?.sellerNickname || '판매자';
-  const sellerBadge   = pendingOrder?.sellerBadge    || 'Bronze';
+const { orderId, finalPrice, title,
+        productPrice, shippingFee: payShippingFee,
+        commission } = pendingPayment;
+const productAmount = productPrice   || pendingOrder?.productAmount || 0;
+const shippingFee   = payShippingFee || pendingOrder?.shippingFee   || 0;
+const sellerNick    = pendingOrder?.sellerNickname || '판매자';
+const sellerBadge   = pendingOrder?.sellerBadge    || 'Bronze';
 
   const onPay = async () => {
     if (paying) return;
@@ -190,7 +190,7 @@ export default function PaymentPage() {
             <div style={s.row}><span style={s.rowLabel}>상품명</span><span style={{ fontWeight: '500' }}>{title}</span></div>
             <div style={s.row}><span style={s.rowLabel}>상품 금액</span><span>{productAmount.toLocaleString()}원</span></div>
             <div style={s.row}><span style={s.rowLabel}>배송비</span><span>{shippingFee === 0 ? '무료' : `${shippingFee.toLocaleString()}원`}</span></div>
-            <div style={s.row}><span style={s.rowLabel}>수수료 ({(COMMISSION_RATE * 100).toFixed(0)}%)</span><span>{commission.toLocaleString()}원</span></div>
+            <div style={s.row}><span style={s.rowLabel}>수수료</span><span>{commission.toLocaleString()}원</span></div>
             <div style={s.rowTotal}><span>총 결제 금액</span><span>{(finalPrice || 0).toLocaleString()}원</span></div>
           </div>
 

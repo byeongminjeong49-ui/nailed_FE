@@ -24,7 +24,6 @@ const s = {
   btnDisabled: { display: 'block', width: '100%', padding: '16px', background: '#ccc', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '16px', fontWeight: '700', cursor: 'not-allowed' },
 };
 
-const COMMISSION_RATE = 0.02;
 const SESSION_KEY = 'nailed_session';
 
 function getCurrentMemberId() {
@@ -58,11 +57,13 @@ export default function OrderForm() {
   });
   const [agree1, setAgree1] = useState(false);
   const [addressTouched, setAddressTouched] = useState(false);
-  const [paying, setPaying] = useState(false); // ← 추가
+  const [paying, setPaying] = useState(false); 
 
-  const commission = Math.floor((pendingOrder.productAmount || 0) * COMMISSION_RATE);
-  const shippingFee = pendingOrder.shippingFee || 0;
-  const totalPrice = (pendingOrder.productAmount || 0) + shippingFee + commission;
+const productAmount    = pendingOrder.productAmount || 0;
+const shippingFee      = pendingOrder.shippingFee || 0;
+const commission = Math.floor((productAmount + shippingFee) * 2 / 100);
+const finalPrice       = productAmount + shippingFee + commission;
+
   const isValidPhone   = /^\d{10,11}$/.test(form.receiverPhone);
   const isValidZipcode = /^\d{5}$/.test(form.zipcode);
   const canPay = agree1 && form.receiverName && isValidPhone && isValidZipcode && form.address;
@@ -93,8 +94,6 @@ if (existingPayment) {
     try {
       const orderData = {
         productId:             pendingOrder.productId,
-        productAmount:         pendingOrder.productAmount,
-        shippingFee:           shippingFee,
         receiverName:          form.receiverName,
         receiverPhone:         form.receiverPhone,
         receiverZipcode:       form.zipcode,
@@ -106,10 +105,14 @@ if (existingPayment) {
       const response = await createOrder(buyerId, pendingOrder.sellerId, orderData);
       if (response?.orderId) {
       sessionStorage.setItem('pendingPayment', JSON.stringify({
-  orderId:    response.orderId,
-  finalPrice: totalPrice,
-  title:      pendingOrder.title,
-  productId:  pendingOrder.productId,
+  orderId:                response.orderId,
+  finalPrice:             response.finalPrice,
+  productPrice:           response.productPrice,
+  shippingFee:            response.shippingFee,
+  commission: response.finalPrice - response.sellerSettlementAmount,
+  sellerSettlementAmount: response.sellerSettlementAmount,
+  title:                  pendingOrder.title,
+  productId:              pendingOrder.productId,
 }));
 window.history.pushState({}, '', '/order/payment');
 window.dispatchEvent(new PopStateEvent('popstate'));
@@ -219,10 +222,9 @@ window.dispatchEvent(new PopStateEvent('popstate'));
           <div style={s.cardTitle}>결제 금액</div>
           <div style={s.row}><span style={s.rowLabel}>상품 금액</span><span>{(pendingOrder.productAmount || 0).toLocaleString()}원</span></div>
           <div style={s.row}><span style={s.rowLabel}>배송비</span><span>{shippingFee === 0 ? '무료' : `${shippingFee.toLocaleString()}원`}</span></div>
-          <div style={s.row}><span style={s.rowLabel}>수수료 ({(COMMISSION_RATE * 100).toFixed(0)}%)</span><span>{commission.toLocaleString()}원</span></div>
-          <div style={s.rowTotal}><span>총 결제 금액</span><span>{totalPrice.toLocaleString()}원</span></div>
-        </div>
-
+          <div style={s.row}><span style={s.rowLabel}>수수료</span><span>{commission.toLocaleString()}원</span></div>
+          <div style={s.rowTotal}><span>총 결제 금액</span><span>{finalPrice.toLocaleString()}원</span></div>
+          </div>
         {/* 동의 */}
         <div style={s.card}>
           <div style={s.cardTitle}>결제 동의</div>
@@ -233,7 +235,7 @@ window.dispatchEvent(new PopStateEvent('popstate'));
         </div>
 
         <button style={canPay && !paying ? s.btn : s.btnDisabled} onClick={handlePayment} disabled={!canPay || paying}>
-          {paying ? '처리 중...' : `${totalPrice.toLocaleString()}원 안전결제`}
+          {paying ? '처리 중...' : `${finalPrice.toLocaleString()}원 안전결제`}
         </button>
         {!canPay && !agree1 && <p style={{ textAlign: 'center', fontSize: '12px', color: '#e05c5c', marginTop: '8px' }}>배송지 입력 및 필수 동의를 완료해 주세요.</p>}
       </div>
