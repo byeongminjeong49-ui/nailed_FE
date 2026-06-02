@@ -20,6 +20,7 @@ import ReviewWritePage from "./pages/ReviewWritePage.jsx";
 import SearchResultPage from "./pages/SearchResultPage.jsx";
 import ServiceGuidePage from "./pages/ServiceGuidePage.jsx";
 import UserProfilePage from "./pages/UserProfilePage.jsx";
+import ErrorPage from "./pages/ErrorPage.jsx";
 import { clearLegacyAuthLocalStorage } from "./api/authApi";
 
 // 공통 레이아웃 컴포넌트 포함
@@ -91,33 +92,6 @@ function getCurrentRole() {
   return String(session?.role || "").toUpperCase();
 }
 
-function moveTo(path) {
-  window.history.replaceState({}, "", path);
-  window.dispatchEvent(new PopStateEvent("popstate"));
-}
-
-function requireAdmin() {
-  window.alert("관리자 권한이 필요한 페이지입니다.");
-  moveTo("/");
-  return null;
-}
-
-function LoginRequiredRedirect() {
-  useEffect(() => {
-    window.alert("로그인이 필요한 페이지입니다.");
-    moveTo("/login");
-  }, []);
-
-  return (
-    <LoginPage
-      onNavigate={(nextPath) => {
-        window.history.pushState({}, "", nextPath);
-        window.dispatchEvent(new PopStateEvent("popstate"));
-      }}
-    />
-  );
-}
-
 function getProductId(pathname) {
   const m = pathname.match(/^\/product\/([^/]+)$/);
   return m ? m[1] : null;
@@ -146,6 +120,11 @@ function getCurrentPath() {
   };
 }
 
+function getErrorStatusCode(pathname) {
+  const match = pathname.match(/^\/error\/(400|401|403|404|500|503)$/);
+  return match ? Number(match[1]) : null;
+}
+
 function renderAdminPage(activePage) {
   if (activePage === "members") return <AdminMembersPage />;
   if (activePage === "products") return <AdminProductsPage />;
@@ -168,6 +147,7 @@ function App() {
   const userId = getUserId(path);
   const reviewOrderId = getReviewOrderId(path);
   const orderId = getOrderId(path); 
+  const errorStatusCode = getErrorStatusCode(path);
 
   useEffect(() => {
     clearLegacyAuthLocalStorage();
@@ -187,10 +167,12 @@ function App() {
     setLocation(getCurrentPath());
   };
 
+  if (errorStatusCode) return <ErrorPage statusCode={errorStatusCode} />;
+
   // 1. 관리자 전용 라우트 우선 처리
   if (activePage) {
-    if (!hasAccessToken()) return <LoginRequiredRedirect />;
-    if (getCurrentRole() !== "ADMIN") return requireAdmin();
+    if (!hasAccessToken()) return <ErrorPage statusCode={401} />;
+    if (getCurrentRole() !== "ADMIN") return <ErrorPage statusCode={403} />;
 
     return (
       <AdminLayout activePage={activePage} onNavigate={handleAdminNavigate}>
@@ -204,17 +186,17 @@ function App() {
   if (activeAuthPage === "signup") return <SignupPage onNavigate={handleNavigate} />;
   if (activeAuthPage === "find-password") return <FindPasswordPage onNavigate={handleNavigate} />;
   if (isMyPageRoute) {
-    if (!hasAccessToken()) return <LoginRequiredRedirect />;
+    if (!hasAccessToken()) return <ErrorPage statusCode={401} />;
     return <MyPage onNavigate={handleNavigate} pathname={path} />;
   }
   if (activeGuidePage) return <ServiceGuidePage type={activeGuidePage} />;
   if (path === "/sell") {
-    if (!hasAccessToken()) return <LoginRequiredRedirect />;
+    if (!hasAccessToken()) return <ErrorPage statusCode={401} />;
     const editProductId = new URLSearchParams(location.search).get("edit");
     return <SellPage editProductId={editProductId} />;
   }
   if (activeReadyPage) {
-    if (!hasAccessToken()) return <LoginRequiredRedirect />;
+    if (!hasAccessToken()) return <ErrorPage statusCode={401} />;
     return <ReadyPage title={activeReadyPage} />;
   }
 
@@ -226,14 +208,14 @@ function App() {
   // 4. 회원 프로필 및 리뷰 작성 허브
   if (userId) return <UserProfilePage memberId={userId} />;
   if (reviewOrderId) {
-    if (!hasAccessToken()) return <LoginRequiredRedirect />;
+    if (!hasAccessToken()) return <ErrorPage statusCode={401} />;
     const params = new URLSearchParams(location.search);
     return <ReviewWritePage orderId={reviewOrderId} sellerId={params.get("sellerId")} />;
   }
 
   // 5. 주문서 / 결제 / 주문상세 내역 통합 처리 분기점
   if (activeOrderPage === "form") {
-    if (!hasAccessToken()) return <LoginRequiredRedirect />;
+    if (!hasAccessToken()) return <ErrorPage statusCode={401} />;
 
     return (
       <div className="main-wrapper">
@@ -245,7 +227,7 @@ function App() {
   }
 
   if (activeOrderPage === "payment") {
-    if (!hasAccessToken()) return <LoginRequiredRedirect />;
+    if (!hasAccessToken()) return <ErrorPage statusCode={401} />;
 
     return (
       <div className="main-wrapper">
@@ -257,7 +239,7 @@ function App() {
   }
 
   if (orderId) {
-    if (!hasAccessToken()) return <LoginRequiredRedirect />;
+    if (!hasAccessToken()) return <ErrorPage statusCode={401} />;
 
     return (
       <div className="main-wrapper">
@@ -275,8 +257,10 @@ function App() {
     return <ProductListPage path={path} search={location.search} />;
   }
 
-  // 7. 폴백 기본 루트 홈화면
-  return <HomePage />;
+  if (path === "/") return <HomePage />;
+
+  // 7. 정의되지 않은 경로
+  return <ErrorPage statusCode={404} />;
 }
 
 export default App;

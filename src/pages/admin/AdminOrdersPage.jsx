@@ -362,7 +362,7 @@ function AdminOrdersPage() {
                           {ORDER_STATUS_LABELS[order.orderStatus] || order.orderStatus || "-"}
                         </span>
                       </td>
-                      <td>{formatPrice(order.product?.price)}</td>
+                      <td>{formatPrice(order.product.price)}</td>
                       <td>{formatPrice(order.finalPrice)}</td>
                       <td>{formatDate(order.paidAt)}</td>
                       <td>{formatDate(order.completedAt)}</td>

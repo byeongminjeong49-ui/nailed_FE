@@ -25,8 +25,21 @@ async function requestWithAuth(path, options = {}) {
   return authRequest(path, options);
 }
 
-export async function getProductList(categoryId, page = 0, size = 15) {
+function appendProductFilters(params, filters = {}) {
+  const hasValue = (value) => value !== undefined && value !== null && value !== "";
+
+  if (hasValue(filters.minPrice)) params.append("minPrice", filters.minPrice);
+  if (hasValue(filters.maxPrice)) params.append("maxPrice", filters.maxPrice);
+  if (filters.gender) params.append("gender", filters.gender);
+  if (filters.excludeSold === true) params.append("excludeSold", "true");
+  if (filters.productSize) params.append("productSize", filters.productSize);
+  if (filters.conditionCode) params.append("conditionCode", filters.conditionCode);
+  if (filters.sortBy || filters.sort) params.append("sortBy", filters.sortBy ?? filters.sort);
+}
+
+export async function getProductList(categoryId, page = 0, size = 15, filters = {}) {
   const params = new URLSearchParams({ categoryId, page, size });
+  appendProductFilters(params, filters);
   return request(`/api/products?${params.toString()}`);
 }
 
@@ -34,8 +47,9 @@ export async function getBrands() {
   return request("/api/products/brands");
 }
 
-export async function getProductListByCode(categoryCode, page = 0, size = 20) {
+export async function getProductListByCode(categoryCode, page = 0, size = 20, filters = {}) {
   const params = new URLSearchParams({ categoryCode, page, size });
+  appendProductFilters(params, filters);
   return request(`/api/products?${params.toString()}`);
 }
 
@@ -47,15 +61,32 @@ export async function getPopularProducts() {
   return request("/api/products/popular");
 }
 
-export async function searchProducts({ categoryId, keyword, minPrice, maxPrice, conditionCode, productSize, sortBy = "latest", page = 0, size = 15 } = {}) {
+export async function searchProducts({
+  categoryId,
+  keyword,
+  minPrice,
+  maxPrice,
+  conditionCode,
+  productSize,
+  gender,
+  excludeSold,
+  sort,
+  sortBy = "latest",
+  page = 0,
+  size = 15,
+} = {}) {
   const params = new URLSearchParams();
+  const hasValue = (value) => value !== undefined && value !== null && value !== "";
+
   if (categoryId !== undefined && categoryId !== null) params.append("categoryId", categoryId);
   if (keyword) params.append("keyword", keyword);
-  if (minPrice !== undefined && minPrice !== null) params.append("minPrice", minPrice);
-  if (maxPrice !== undefined && maxPrice !== null) params.append("maxPrice", maxPrice);
+  if (hasValue(minPrice)) params.append("minPrice", minPrice);
+  if (hasValue(maxPrice)) params.append("maxPrice", maxPrice);
   if (conditionCode) params.append("conditionCode", conditionCode);
   if (productSize) params.append("productSize", productSize);
-  params.append("sortBy", sortBy);
+  if (gender) params.append("gender", gender);
+  if (excludeSold === true) params.append("excludeSold", "true");
+  params.append("sort", sort ?? sortBy);
   params.append("page", page);
   params.append("size", size);
   return request(`/api/products/search?${params.toString()}`);

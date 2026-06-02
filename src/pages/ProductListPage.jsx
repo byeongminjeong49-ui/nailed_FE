@@ -1,11 +1,20 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import Header from "../components/common/Header";
 import Footer from "../components/common/Footer";
 import ProductCard from "../components/home/ProductCard";
+import ProductFilterPanel from "../components/ProductFilterPanel";
 import { findCategory, findSubcategory, resolveDbCode } from "../data/categories";
 import { getProductListByCode } from "../api/productApi";
+import "../styles/search-result.css";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+const PAGE_SIZE = 20;
+
+const DEFAULT_FILTERS = {
+  excludeSold: false,
+  gender: "",
+  minPrice: "",
+  maxPrice: "",
+};
 
 function toCardShape(p) {
   return {
@@ -31,11 +40,15 @@ function ProductListPage({ path, search }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [draftFilters, setDraftFilters] = useState(DEFAULT_FILTERS);
+  const [appliedFilters, setAppliedFilters] = useState(DEFAULT_FILTERS);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
-  // 카테고리 변경 시 페이지 초기화
+  // 카테고리 변경 시 필터와 페이지 초기화
   useEffect(() => {
+    setDraftFilters(DEFAULT_FILTERS);
+    setAppliedFilters(DEFAULT_FILTERS);
     setCurrentPage(0);
     setTotalPages(0);
   }, [categoryValue, subcategoryValue]);
@@ -50,7 +63,7 @@ function ProductListPage({ path, search }) {
     setError(null);
     setProducts([]);
 
-    getProductListByCode(targetCode, currentPage, 20)
+    getProductListByCode(targetCode, currentPage, PAGE_SIZE, appliedFilters)
       .then((data) => {
         const list = Array.isArray(data) ? data : (data.content ?? []);
         setProducts(list.map(toCardShape));
@@ -58,7 +71,13 @@ function ProductListPage({ path, search }) {
       })
       .catch(() => setError("상품을 불러오는 데 실패했습니다."))
       .finally(() => setLoading(false));
-  }, [categoryValue, subcategoryValue, currentPage]);
+  }, [categoryValue, subcategoryValue, appliedFilters, currentPage]);
+
+  const handleApplyFilters = (nextFilters) => {
+    setDraftFilters(nextFilters);
+    setAppliedFilters(nextFilters);
+    setCurrentPage(0);
+  };
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
@@ -73,28 +92,38 @@ function ProductListPage({ path, search }) {
             <h2>{title}</h2>
           </div>
 
-          {!category && <p className="empty-result">카테고리를 선택해주세요.</p>}
-          {category && loading && <p className="empty-result">불러오는 중…</p>}
-          {category && !loading && error && <p className="empty-result">{error}</p>}
-          {category && !loading && !error && products.length === 0 && (
-            <p className="empty-result">상품 데이터가 없습니다.</p>
-          )}
-
-          {products.length > 0 && (
-            <div className="product-grid">
-              {products.map((product) => (
-                <ProductCard key={product.id ?? product.productId} product={product} />
-              ))}
-            </div>
-          )}
-
-          {totalPages > 1 && (
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
+          <div className="search-result-layout">
+            <ProductFilterPanel
+              filters={draftFilters}
+              onApplyFilters={handleApplyFilters}
+              namePrefix="category"
             />
-          )}
+
+            <div className="search-result-products">
+              {!category && <p className="empty-result">카테고리를 선택해주세요.</p>}
+              {category && loading && <p className="empty-result">불러오는 중...</p>}
+              {category && !loading && error && <p className="empty-result">{error}</p>}
+              {category && !loading && !error && products.length === 0 && (
+                <p className="empty-result">상품 데이터가 없습니다.</p>
+              )}
+
+              {products.length > 0 && (
+                <div className="product-grid search-product-grid">
+                  {products.map((product) => (
+                    <ProductCard key={product.id ?? product.productId} product={product} />
+                  ))}
+                </div>
+              )}
+
+              {totalPages > 1 && (
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                />
+              )}
+            </div>
+          </div>
         </section>
       </main>
       <Footer />

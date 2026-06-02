@@ -1,5 +1,13 @@
-// import { adminNavItems } from "../../data/adminDummyData";
-// import AdminIcon from "./AdminIcon";
+import AdminIcon from "./AdminIcon";
+
+const adminNavItems = [
+  { id: "dashboard", label: "대시보드", path: "/admin/dashboard", icon: "home" },
+  { id: "members", label: "회원관리", path: "/admin/members", icon: "user" },
+  { id: "products", label: "상품관리", path: "/admin/products", icon: "tag" },
+  { id: "orders", label: "주문관리", path: "/admin/orders", icon: "cart" },
+  { id: "reports", label: "신고관리", path: "/admin/reports", icon: "alert" },
+  { id: "inquiries", label: "문의관리", path: "/admin/inquiries", icon: "document" },
+];
 
 function AdminSidebar({ activePage, onNavigate }) {
   return (
