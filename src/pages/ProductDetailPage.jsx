@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import deliveryTruck from '../assets/deliverytruck.png';
+import deliveryBox from '../assets/deliverybox.jpg';
 import Footer from "../components/common/Footer";
 import Header from "../components/common/Header";
 import ReportModal from "../components/ReportModal";
@@ -75,28 +77,12 @@ function Gallery({ imageUrls, title, brandName, isSold }) {
 }
 
 /* ── 상품 설명 (접기/펼치기) ── */
-const DESC_MAX_HEIGHT = 140;
-
 function DescriptionBox({ text }) {
-  const [expanded, setExpanded] = useState(false);
-  const [overflow, setOverflow] = useState(false);
-  const ref = useRef(null);
-
-  useEffect(() => {
-    if (ref.current) setOverflow(ref.current.scrollHeight > DESC_MAX_HEIGHT + 4);
-  }, [text]);
-
   return (
     <div className="pd-desc-wrap">
-      <div ref={ref} className="pd-desc" style={{ maxHeight: expanded ? "none" : DESC_MAX_HEIGHT, overflow: "hidden" }}>
+      <div className="pd-desc">
         {text}
       </div>
-      {overflow && (
-        <button className="pd-desc-toggle" onClick={() => setExpanded((e) => !e)}>
-          {expanded ? "접기" : "더 보기"}
-          <span className={`pd-desc-toggle-arrow ${expanded ? "up" : ""}`}>›</span>
-        </button>
-      )}
     </div>
   );
 }
@@ -532,18 +518,14 @@ function ProductDetailPage({ productId }) {
               <div className="pd-ship-box">
                 <div className="pd-ship-row">
                   <span className="pd-ship-icon">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
-                    </svg>
+                    <img src={deliveryTruck} width="21" height="21" alt="배송방법" />
                   </span>
                   <span className="pd-ship-label">배송방법</span>
                   <span className="pd-ship-value">판매자 직접 배송</span>
                 </div>
                 <div className="pd-ship-row">
                   <span className="pd-ship-icon">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
-                    </svg>
+                    <img src={deliveryBox} width="18" height="18" alt="배송비" />
                   </span>
                   <span className="pd-ship-label">배송비</span>
                   <span className="pd-ship-value">
