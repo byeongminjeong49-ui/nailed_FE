@@ -4,6 +4,7 @@ import Footer from "../components/common/Footer";
 import Header from "../components/common/Header";
 import { checkNickname } from "../api/authApi";
 import { cancelOrder } from "../api/orderApi";
+import { fetchMyReports } from "../api/reportApi";
 import {
   fetchMyProfile,
   fetchMyProducts,
@@ -71,7 +72,7 @@ function getTabFromPath(pathname) {
   if (pathname === "/mypage/inquiries") return "inquiries";
   if (pathname === "/mypage/account") return "account";
   if (pathname === "/mypage/withdraw") return "withdraw";
-  if (pathname === "/mypage/refunds") return "refunds";
+  if (pathname === "/mypage/reports") return "reports";
   return "products";
 }
 
@@ -84,7 +85,7 @@ function getPathFromTab(tab) {
   if (tab === "inquiries") return "/mypage/inquiries";
   if (tab === "account") return "/mypage/account";
   if (tab === "withdraw") return "/mypage/withdraw";
-  if (tab === "refunds") return "/mypage/refunds";
+  if (tab === "reports") return "/mypage/reports";
   return "/mypage";
 }
 
@@ -336,9 +337,10 @@ const PROFILE_TABS = [
   { key: "orders",       label: "구매 내역" },
   { key: "selling",     label: "판매 내역" },
   { key: "settlements",  label: "정산 내역" },
-  { key: "reviews",      label: "리뷰" },
   { key: "inquiries",    label: "문의 내역" },
-  { key: "refunds", label: "환불 내역" },
+  { key: "reports",     label: "신고 내역" },
+  { key: "reviews",      label: "리뷰" },
+  
 ];
 
 /* ── 사이드바 필터 ── */
@@ -1093,42 +1095,62 @@ function InquiriesTab({
     </div>
   );
 }
-function RefundTab({ refunds }) {
-  if (refunds.length === 0)
-    return <p className="up-empty">환불 내역이 없습니다.</p>;
+function ReportsTab({ reports }) {
+  const REASON_LABELS = {
+    FRAUD: "사기",
+    MISLEADING_INFO: "상품 정보 허위/불일치",
+    PROHIBITED_ITEM: "금지상품",
+    ETC: "기타",
+  };
+  const STATUS_LABELS = {
+    PENDING:  { text: "처리 중",  color: "#1565c0", bg: "#e3f2fd" },
+    APPROVED: { text: "승인",     color: "#2e7d32", bg: "#e8f5e9" },
+    REJECTED: { text: "반려",     color: "#c62828", bg: "#fdecea" },
+    DONE:     { text: "처리 완료", color: "#555",   bg: "#f5f5f5" },
+  };
+
+  const [openId, setOpenId] = useState(null);
+
+  if (reports.length === 0) return <p className="up-empty">신고 내역이 없습니다.</p>;
 
   return (
-    <div className="up-order-list up-buy-order-list">
-      {refunds.map((order) => {
-        const imageUrl = getProductImageUrl(order);
+    <div className="up-inquiry-list" aria-label="신고 내역">
+      {reports.map((r) => {
+        const badge = STATUS_LABELS[r.reportStatus] || { text: r.reportStatus, color: "#555", bg: "#f5f5f5" };
+        const isOpen = openId === r.reportId;
         return (
-          <div key={order.orderId} className="up-order-item up-buy-order-card">
-            {imageUrl && (
-              <div className="up-card-img-wrap up-order-img-wrap">
-                <div className="product-visual">
-                  <img className="product-image" src={imageUrl} alt={order.productTitle} />
-                </div>
-              </div>
-            )}
-            <div className="up-order-info">
-              <p className="up-order-title">{order.productTitle}</p>
-              <p className="up-order-meta">주문번호: {order.orderId || "-"}</p>
-              <p className="up-order-meta">결제금액: {formatWon(order.finalPrice)}</p>
-              <p className="up-order-meta">취소일: {formatDate(order.cancelledAt)}</p>
-            </div>
-            <div className="up-order-right">
+          <div key={r.reportId} className="up-inquiry-item" style={{ cursor: "pointer" }}
+            onClick={() => setOpenId(isOpen ? null : r.reportId)}
+          >
+            <span className="up-inquiry-category">{REASON_LABELS[r.reasonCode] || r.reasonCode}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+              <strong>
+                {r.targetNickname && <span>@{r.targetNickname} </span>}
+                <span style={{ fontWeight: 400, color: "#888", fontSize: "12px" }}>({r.targetMemberId})</span>
+              </strong>
               <span style={{
                 display: "inline-block",
-                padding: "4px 10px",
-                borderRadius: "20px",
-                fontSize: "12px",
+                padding: "2px 8px",
+                borderRadius: "12px",
+                fontSize: "11px",
                 fontWeight: 600,
-                background: "#fdecea",
-                color: "#c62828",
+                background: badge.bg,
+                color: badge.color,
               }}>
-                환불완료
+                {badge.text}
               </span>
+              <span style={{ marginLeft: "auto", fontSize: "12px", color: "#aaa" }}>{isOpen ? "▲" : "▼"}</span>
             </div>
+            <span className="up-inquiry-date">신고일 {formatDateTime(r.createdAt)}</span>
+
+            {isOpen && (
+              <div style={{ marginTop: "12px", padding: "12px", background: "#f8f9fa", borderRadius: "8px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                <div><span style={{ color: "#888", fontSize: "12px" }}>신고번호</span> <span style={{ fontSize: "13px" }}>{r.reportId}</span></div>
+                <div><span style={{ color: "#888", fontSize: "12px" }}>신고 사유</span> <span style={{ fontSize: "13px" }}>{REASON_LABELS[r.reasonCode] || r.reasonCode}</span></div>
+                <div><span style={{ color: "#888", fontSize: "12px" }}>신고 내용</span> <span style={{ fontSize: "13px" }}>{r.detail || "-"}</span></div>
+                <div><span style={{ color: "#888", fontSize: "12px" }}>처리 결과</span> <span style={{ fontSize: "13px", color: badge.color, fontWeight: 600 }}>{badge.text}</span></div>
+              </div>
+            )}
           </div>
         );
       })}
@@ -1360,7 +1382,7 @@ function UserProfilePage({
   const [wishlist, setWishlist] = useState([]);
   const [settlements, setSettlements] = useState([]);
   const [inquiries, setInquiries] = useState([]);
-  const [refunds, setRefunds] = useState([]);
+  const [reports, setReports] = useState([]);
   const [selectedInquiry, setSelectedInquiry] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [sellOrderMap, setSellOrderMap] = useState({});
@@ -1510,16 +1532,10 @@ function UserProfilePage({
             setSelectedInquiry(null);
           }
         }
-        if (currentTab === "refunds") {
-          const data = await fetchOrders(0, 50, "BUY");
-          if (!ignore) {
-            setRefunds(
-              toList(data)
-              .map(normalizeOrder)
-              .filter((o) => o.orderStatus === "CANCELLED" && o.previousStatus === "PAID")
-              );
-            }
-          }
+        if (currentTab === "reports") {
+       const data = await fetchMyReports(0, 20);
+         if (!ignore) setReports(toList(data));
+        }
       } catch (error) {
         if (!ignore) {
           showToast(error.message || "목록을 불러올 수 없습니다.");
@@ -1760,7 +1776,7 @@ function UserProfilePage({
           borderRadius: "8px",
           boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
           zIndex: 100,
-          minWidth: "120px",
+          minWidth: "70px",
           padding: "6px 0",
         }}
       >
@@ -1769,10 +1785,10 @@ function UserProfilePage({
           style={{
             display: "block",
             width: "100%",
-            padding: "10px 16px",
+            padding: "1px 0px",
             background: "none",
             border: "none",
-            textAlign: "left",
+            textAlign: "center",
             fontSize: "13px",
             color: "#e05c5c",
             cursor: "pointer",
@@ -1840,9 +1856,9 @@ function UserProfilePage({
             onSelectInquiry={handleSelectInquiry}
           />
         )}
-        {!tabLoading && hideFooter && currentTab === "refunds" && (
-         <RefundTab refunds={refunds} />
-          )}
+        {!tabLoading && hideFooter && currentTab === "reports" && (
+  <ReportsTab reports={reports} />
+)}
          {!tabLoading && hideFooter && currentTab === "account" && (
   <AccountTab />
 )}

@@ -21,3 +21,7 @@ export async function submitReport({ targetMemberId, reasonCode, detail }) {
     }),
   });
 }
+
+export async function fetchMyReports(page = 0, size = 10) {
+  return requestWithAuth(`/api/reports/me?page=${page}&size=${size}`);
+}
