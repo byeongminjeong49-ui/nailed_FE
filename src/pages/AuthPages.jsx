@@ -270,6 +270,7 @@ export function SignupPage({ onNavigate }) {
                   type="text"
                   placeholder="아이디를 입력해주세요"
                   autoComplete="username"
+                  maxLength={20}
                   value={form.userId}
                   onChange={(event) => update("userId", event.target.value)}
                 />
@@ -284,6 +285,7 @@ export function SignupPage({ onNavigate }) {
                 type="password"
                 placeholder="비밀번호"
                 autoComplete="new-password"
+                maxLength={16}
                 value={form.password}
                 onChange={(event) => update("password", event.target.value)}
               />
@@ -294,6 +296,7 @@ export function SignupPage({ onNavigate }) {
                 type="password"
                 placeholder="비밀번호를 다시 입력해주세요"
                 autoComplete="new-password"
+                maxLength={16}
                 value={form.passwordConfirm}
                 onChange={(event) => update("passwordConfirm", event.target.value)}
               />
