@@ -108,16 +108,16 @@ function SafeSection() {
       <AccordionItem title="배송정보">
         <ul className="pd-safe-bullets">
           <li>상품은 판매자 측에서 직접 배송하며 평균적으로 2일 이내 배송이 시작됩니다.</li>
-          <li>배송 상태는 Nailed 앱에서 확인 가능하고, 그 외 문의는 판매자에게 연락해 주시기 바랍니다.</li>
-          <li>판매자와 연락이 되지 않는 경우, Nailed 고객센터로 문의해 주시면 확인 도와드리겠습니다.</li>
+          <li>배송 상태는 마이페이지에서 확인 가능하고, 그 외 문의는 판매자에게 연락해 주시기 바랍니다.</li>
+          <li>도움이 필요하신 경우에 Nailed 고객센터로 문의해 주시면 확인 도와드리겠습니다.</li>
         </ul>
       </AccordionItem>
-      <AccordionItem title="반품 및 환불 정책">
-        <p className="pd-safe-para">판매자가 통신판매업자인 경우, 구매자의 반품 요청 시 협의를 진행해 주셔야 하니 상호 간 원만한 협의를 부탁드립니다.</p>
-        <p className="pd-safe-para">중고거래 특성상, 개인 간 개인 거래는 반품이 원칙적으로 어렵습니다. 단, Nailed 안전결제를 이용하시면 아래 경우에는 반품 및 환불 진행을 도와드립니다.</p>
+      <AccordionItem title="결제 취소 정책">
+        <p className="pd-safe-para">상품이 발송되기 전까지는 결제를 취소하실 수 있습니다. 결제 취소는 마이페이지의 주문 상세내역에서 직접 진행하실 수 있습니다.</p>
+        <p className="pd-safe-para">판매자가 주문을 접수한 이후 단계 (주문접수 · 배송중 · 배송완료) 에서는 결제 취소가 불가능합니다.</p>
         <ul className="pd-safe-bullets">
-          <li>받은 상품이 설명과 다른 경우</li>
-          <li>구매한 상품이 배송되지 않은 경우</li>
+          <li>결제를 취소하면 해당 주문은 자동으로 종료됩니다.</li>
+          <li>취소된 상품은 다시 판매 상태로 전환되며 다른 구매자가 구매할 수 있습니다.</li>
         </ul>
         <p className="pd-safe-para pd-safe-warn">외부(계좌) 거래 시, Nailed 고객 지원이 불가능합니다.</p>
       </AccordionItem>
