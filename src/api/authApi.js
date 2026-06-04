@@ -1,14 +1,14 @@
+import axios from "axios";
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 const ACCESS_TOKEN_KEY = "accessToken";
 const REFRESH_TOKEN_KEY = "refreshToken";
-const TOKEN_TYPE_KEY = "tokenType";
 const TOKEN_EXPIRES_AT_KEY = "tokenExpiresAt";
 const SESSION_KEY = "nailed_session";
 const SESSION_EXPIRED_MESSAGE = "로그인 시간이 만료되었습니다. 다시 로그인해주세요.";
 const AUTH_STORAGE_KEYS = [
   ACCESS_TOKEN_KEY,
   REFRESH_TOKEN_KEY,
-  TOKEN_TYPE_KEY,
   TOKEN_EXPIRES_AT_KEY,
   SESSION_KEY,
 ];
@@ -48,37 +48,44 @@ const UNUSED_SESSION_AUTH_KEYS = [
 
 let sessionExpiredNotified = false;
 
-function buildUrl(path) {
-  return `${API_BASE_URL}${path}`;
-}
+// ─────────────────────────────────────────────
+// axios 인스턴스 생성
+// baseURL, withCredentials(쿠키 자동 전송) 공통 설정
+// ─────────────────────────────────────────────
+const instance = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true, // HttpOnly 쿠키(refreshToken) 자동 전송
+});
 
-async function parseResponseData(response) {
-  const contentType = response.headers.get("content-type") || "";
-  return contentType.includes("application/json")
-    ? await response.json()
-    : await response.text();
-}
-
-async function request(path, options = {}) {
-  const response = await fetch(buildUrl(path), {
-    ...options,
-    headers: {
-      ...(options.body ? { "Content-Type": "application/json" } : {}),
-      ...options.headers,
-    },
-  });
-
-  const data = await parseResponseData(response);
-
-  if (!response.ok) {
-    const message =
-      typeof data === "string"
-        ? data
-        : data?.error?.message || data?.message || "요청 처리에 실패했습니다.";
-    throw new Error(message);
-  }
-
+// ─────────────────────────────────────────────
+// 응답 데이터 정규화: data.data ?? data 로 꺼냄
+// ─────────────────────────────────────────────
+function extractData(response) {
+  const data = response.data;
   return data?.data ?? data;
+}
+
+// ─────────────────────────────────────────────
+// 인증 없이 호출하는 공통 요청 함수
+// ─────────────────────────────────────────────
+async function request(path, options = {}) {
+  try {
+    const response = await instance({
+      url: path,
+      method: options.method || "GET",
+      data: options.body ? JSON.parse(options.body) : undefined,
+      params: options.params,
+      headers: options.headers || {},
+    });
+    return extractData(response);
+  } catch (error) {
+    const message =
+      error.response?.data?.error?.message ||
+      error.response?.data?.message ||
+      error.response?.data ||
+      "요청 처리에 실패했습니다.";
+    throw new Error(typeof message === "string" ? message : "요청 처리에 실패했습니다.");
+  }
 }
 
 function normalizeUserId(userId) {
@@ -93,7 +100,6 @@ function saveSession(user) {
     role: user.role || "USER",
     memberStatus: user.memberStatus || user.member_status || "ACTIVE",
   };
-
   sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
   return session;
 }
@@ -109,9 +115,6 @@ function saveAuthFields(data) {
   sessionStorage.setItem(ACCESS_TOKEN_KEY, data.accessToken);
 
   // refreshToken은 쿠키로 관리 (BE에서 HttpOnly 쿠키로 내려줌)
-  if (data.tokenType) {
-    sessionStorage.setItem(TOKEN_TYPE_KEY, data.tokenType);
-  }
   if (data.tokenExpiresAt) {
     sessionStorage.setItem(TOKEN_EXPIRES_AT_KEY, data.tokenExpiresAt);
   }
@@ -141,7 +144,7 @@ function getRefreshToken() {
 }
 
 function getTokenType() {
-  return sessionStorage.getItem(TOKEN_TYPE_KEY) || "Bearer";
+  return "Bearer";
 }
 
 function getTokenExpiresAt() {
@@ -190,36 +193,34 @@ export function clearAuthStorage({ redirect = false } = {}) {
   }
 }
 
+// ─────────────────────────────────────────────
+// Access Token 재발급
+// refreshToken은 HttpOnly 쿠키로 자동 전송됨
+// ─────────────────────────────────────────────
 async function refreshAccessToken() {
-  const response = await fetch(buildUrl("/api/auth/refresh"), {
-    method: "POST",
-    credentials: "include", // HttpOnly 쿠키의 refreshToken 자동 전송
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-  const data = await parseResponseData(response);
+  try {
+    const response = await instance.post("/api/auth/refresh");
+    const result = extractData(response);
 
-  if (!response.ok) {
+    if (!result?.accessToken) {
+      throw new Error(SESSION_EXPIRED_MESSAGE);
+    }
+
+    saveAuthFields(result);
+    if (result.memberId || result.userid || result.nickname || result.role || result.memberStatus) {
+      saveSession(result);
+    }
+    window.dispatchEvent(new Event("storage"));
+
+    return result.accessToken;
+  } catch (error) {
     const message =
-      typeof data === "string"
-        ? data
-        : data?.error?.message || data?.message || SESSION_EXPIRED_MESSAGE;
+      error.response?.data?.error?.message ||
+      error.response?.data?.message ||
+      error.message ||
+      SESSION_EXPIRED_MESSAGE;
     throw new Error(message);
   }
-
-  const result = data?.data ?? data;
-  if (!result?.accessToken) {
-    throw new Error(SESSION_EXPIRED_MESSAGE);
-  }
-
-  saveAuthFields(result);
-  if (result.memberId || result.userid || result.nickname || result.role || result.memberStatus) {
-    saveSession(result);
-  }
-  window.dispatchEvent(new Event("storage"));
-
-  return result.accessToken;
 }
 
 export async function getValidAccessToken({
@@ -227,36 +228,31 @@ export async function getValidAccessToken({
   redirectOnFailure = false,
 } = {}) {
   const token = getAccessToken();
-  const refreshToken = getRefreshToken();
 
   if (token && !forceRefresh && !isAccessTokenExpired()) {
     return token;
   }
 
-  if (refreshToken) {
-    try {
-      return await refreshAccessToken();
-    } catch (error) {
-      if (redirectOnFailure) {
-        clearAuthStorage({ redirect: true });
-        throw new Error(error.message || SESSION_EXPIRED_MESSAGE);
-      }
-      return null;
+  // refreshToken은 HttpOnly 쿠키로 관리 -> sessionStorage 체크 없이 바로 재발급 시도
+  try {
+    return await refreshAccessToken();
+  } catch (error) {
+    if (redirectOnFailure) {
+      clearAuthStorage({ redirect: true });
+      throw new Error(error.message || SESSION_EXPIRED_MESSAGE);
     }
+    return null;
   }
-
-  if (redirectOnFailure) {
-    clearAuthStorage({ redirect: true });
-    throw new Error(SESSION_EXPIRED_MESSAGE);
-  }
-
-  return null;
 }
 
 function isAuthPath(path) {
   return path === "/api/auth/login" || path === "/api/auth/refresh";
 }
 
+// ─────────────────────────────────────────────
+// 인증이 필요한 API 요청 함수
+// Authorization 헤더 자동 추가 + 401 시 토큰 재발급 후 재시도
+// ─────────────────────────────────────────────
 export async function authRequest(path, options = {}, retried = false) {
   const token = await getValidAccessToken({ redirectOnFailure: true });
   if (!token) {
@@ -266,71 +262,85 @@ export async function authRequest(path, options = {}, retried = false) {
 
   const { Authorization, authorization, ...optionHeaders } = options.headers || {};
 
-  const response = await fetch(buildUrl(path), {
-    credentials: "include",
-    ...options,
-    headers: {
-      ...(options.body && !(options.body instanceof FormData) ? { "Content-Type": "application/json" } : {}),
-      ...optionHeaders,
-      Authorization: getAuthorizationHeader(token),
-    },
-  });
+  try {
+    const response = await instance({
+      url: path,
+      method: options.method || "GET",
+      data: options.body && !(options.body instanceof FormData)
+        ? JSON.parse(options.body)
+        : options.body,
+      params: options.params,
+      headers: {
+        ...optionHeaders,
+        Authorization: getAuthorizationHeader(token),
+      },
+    });
 
-  if (response.status === 204) {
-    return null;
-  }
+    if (response.status === 204) return null;
+    return extractData(response);
 
-  if (response.status === 401 && !retried && !isAuthPath(path)) {
-    try {
-      const newAccessToken = await refreshAccessToken();
-      return authRequest(
-        path,
-        {
-          ...options,
-          headers: {
-            ...optionHeaders,
-            Authorization: getAuthorizationHeader(newAccessToken),
+  } catch (error) {
+    const status = error.response?.status;
+
+    // 401: 토큰 만료 → 재발급 후 재시도 (1회)
+    if (status === 401 && !retried && !isAuthPath(path)) {
+      try {
+        const newAccessToken = await refreshAccessToken();
+        return authRequest(
+          path,
+          {
+            ...options,
+            headers: {
+              ...optionHeaders,
+              Authorization: getAuthorizationHeader(newAccessToken),
+            },
           },
-        },
-        true,
-      );
-    } catch (error) {
-      clearAuthStorage({ redirect: true });
-      throw new Error(error.message || SESSION_EXPIRED_MESSAGE);
+          true,
+        );
+      } catch (refreshError) {
+        clearAuthStorage({ redirect: true });
+        throw new Error(refreshError.message || SESSION_EXPIRED_MESSAGE);
+      }
     }
-  }
 
-  if (response.status === 401 || response.status === 403) {
-    clearAuthStorage({ redirect: true });
-    throw new Error(SESSION_EXPIRED_MESSAGE);
-  }
+    if (status === 401 || status === 403) {
+      clearAuthStorage({ redirect: true });
+      throw new Error(SESSION_EXPIRED_MESSAGE);
+    }
 
-  const data = await parseResponseData(response);
-
-  if (!response.ok) {
     const message =
-      typeof data === "string"
-        ? data
-        : data?.error?.message || data?.message || "요청 처리에 실패했습니다.";
-    throw new Error(message);
+      error.response?.data?.error?.message ||
+      error.response?.data?.message ||
+      error.response?.data ||
+      "요청 처리에 실패했습니다.";
+    throw new Error(typeof message === "string" ? message : "요청 처리에 실패했습니다.");
   }
-
-  return data?.data ?? data;
 }
 
+// ─────────────────────────────────────────────
+// 아이디 중복 확인
+// ─────────────────────────────────────────────
 export async function checkUserId(userId) {
   const userid = normalizeUserId(userId);
-  const params = new URLSearchParams({ userid });
-  const data = await request(`/api/auth/check-userid?${params.toString()}`);
+  const data = await request("/api/auth/check-userid", {
+    params: { userid },
+  });
   return { available: !data.duplicated };
 }
 
+// ─────────────────────────────────────────────
+// 닉네임 중복 확인
+// ─────────────────────────────────────────────
 export async function checkNickname(nickname) {
-  const params = new URLSearchParams({ nickname: nickname.trim() });
-  const data = await request(`/api/auth/check-nickname?${params.toString()}`);
+  const data = await request("/api/auth/check-nickname", {
+    params: { nickname: nickname.trim() },
+  });
   return { available: !data.duplicated };
 }
 
+// ─────────────────────────────────────────────
+// 회원가입
+// ─────────────────────────────────────────────
 export async function signUp({
   name,
   userId,
@@ -354,19 +364,31 @@ export async function signUp({
   });
 }
 
+// ─────────────────────────────────────────────
+// 로그인
+// refreshToken은 BE가 HttpOnly 쿠키로 내려줌
+// ─────────────────────────────────────────────
 export async function login({ userId, password }) {
-  const data = await request("/api/auth/login", {
-    method: "POST",
-    body: JSON.stringify({
+  try {
+    const response = await instance.post("/api/auth/login", {
       userid: normalizeUserId(userId),
       password,
-    }),
-     credentials: "include",
-  });
-
-  return saveLoginResult(data);
+    });
+    const data = extractData(response);
+    return saveLoginResult(data);
+  } catch (error) {
+    const message =
+      error.response?.data?.error?.message ||
+      error.response?.data?.message ||
+      error.response?.data ||
+      "로그인에 실패했습니다.";
+    throw new Error(typeof message === "string" ? message : "로그인에 실패했습니다.");
+  }
 }
 
+// ─────────────────────────────────────────────
+// 비밀번호 찾기 (임시 비밀번호 발급)
+// ─────────────────────────────────────────────
 export async function findPassword({ userId }) {
   const data = await request("/api/auth/password/reset-request", {
     method: "POST",
@@ -381,15 +403,13 @@ export async function findPassword({ userId }) {
   };
 }
 
+// ─────────────────────────────────────────────
+// 로그아웃
+// refreshToken은 쿠키로 자동 전송 → BE에서 DB NULL 처리 + 쿠키 삭제
+// ─────────────────────────────────────────────
 export async function logout() {
   try {
-    await fetch(buildUrl("/api/auth/logout"), {
-      method: "POST",
-      credentials: "include", // HttpOnly 쿠키의 refreshToken 자동 전송
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    await instance.post("/api/auth/logout");
   } finally {
     clearAuthStorage();
   }

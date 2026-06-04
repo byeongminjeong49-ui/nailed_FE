@@ -565,7 +565,7 @@
 .up-card-body { padding: 0 2px; }
 .up-card-brand {
   display: inline-block;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: #151515;
   background: #fff;
@@ -804,7 +804,7 @@
 .up-settlement-price {
   margin: 0 0 8px;
   color: #151515;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 800;
 }
 

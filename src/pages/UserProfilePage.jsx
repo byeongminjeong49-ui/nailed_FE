@@ -31,7 +31,6 @@ const NICKNAME_CHANGE_INTERVAL_DAYS = 30;
 const NICKNAME_CHANGED_KEY = "nailed_nickname_changed_at";
 const DEFAULT_PROFILE_IMAGE_URL = "/images/profileImg/default-profile.png";
 
-
 const GRADE = { BRONZE: "브론즈", SILVER: "실버", GOLD: "골드", DIAMOND: "다이아" };
 
 function navigate(path) {
@@ -48,18 +47,9 @@ function toAssetUrl(url) {
 }
 
 function getProductImageUrl(product) {
-  if (product?.thumbnailUrl) {
-    return toAssetUrl(product.thumbnailUrl);
-  }
-
-  if (product?.imageUrl) {
-    return toAssetUrl(product.imageUrl);
-  }
-
-  if (Array.isArray(product?.imageUrls)) {
-    return toAssetUrl(product.imageUrls.find(Boolean) ?? "");
-  }
-
+  if (product?.thumbnailUrl) return toAssetUrl(product.thumbnailUrl);
+  if (product?.imageUrl) return toAssetUrl(product.imageUrl);
+  if (Array.isArray(product?.imageUrls)) return toAssetUrl(product.imageUrls.find(Boolean) ?? "");
   return "";
 }
 
@@ -98,6 +88,7 @@ function toList(data) {
   if (Array.isArray(data)) return data;
   return [];
 }
+
 function unwrapApiData(data) {
   return data?.data ?? data ?? {};
 }
@@ -109,6 +100,7 @@ function readTotalPages(data) {
 function readTotalElements(data) {
   return Number(data?.totalElements ?? data?.data?.totalElements ?? 0);
 }
+
 function formatDate(value) {
   if (!value) return "";
   const date = new Date(value);
@@ -157,7 +149,6 @@ function updateSessionNickname(nickname) {
 function getNicknameAvailableDate(seller) {
   const changedAt = seller?.nicknameUpdatedAt || readLocalNicknameChangedAt(seller?.memberId);
   if (!changedAt) return null;
-
   const availableAt = addDays(changedAt, NICKNAME_CHANGE_INTERVAL_DAYS);
   if (!availableAt || availableAt <= new Date()) return null;
   return availableAt;
@@ -169,22 +160,9 @@ function formatWon(value) {
 }
 
 function normalizeProduct(product) {
-  const productStatus = String(
-    product?.productStatus ||
-    product?.product_status ||
-    ""
-  ).toUpperCase();
-
-  const orderStatus = String(
-    product?.orderStatus ||
-    product?.order_status ||
-    ""
-  ).toUpperCase();
-
-  const isSold =
-    Boolean(product?.isSold) ||
-    Boolean(product?.is_sold) ||
-    productStatus === "SOLD";
+  const productStatus = String(product?.productStatus || product?.product_status || "").toUpperCase();
+  const orderStatus = String(product?.orderStatus || product?.order_status || "").toUpperCase();
+  const isSold = Boolean(product?.isSold) || Boolean(product?.is_sold) || productStatus === "SOLD";
 
   return {
     ...product,
@@ -203,6 +181,7 @@ function normalizeProduct(product) {
     wishlistCount: product?.wishlistCount ?? product?.wishlist_count ?? 0,
   };
 }
+
 function getProfileImageUrl(profile) {
   return toAssetUrl(profile?.profileImageUrl || DEFAULT_PROFILE_IMAGE_URL);
 }
@@ -210,76 +189,65 @@ function getProfileImageUrl(profile) {
 function normalizeOrder(order) {
   return {
     ...order,
-    orderId:      order?.orderId || "",
-    productId:    order?.productId,
-    productTitle: order?.productTitle || order?.title || "상품명 없음",
-    orderStatus:  order.order_status ?? order.orderStatus ?? "",
+    orderId:        order?.orderId || "",
+    productId:      order?.productId,
+    productTitle:   order?.productTitle || order?.title || "상품명 없음",
+    orderStatus:    order.order_status ?? order.orderStatus ?? "",
     previousStatus: order.previous_status ?? order.previousStatus ?? "",
-    finalPrice:   Number(order?.finalPrice ?? order?.price ?? 0),
-    createdAt:    order?.createdAt || "",
+    finalPrice:     Number(order?.finalPrice ?? order?.price ?? 0),
+    createdAt:      order?.createdAt || "",
   };
 }
 
 function normalizeSettlement(settlement) {
   return {
     ...settlement,
-    orderId: settlement?.orderId || "",
-    productId: settlement?.productId,
-    productTitle: settlement?.productTitle || settlement?.title || "상품명 없음",
-    thumbnailUrl: settlement?.thumbnailUrl || settlement?.imageUrl || "",
-    commission: Number(settlement?.commission ?? 0),
-    finalPrice: Number(settlement?.finalPrice ?? settlement?.price ?? 0),
+    orderId:                settlement?.orderId || "",
+    productId:              settlement?.productId,
+    productTitle:           settlement?.productTitle || settlement?.title || "상품명 없음",
+    thumbnailUrl:           settlement?.thumbnailUrl || settlement?.imageUrl || "",
+    commission:             Number(settlement?.commission ?? 0),
+    finalPrice:             Number(settlement?.finalPrice ?? settlement?.price ?? 0),
     sellerSettlementAmount: Number(settlement?.sellerSettlementAmount ?? 0),
-    orderStatus: settlement?.orderStatus || "",
-    createdAt: settlement?.createdAt || "",
-    bankCode: settlement?.bankCode || "",
-    depositorName: settlement?.depositorName || "",
+    orderStatus:            settlement?.orderStatus || "",
+    createdAt:              settlement?.createdAt || "",
+    bankCode:               settlement?.bankCode || "",
+    accountNumber:          settlement?.accountNumber || "",
+    depositorName:          settlement?.depositorName || "",
   };
 }
 
 function normalizeInquiry(inquiry) {
   return {
     ...inquiry,
-    inquiryId: inquiry?.inquiryId || "",
-    memberId: inquiry?.memberId || "",
-    category: inquiry?.category || "",
-    title: inquiry?.title || "제목 없음",
-    content: inquiry?.content || "",
-    inquiryStatus: inquiry?.inquiryStatus || "",
-    answerContent: inquiry?.answerContent || "",
-    createdAt: inquiry?.createdAt || "",
-    answeredAt: inquiry?.answeredAt || "",
+    inquiryId:      inquiry?.inquiryId || "",
+    memberId:       inquiry?.memberId || "",
+    category:       inquiry?.category || "",
+    title:          inquiry?.title || "제목 없음",
+    content:        inquiry?.content || "",
+    inquiryStatus:  inquiry?.inquiryStatus || "",
+    answerContent:  inquiry?.answerContent || "",
+    createdAt:      inquiry?.createdAt || "",
+    answeredAt:     inquiry?.answeredAt || "",
   };
 }
 
 function formatDateTime(value) {
   if (!value) return "-";
-
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-
   return date.toLocaleString("ko-KR", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit",
   });
 }
 
 const INQUIRY_CATEGORY_LABELS = {
-  ORDER: "주문 문의",
-  PAYMENT: "결제 문의",
-  PRODUCT: "상품 문의",
-  DELIVERY: "배송 문의",
-  ACCOUNT: "회원/계정 문의",
-  ETC: "기타 문의",
+  ORDER: "주문 문의", PAYMENT: "결제 문의", PRODUCT: "상품 문의",
+  DELIVERY: "배송 문의", ACCOUNT: "회원/계정 문의", ETC: "기타 문의",
 };
 
-const INQUIRY_STATUS_LABELS = {
-  PENDING: "답변 대기",
-  ANSWERED: "답변 완료",
-};
+const INQUIRY_STATUS_LABELS = { PENDING: "답변 대기", ANSWERED: "답변 완료" };
 
 function getInquiryCategoryLabel(category) {
   return INQUIRY_CATEGORY_LABELS[category] || category || "-";
@@ -288,6 +256,7 @@ function getInquiryCategoryLabel(category) {
 function getInquiryStatusLabel(status) {
   return INQUIRY_STATUS_LABELS[status] || status || "-";
 }
+
 function createSettlementFromSoldProduct(product) {
   const normalized = normalizeProduct(product);
   const commissionPercent = DEFAULT_COMMISSION_RATE * 100;
@@ -308,16 +277,13 @@ function createSettlementFromSoldProduct(product) {
 function mergeSettlementsWithSoldProducts(settlements, products) {
   const normalizedSettlements = settlements.map(normalizeSettlement);
   const settlementProductIds = new Set(
-    normalizedSettlements
-      .map((settlement) => settlement.productId)
-      .filter(Boolean)
-      .map(String)
+    normalizedSettlements.map((s) => s.productId).filter(Boolean).map(String)
   );
 
   const missingSoldSettlements = products
     .map(normalizeProduct)
     .filter(isSoldProduct)
-    .filter((product) => product.productId && !settlementProductIds.has(String(product.productId)))
+    .filter((p) => p.productId && !settlementProductIds.has(String(p.productId)))
     .map(createSettlementFromSoldProduct);
 
   return [...normalizedSettlements, ...missingSoldSettlements];
@@ -348,15 +314,14 @@ const PRICE_PRESETS = [
 ];
 
 const PROFILE_TABS = [
-  { key: "products",     label: "상품" },
-  { key: "wishlist",     label: "위시리스트" },
-  { key: "orders",       label: "구매 내역" },
+  { key: "products",    label: "상품" },
+  { key: "wishlist",    label: "위시리스트" },
+  { key: "orders",      label: "구매 내역" },
   { key: "selling",     label: "판매 내역" },
-  { key: "settlements",  label: "정산 내역" },
-  { key: "inquiries",    label: "문의 내역" },
+  { key: "settlements", label: "정산 내역" },
+  { key: "inquiries",   label: "문의 내역" },
   { key: "reports",     label: "신고 내역" },
-  { key: "reviews",      label: "리뷰" },
-  
+  { key: "reviews",     label: "리뷰" },
 ];
 
 /* ── 사이드바 필터 ── */
@@ -376,44 +341,28 @@ function FilterSidebar({ filters, onApplyFilters }) {
   function handleApply() {
     const min = minInput === "" ? 0 : Number(minInput.replace(/,/g, ""));
     const max = maxInput === "" ? 0 : Number(maxInput.replace(/,/g, ""));
-    onApplyFilters({
-      excludeSold: draftExcludeSold,
-      gender: draftGender,
-      priceMin: min,
-      priceMax: max,
-    });
+    onApplyFilters({ excludeSold: draftExcludeSold, gender: draftGender, priceMin: min, priceMax: max });
   }
 
   return (
     <aside className="up-sidebar">
       <p className="up-sidebar-title">필터</p>
-
       <div className="up-filter-check">
         <label>
           <input type="checkbox" checked={draftExcludeSold} onChange={(e) => setDraftExcludeSold(e.target.checked)} />
           품절 상품 제외
         </label>
       </div>
-
       <div className="up-filter-group">
         <button className="up-filter-head" onClick={() => setGenderOpen((o) => !o)}>
           성별 <span className={`up-filter-arrow ${genderOpen ? "open" : ""}`}>›</span>
         </button>
         {genderOpen && (
           <ul className="up-filter-list">
-            {[
-              { value: "all", label: "전체" },
-              { value: "mens", label: "남성" },
-              { value: "womens", label: "여성" },
-            ].map(({ value, label }) => (
+            {[{ value: "all", label: "전체" }, { value: "mens", label: "남성" }, { value: "womens", label: "여성" }].map(({ value, label }) => (
               <li key={value}>
                 <label>
-                  <input
-                    type="radio"
-                    name="up-gender-filter"
-                    checked={draftGender === value}
-                    onChange={() => setDraftGender(value)}
-                  />
+                  <input type="radio" name="up-gender-filter" checked={draftGender === value} onChange={() => setDraftGender(value)} />
                   {label}
                 </label>
               </li>
@@ -421,7 +370,6 @@ function FilterSidebar({ filters, onApplyFilters }) {
           </ul>
         )}
       </div>
-
       <div className="up-filter-group">
         <button className="up-filter-head" onClick={() => setPriceOpen((o) => !o)}>
           가격 <span className={`up-filter-arrow ${priceOpen ? "open" : ""}`}>›</span>
@@ -429,31 +377,13 @@ function FilterSidebar({ filters, onApplyFilters }) {
         {priceOpen && (
           <div className="up-price-body">
             <div className="up-price-range">
-              <input
-                className="up-price-input"
-                type="number"
-                placeholder="0"
-                value={minInput}
-                onChange={(e) => setMinInput(e.target.value)}
-                min={0}
-              />
+              <input className="up-price-input" type="number" placeholder="0" value={minInput} onChange={(e) => setMinInput(e.target.value)} min={0} />
               <span className="up-price-dash">-</span>
-              <input
-                className="up-price-input"
-                type="number"
-                placeholder="0"
-                value={maxInput}
-                onChange={(e) => setMaxInput(e.target.value)}
-                min={0}
-              />
+              <input className="up-price-input" type="number" placeholder="0" value={maxInput} onChange={(e) => setMaxInput(e.target.value)} min={0} />
             </div>
             <ul className="up-price-presets">
               {PRICE_PRESETS.map(({ label, max }) => (
-                <li key={max}>
-                  <button className="up-price-preset-btn" onClick={() => applyPreset(max)}>
-                    {label}
-                  </button>
-                </li>
+                <li key={max}><button className="up-price-preset-btn" onClick={() => applyPreset(max)}>{label}</button></li>
               ))}
             </ul>
             <button className="up-price-apply" onClick={handleApply}>적용</button>
@@ -466,12 +396,7 @@ function FilterSidebar({ filters, onApplyFilters }) {
 
 /* ── 상품 탭 ── */
 function ProductsTab({ products, emptyMessage = "조건에 맞는 상품이 없습니다.", showOrderButton = false, orderIdMap = {} }) {
-  const [filters, setFilters] = useState({
-    excludeSold: false,
-    gender: "all",
-    priceMin: 0,
-    priceMax: 0,
-  });
+  const [filters, setFilters] = useState({ excludeSold: false, gender: "all", priceMin: 0, priceMax: 0 });
   const [visible, setVisible] = useState(12);
 
   const filtered = products.map(normalizeProduct)
@@ -484,30 +409,18 @@ function ProductsTab({ products, emptyMessage = "조건에 맞는 상품이 없�
 
   return (
     <div className="up-tab-layout">
-      <FilterSidebar
-        filters={filters}
-        onApplyFilters={(nextFilters) => {
-          setFilters(nextFilters);
-          setVisible(12);
-        }}
-      />
-
+      <FilterSidebar filters={filters} onApplyFilters={(nextFilters) => { setFilters(nextFilters); setVisible(12); }} />
       <div className="up-products-main">
         <div className="up-sort-row">
           <span className="up-count">전체 <strong>{filtered.length}</strong>개</span>
         </div>
-
         {filtered.length === 0 ? (
           <p className="up-empty">{emptyMessage}</p>
         ) : (
           <>
             <div className="up-product-grid">
               {shown.map((p) => (
-                <article
-                  key={p.productId}
-                  className="up-card"
-                  onClick={() => navigate(`/product/${p.productId}`)}
-                >
+                <article key={p.productId} className="up-card" onClick={() => navigate(`/product/${p.productId}`)}>
                   <div className="up-card-img-wrap">
                     {getProductImageUrl(p) && (
                       <div className="product-visual">
@@ -516,11 +429,11 @@ function ProductsTab({ products, emptyMessage = "조건에 맞는 상품이 없�
                     )}
                     {p.isSold && <div className="up-card-sold">SOLD</div>}
                     <div className="product-heart-btn" onClick={(e) => e.stopPropagation()}>
-       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-       <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-      </svg>
-      <span className="product-heart-count">{p.wishlistCount}</span>
-</div>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                      </svg>
+                      <span className="product-heart-count">{p.wishlistCount}</span>
+                    </div>
                   </div>
                   <div className="up-card-body">
                     {(p.brandName || p.size) && (
@@ -533,23 +446,8 @@ function ProductsTab({ products, emptyMessage = "조건에 맞는 상품이 없�
                     <p className="up-card-price">{p.price.toLocaleString()}원</p>
                     {showOrderButton && (
                       <button
-                        style={{
-                          marginTop: "8px",
-                          width: "100%",
-                          padding: "7px 0",
-                          background: "#168f88",
-                          color: "#fff",
-                          border: "none",
-                          borderRadius: "6px",
-                          fontSize: "12px",
-                          fontWeight: 600,
-                          cursor: "pointer",
-                          letterSpacing: "0.02em",
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/order/detail/${orderIdMap[p.productId] ?? p.productId}`);
-                        }}
+                        style={{ marginTop: "8px", width: "100%", padding: "7px 0", background: "#168f88", color: "#fff", border: "none", borderRadius: "6px", fontSize: "12px", fontWeight: 600, cursor: "pointer", letterSpacing: "0.02em" }}
+                        onClick={(e) => { e.stopPropagation(); navigate(`/order/detail/${orderIdMap[p.productId] ?? p.productId}`); }}
                       >
                         주문 상세
                       </button>
@@ -558,11 +456,8 @@ function ProductsTab({ products, emptyMessage = "조건에 맞는 상품이 없�
                 </article>
               ))}
             </div>
-
             {visible < filtered.length && (
-              <button className="up-load-more" onClick={() => setVisible((v) => v + 12)}>
-                더 많은 상품 보기
-              </button>
+              <button className="up-load-more" onClick={() => setVisible((v) => v + 12)}>더 많은 상품 보기</button>
             )}
           </>
         )}
@@ -572,42 +467,21 @@ function ProductsTab({ products, emptyMessage = "조건에 맞는 상품이 없�
 }
 
 function isSoldProduct(product) {
-  const productStatus = String(
-    product?.productStatus ||
-    product?.product_status ||
-    ""
-  ).toUpperCase();
-
-  return (
-    Boolean(product?.isSold) ||
-    Boolean(product?.is_sold) ||
-    productStatus === "SOLD"
-  );
+  const productStatus = String(product?.productStatus || product?.product_status || "").toUpperCase();
+  return Boolean(product?.isSold) || Boolean(product?.is_sold) || productStatus === "SOLD";
 }
 
 function matchesGender(product, gender) {
   const categoryCode = String(product?.categoryCode || "").toUpperCase();
-  const categoryText = [
-    categoryCode,
-    product?.categoryName,
-    product?.categoryPath,
-  ].filter(Boolean).join(" ").toUpperCase();
-
-  if (gender === "mens") {
-    return categoryCode.startsWith("MENS") || categoryText.includes("남성") || categoryText.includes("맨즈");
-  }
-
-  if (gender === "womens") {
-    return categoryCode.startsWith("WOMENS") || categoryText.includes("여성") || categoryText.includes("우먼");
-  }
-
+  const categoryText = [categoryCode, product?.categoryName, product?.categoryPath].filter(Boolean).join(" ").toUpperCase();
+  if (gender === "mens") return categoryCode.startsWith("MENS") || categoryText.includes("남성") || categoryText.includes("맨즈");
+  if (gender === "womens") return categoryCode.startsWith("WOMENS") || categoryText.includes("여성") || categoryText.includes("우먼");
   return true;
 }
 
 /* ── 주문 내역 탭 ── */
 function OrdersTab({ orders, onCancelOrder }) {
-  const normalizedOrders = orders.map(normalizeOrder)
-  .filter((o) => o.orderStatus !== 'CANCELLED');
+  const normalizedOrders = orders.map(normalizeOrder).filter((o) => o.orderStatus !== "CANCELLED");
   if (normalizedOrders.length === 0) return <p className="up-empty">주문 내역 정보가 없습니다.</p>;
 
   return (
@@ -615,7 +489,6 @@ function OrdersTab({ orders, onCancelOrder }) {
       {normalizedOrders.map((order) => {
         const title = order.productTitle;
         const imageUrl = getProductImageUrl(order);
-
         return (
           <div key={order.orderId || order.productId} className="up-order-item up-buy-order-card">
             {imageUrl && (
@@ -629,17 +502,12 @@ function OrdersTab({ orders, onCancelOrder }) {
               <p className="up-order-title">{title}</p>
               <p className="up-order-meta">주문번호: {order.orderId || "-"}</p>
               <p className="up-order-meta">
-              상태: {{ REQUESTED: '주문접수', PAID: '결제완료', SHIPPING: '배송중', DELIVERED: '배송완료', CANCELLED: '취소됨' }[order.orderStatus] || order.orderStatus || '-'}
+                상태: {{ REQUESTED: "주문접수", PAID: "결제완료", SHIPPING: "배송중", DELIVERED: "배송완료", CANCELLED: "취소됨" }[order.orderStatus] || order.orderStatus || "-"}
               </p>
             </div>
             <div className="up-order-right">
               <p className="up-order-price">{formatWon(order.finalPrice)}</p>
-              <button
-                className="up-order-detail-btn"
-                onClick={() => navigate(`/order/detail/${order.orderId}`)}
-              >
-                주문 상세
-              </button>
+              <button className="up-order-detail-btn" onClick={() => navigate(`/order/detail/${order.orderId}`)}>주문 상세</button>
             </div>
           </div>
         );
@@ -648,185 +516,56 @@ function OrdersTab({ orders, onCancelOrder }) {
   );
 }
 
-/* ── 내가 판매한 상품 탭 ── */
-
+/* ── 판매 내역 탭 ── */
 function SellingTab() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-      fetchOrders(0, 50, 'SELL')
-    .then((data) => {
-      const filtered = toList(data)
-        .map(normalizeOrder)
-        .filter((o) => ['PAID', 'REQUESTED', 'SHIPPING', 'DELIVERED'].includes(o.orderStatus));
-      setOrders(filtered);
-      setLoading(false);
-    })
-    .catch(() => setLoading(false));
-}, []);
+    fetchOrders(0, 50, "SELL")
+      .then((data) => {
+        const filtered = toList(data).map(normalizeOrder).filter((o) => ["PAID", "REQUESTED", "SHIPPING", "DELIVERED"].includes(o.orderStatus));
+        setOrders(filtered);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
 
-  const STATUS_LABEL = {
-    REQUESTED: '주문접수',
-    PAID: '결제완료',
-    SHIPPING: '배송중',
-    DELIVERED: '배송완료',
-    CANCELLED: '취소됨',
-  };
+  const STATUS_LABEL = { REQUESTED: "주문접수", PAID: "결제완료", SHIPPING: "배송중", DELIVERED: "배송완료", CANCELLED: "취소됨" };
 
   if (loading) return <p className="up-empty">불러오는 중...</p>;
   if (orders.length === 0) return <p className="up-empty">판매한 상품이 없습니다.</p>;
 
   return (
-        <div className="up-product-grid">
+    <div className="up-product-grid">
       {orders.map((o) => {
         const imageUrl = getProductImageUrl(o);
-        const isPaid = o.orderStatus === 'PAID';
-
         return (
-     <article
-  key={o.orderId || o.productId}
-  className="up-card"
-  onClick={() => navigate(`/product/${o.productId}`)}
->
-  <div className="up-card-img-wrap">
-    {imageUrl
-      ? <div className="product-visual"><img className="product-image" src={imageUrl} alt={o.productTitle} /></div>
-      : <div className="product-visual" style={{ background: '#eef2f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa', fontSize: '12px' }}>NO IMAGE</div>
-    }
-    {['SHIPPING', 'DELIVERED'].includes(o.orderStatus) && <div className="up-card-sold">SOLD</div>}
-  </div>
-  <div className="up-card-body">
-    <p className="up-card-name">{o.productTitle}</p>
-    <p className="up-card-name" style={{ fontSize: '11px', color: '#69717d', fontWeight: 600 }}>주문번호: {o.orderId || '-'}</p>
-    <p className="up-card-name" style={{ fontSize: '11px', color: '#69717d', fontWeight: 600 }}>상태: {STATUS_LABEL[o.orderStatus] || o.orderStatus || '-'}</p>
-    <p className="up-card-price">{formatWon(o.finalPrice)}</p>
-
-{o.orderStatus === 'PAID' && (
-  <button
-    style={{
-      marginTop: '8px',
-      width: '100%',
-      padding: '7px 0',
-      background: '#168f88',
-      color: '#fff',
-      border: 'none',
-      borderRadius: '6px',
-      fontSize: '13px',
-      fontWeight: 700,
-      cursor: 'pointer',
-    }}
-    onClick={(e) => {
-      e.stopPropagation();
-      navigate(`/order/detail/${o.orderId}`);
-    }}
-  >
-    주문 상세
-  </button>
-)}
-
-   {o.orderStatus === 'REQUESTED' && (
-  <button
-    style={{
-      marginTop: '8px',
-      width: '100%',
-      padding: '7px 0',
-      background: '#168f88',
-      color: '#fff',
-      border: 'none',
-      borderRadius: '6px',
-      fontSize: '13px',
-      fontWeight: 700,
-      cursor: 'pointer',
-    }}
-    onClick={(e) => {
-      e.stopPropagation();
-      navigate(`/order/detail/${o.orderId}`);
-    }}
-  >
-    운송장 등록
-  </button>
-)}
-{o.orderStatus === 'SHIPPING' && (
-  <button
-    style={{
-      marginTop: '8px',
-      width: '100%',
-      padding: '7px 0',
-      background: '#fff',
-      color: '#168f88',
-      border: '1.5px solid #168f88',
-      borderRadius: '6px',
-      fontSize: '13px',
-      fontWeight: 700,
-      cursor: 'pointer',
-    }}
-    onClick={(e) => {
-      e.stopPropagation();
-      navigate(`/order/detail/${o.orderId}`);
-    }}
-  >
-    운송장 조회하기
-  </button>
-)}
-
-  </div>
-</article>
-        );
-      })}
-    </div>
-  );
-}
-
-/* ── 정산 내역 탭 ── */
-  function SettlementTab({ settlements }) {
-  
-  const normalizedSettlements = settlements
-  .map(normalizeSettlement)
-  .filter((settlement) => ["SHIPPING", "DELIVERED"].includes(settlement.orderStatus));
-
-  if (normalizedSettlements.length === 0) return <p className="up-empty">정산 내역 정보가 없습니다.</p>;
-
-  const getSettlementLabel = (status) => {
-    if (status === 'DELIVERED') return { text: '정산 완료', color: '#2e7d32', bg: '#e8f5e9' };
-       if (status === 'SHIPPING') return { text: '정산 예정', color: '#1565c0', bg: '#e3f2fd' };
-    return { text: '-', color: '#666', bg: '#f5f5f5' };
-  };
-
-  return (
-    <div className="up-settlement-grid">
-      {normalizedSettlements.map((s) => {
-        const badge = getSettlementLabel(s.orderStatus);
-        const imageUrl = getProductImageUrl(s);
-        return (
-          <article key={s.orderId || s.productId} className="up-settlement-card">
-            <div
-     className="up-settlement-img-wrap"
-    onClick={() => s.productId && navigate(`/product/${s.productId}`)}
-   style={{ cursor: s.productId ? 'pointer' : 'default' }}
-  >
-  <div style={{ position: "relative" }}>
-  {imageUrl ? (
-    <img className="up-settlement-img" src={imageUrl} alt={s.productTitle} />
-  ) : (
-    <div className="up-settlement-no-img">NO IMAGE</div>
-  )}
-  {(s.orderStatus === "DELIVERED" || s.orderStatus === "SHIPPING") && (
-  <div className="up-card-sold">SOLD</div>
-)}
-</div>
-</div>
-
-            <div className="up-settlement-body">
-              <p className="up-settlement-title">{s.productTitle}</p>
-              <p className="up-settlement-price">
-                {s.orderStatus === 'DELIVERED' ? '정산 완료액' : '정산 예정액'} {formatWon(s.sellerSettlementAmount)}
-              </p>
-              <p className="up-settlement-meta">{s.createdAt || ""}</p>
-              <p className="up-settlement-meta">수수료 {s.commission ?? 0}% · 결제금액 {formatWon(s.finalPrice)}</p>
-              <span className="up-settlement-badge" style={{ background: badge.bg, color: badge.color }}>
-                {badge.text}
-              </span>
+          <article key={o.orderId || o.productId} className="up-card" onClick={() => navigate(`/product/${o.productId}`)}>
+            <div className="up-card-img-wrap">
+              {imageUrl
+                ? <div className="product-visual"><img className="product-image" src={imageUrl} alt={o.productTitle} /></div>
+                : <div className="product-visual" style={{ background: "#eef2f6", display: "flex", alignItems: "center", justifyContent: "center", color: "#aaa", fontSize: "12px" }}>NO IMAGE</div>
+              }
+              {o.orderStatus === "DELIVERED" && <div className="up-card-sold">SOLD</div>}
+            </div>
+            <div className="up-card-body">
+              <p className="up-card-name">{o.productTitle}</p>
+              <p className="up-card-name" style={{ fontSize: "11px", color: "#69717d", fontWeight: 600 }}>주문번호: {o.orderId || "-"}</p>
+              <p className="up-card-name" style={{ fontSize: "11px", color: "#69717d", fontWeight: 600 }}>상태: {STATUS_LABEL[o.orderStatus] || o.orderStatus || "-"}</p>
+              <p className="up-card-price">{formatWon(o.finalPrice)}</p>
+              {o.orderStatus === "PAID" && (
+                <button style={{ marginTop: "8px", width: "100%", padding: "7px 0", background: "#168f88", color: "#fff", border: "none", borderRadius: "6px", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}
+                  onClick={(e) => { e.stopPropagation(); navigate(`/order/detail/${o.orderId}`); }}>주문 상세</button>
+              )}
+              {o.orderStatus === "REQUESTED" && (
+                <button style={{ marginTop: "8px", width: "100%", padding: "7px 0", background: "#168f88", color: "#fff", border: "none", borderRadius: "6px", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}
+                  onClick={(e) => { e.stopPropagation(); navigate(`/order/detail/${o.orderId}`); }}>운송장 등록</button>
+              )}
+              {o.orderStatus === "SHIPPING" && (
+                <button style={{ marginTop: "8px", width: "100%", padding: "7px 0", background: "#fff", color: "#168f88", border: "1.5px solid #168f88", borderRadius: "6px", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}
+                  onClick={(e) => { e.stopPropagation(); navigate(`/order/detail/${o.orderId}`); }}>운송장 조회하기</button>
+              )}
             </div>
           </article>
         );
@@ -835,93 +574,162 @@ function SellingTab() {
   );
 }
 
-function ProfileEditModal({ seller, onClose, onSave }) {
-  const fileInputRef = useRef(null);
-  const nicknameAvailableDate = getNicknameAvailableDate(seller);
-  const nicknameLocked = Boolean(nicknameAvailableDate);
-  const [nickname, setNickname] = useState(seller.nickname || "");
-  const [shopInfo, setShopInfo] = useState(seller.shopInfo || "");
-  const [profilePreview, setProfilePreview] = useState(seller.profileImageUrl || "");
-  const [profileFile, setProfileFile] = useState(null);
-  const [profilePreviewFailed, setProfilePreviewFailed] = useState(false);
-  const [nicknameChecked, setNicknameChecked] = useState(false);
-  const [nicknameMessage, setNicknameMessage] = useState("");
-  const [saving, setSaving] = useState(false);
-  const nicknameChanged = nickname.trim() !== (seller.nickname || "");
+/* ── 정산 내역 탭 ── */
+function SettlementTab({ settlements }) {
+  const [withdrawLoading, setWithdrawLoading] = useState(false);
+  const [withdrawDone, setWithdrawDone] = useState(false);
+
+  const normalizedSettlements = settlements
+    .map(normalizeSettlement)
+    .filter((s) => ["SHIPPING", "DELIVERED"].includes(s.orderStatus));
+
+  const withdrawableAmount = normalizedSettlements
+    .filter((s) => s.orderStatus === "DELIVERED")
+    .reduce((sum, s) => sum + s.sellerSettlementAmount, 0);
+
+  async function handleWithdraw() {
+    if (withdrawableAmount <= 0) { alert("출금 가능한 금액이 없습니다."); return; }
+    if (!window.confirm(`${formatWon(withdrawableAmount)}을 출금 신청하시겠습니까?`)) return;
+    setWithdrawLoading(true);
+    try {
+      // TODO: 출금 신청 API 연결 (POST /api/settlements/withdraw)
+      await new Promise((r) => setTimeout(r, 800));
+      setWithdrawDone(true);
+      setTimeout(() => setWithdrawDone(false), 3000);
+    } catch {
+      alert("출금 신청에 실패했습니다. 다시 시도해주세요.");
+    } finally {
+      setWithdrawLoading(false);
+    }
+  }
+
+  function groupByMonth(list) {
+    const groups = {};
+    list.forEach((s) => {
+      const date = s.createdAt ? new Date(s.createdAt) : null;
+      const key = date && !isNaN(date)
+        ? `${date.getFullYear()}년 ${String(date.getMonth() + 1).padStart(2, "0")}월`
+        : "";
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(s);
+    });
+    return groups;
+  }
+
+  const grouped = groupByMonth(normalizedSettlements);
+
+  const getStatusText = (s) => {
+    if (s.orderStatus === "DELIVERED") return "입금완료";
+    if (s.orderStatus === "SHIPPING")  return "입금예정";
+    return "-";
+  };
+
+  const getStatusColor = (s) => {
+    if (s.orderStatus === "DELIVERED") return "#168f88";
+    return "#1565c0";
+  };
+
+  const BANK_LABELS = { KB: "국민은행", SHINHAN: "신한은행", WOORI: "우리은행", HANA: "하나은행", IBK: "기업은행", NH: "농협은행" };
+
+  return (
+    <div style={{ maxWidth: "720px" }}>
+      {/* 출금 신청 박스 */}
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        background: "#f4faf9", border: "1px solid #c8e6e4", borderRadius: "10px",
+        padding: "10px 16px", marginBottom: "24px",
+      }}>
+        <div>
+          <p style={{ fontSize: "12px", color: "#888", marginBottom: "4px" }}>출금 가능 금액</p>
+          <p style={{ fontSize: "15px", fontWeight: 700, color: "#168f88" }}>{formatWon(withdrawableAmount)}</p>
+        </div>
+        <button
+          onClick={handleWithdraw}
+          disabled={withdrawLoading || withdrawableAmount <= 0}
+          style={{
+            padding: "7px 16px",
+            background: withdrawableAmount > 0 ? "#168f88" : "#ccc",
+            color: "#fff", border: "none", borderRadius: "8px",
+            fontSize: "13px", fontWeight: 700,
+            cursor: withdrawableAmount > 0 ? "pointer" : "not-allowed",
+          }}
+        >
+          {withdrawDone ? "신청 완료 ✓" : withdrawLoading ? "처리 중..." : "출금 신청"}
+        </button>
+      </div>
+
+      {normalizedSettlements.length === 0 ? (
+        <p className="up-empty">정산 내역 정보가 없습니다.</p>
+      ) : (
+        Object.entries(grouped).map(([month, items]) => (
+          <div key={month} style={{ marginBottom: "28px" }}>
+            {/* 월 헤더 */}
+            <p style={{ fontSize: "14px", fontWeight: 700, color: "#222", marginBottom: "12px" }}>
+              {month}
+            </p>
+
+            {/* 항목 리스트 */}
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              {items.map((s) => {
+                const imageUrl = getProductImageUrl(s);
+                const date = s.createdAt ? new Date(s.createdAt) : null;
+                const dateStr = date && !isNaN(date)
+                  ? `${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`
+                  : "";
+                const bankLabel = BANK_LABELS[s.bankCode] || s.bankCode || "";
+                const accountLine = s.accountNumber
+                  ? `${s.accountNumber}${bankLabel ? " " + bankLabel : ""}`
+                  : `수수료 ${s.commission ?? 0}% · 결제금액 ${formatWon(s.finalPrice)}`;
+
+                return (
+                  <div
+                    key={s.orderId || s.productId}
+                    style={{
+                      display: "flex", alignItems: "center", gap: "12px",
+                      padding: "12px 0", borderBottom: "1px solid #f0f0f0",
+                      cursor: s.productId ? "pointer" : "default",
+                    }}
+                    onClick={() => s.productId && navigate(`/product/${s.productId}`)}
+                  >
+                    {/* 썸네일 */}
+                    <div style={{ width: "48px", height: "48px", borderRadius: "6px", overflow: "hidden", flexShrink: 0, background: "#eee" }}>
+                      {imageUrl
+                        ? <img src={imageUrl} alt={s.productTitle} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", color: "#aaa" }}>NO IMG</div>
+                      }
+                    </div>
+
+                    {/* 상품명 + 계좌 */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: "14px", fontWeight: 600, color: "#222", marginBottom: "2px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {s.productTitle}
+                      </p>
+                      <p style={{ fontSize: "12px", color: "#999" }}>
+                        {accountLine}
+                      </p>
+                    </div>
+
+                    {/* 금액 + 상태 */}
+                    <div style={{ textAlign: "right", flexShrink: 0 }}>
+                      <p style={{ fontSize: "14px", fontWeight: 700, color: "#222", marginBottom: "2px" }}>
+                        {formatWon(s.sellerSettlementAmount)}
+                      </p>
+                      <p style={{ fontSize: "12px", color: getStatusColor(s) }}>
+                        {dateStr && `${dateStr} `}{getStatusText(s)}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
 }
 
- function handleImageChange(event) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (!PROFILE_IMAGE_TYPES.includes(file.type)) {
-      alert("jpg/png 파일만 선택할 수 있습니다.");
-      event.target.value = "";
-      return;
-    }
-
-    if (file.size > PROFILE_IMAGE_MAX_SIZE) {
-      alert("파일 크기 초과(최대 5MB)");
-      event.target.value = "";
-      return;
-    }
-
-    setProfilePreview(URL.createObjectURL(file));
-    setProfilePreviewFailed(false);
-    setProfileFile(file);
-  }
-
-  async function handleCheckNickname() {
-    const value = nickname.trim();
-    if (!value) {
-      setNicknameMessage("닉네임을 입력해주세요.");
-      setNicknameChecked(false);
-      return;
-    }
-
-    if (!nicknameChanged) {
-      setNicknameMessage("현재 사용 중인 닉네임입니다.");
-      setNicknameChecked(true);
-      return;
-    }
-
-    if (nicknameLocked) {
-      setNicknameMessage(`${formatDate(nicknameAvailableDate)} 이후 변경할 수 있습니다.`);
-      setNicknameChecked(false);
-      return;
-    }
-
-    try {
-      const result = await checkNickname(value);
-      if (!result.available) {
-        setNicknameMessage("이미 사용 중인 닉네임입니다.");
-        setNicknameChecked(false);
-        return;
-      }
-      setNicknameMessage("사용 가능한 닉네임입니다.");
-      setNicknameChecked(true);
-    } catch (error) {
-      setNicknameMessage(error.message || "닉네임 중복 확인에 실패했습니다.");
-      setNicknameChecked(false);
-    }
-  }
-
-  async function handleSubmit(event) {
-    event.preventDefault();
-    const nextNickname = nickname.trim();
-
-    if (!nextNickname) {
-      setNicknameMessage("닉네임을 입력해주세요.");
-      return;
-    }
-
-    if (nicknameChanged && nicknameLocked) {
-      setNicknameMessage(`${formatDate(nicknameAvailableDate)} 이후 변경할 수 있습니다.`);
-      return;
-    }
-  }
-
-/* ── 리뷰 탭 ── */
+/* ── 프로필 수정 모달 ── */
 function ProfileSettingsModal({ seller, onClose, onSave }) {
   const fileInputRef = useRef(null);
   const [shopInfo, setShopInfo] = useState(seller.shopInfo || "");
@@ -933,19 +741,8 @@ function ProfileSettingsModal({ seller, onClose, onSave }) {
   function handleImageChange(event) {
     const file = event.target.files?.[0];
     if (!file) return;
-
-    if (!PROFILE_IMAGE_TYPES.includes(file.type)) {
-      alert("jpg/png 파일만 선택할 수 있습니다.");
-      event.target.value = "";
-      return;
-    }
-
-    if (file.size > PROFILE_IMAGE_MAX_SIZE) {
-      alert("파일 크기는 최대 5MB까지 가능합니다.");
-      event.target.value = "";
-      return;
-    }
-
+    if (!PROFILE_IMAGE_TYPES.includes(file.type)) { alert("jpg/png 파일만 선택할 수 있습니다."); event.target.value = ""; return; }
+    if (file.size > PROFILE_IMAGE_MAX_SIZE) { alert("파일 크기는 최대 5MB까지 가능합니다."); event.target.value = ""; return; }
     setProfilePreview(URL.createObjectURL(file));
     setProfilePreviewFailed(false);
     setProfileFile(file);
@@ -953,13 +750,9 @@ function ProfileSettingsModal({ seller, onClose, onSave }) {
 
   async function handleSubmit(event) {
     event.preventDefault();
-
     try {
       setSaving(true);
-      await onSave({
-        shopInfo: shopInfo.trim(),
-        profileFile,
-      });
+      await onSave({ shopInfo: shopInfo.trim(), profileFile });
       onClose();
     } finally {
       setSaving(false);
@@ -971,58 +764,31 @@ function ProfileSettingsModal({ seller, onClose, onSave }) {
       <form className="up-profile-modal" onSubmit={handleSubmit} onMouseDown={(event) => event.stopPropagation()}>
         <div className="up-modal-head">
           <h2>프로필 수정</h2>
-          <button type="button" className="up-modal-close" onClick={onClose} aria-label="닫기">
-            ×
-          </button>
+          <button type="button" className="up-modal-close" onClick={onClose} aria-label="닫기">×</button>
         </div>
-
-        <button
-          type="button"
-          className="up-edit-avatar"
-          onClick={() => fileInputRef.current?.click()}
-          aria-label="프로필 이미지 선택"
-        >
-          {profilePreview && !profilePreviewFailed ? (
-            <img src={profilePreview} alt="" onError={() => setProfilePreviewFailed(true)} />
-          ) : (
-            <span>{seller.nickname.charAt(0)}</span>
-          )}
+        <button type="button" className="up-edit-avatar" onClick={() => fileInputRef.current?.click()} aria-label="프로필 이미지 선택">
+          {profilePreview && !profilePreviewFailed
+            ? <img src={profilePreview} alt="" onError={() => setProfilePreviewFailed(true)} />
+            : <span>{seller.nickname.charAt(0)}</span>
+          }
         </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          className="up-hidden-file"
-          accept="image/jpeg,image/png"
-          onChange={handleImageChange}
-        />
-
+        <input ref={fileInputRef} type="file" className="up-hidden-file" accept="image/jpeg,image/png" onChange={handleImageChange} />
         <label className="up-edit-field">
           <span>상점 정보</span>
-          <textarea
-            value={shopInfo}
-            onChange={(event) => setShopInfo(event.target.value.slice(0, 500))}
-            rows={5}
-            maxLength={500}
-            placeholder="상점 소개를 입력하세요."
-          />
+          <textarea value={shopInfo} onChange={(event) => setShopInfo(event.target.value.slice(0, 500))} rows={5} maxLength={500} placeholder="상점 소개를 입력하세요." />
         </label>
         <p className="up-edit-help">{shopInfo.length}/500</p>
-
-        <button type="submit" className="up-save-profile" disabled={saving}>
-          {saving ? "저장 중..." : "저장"}
-        </button>
+        <button type="submit" className="up-save-profile" disabled={saving}>{saving ? "저장 중..." : "저장"}</button>
       </form>
     </div>
   );
 }
 
+/* ── 리뷰 탭 ── */
 function ReviewsTab({ reviews, totalPages, page, setPage, rvLoading }) {
   return (
     <div className="up-reviews-wrap">
-      {reviews.length === 0 && !rvLoading && (
-        <p className="up-empty">아직 받은 리뷰가 없습니다.</p>
-      )}
-
+      {reviews.length === 0 && !rvLoading && <p className="up-empty">아직 받은 리뷰가 없습니다.</p>}
       <ul className="rv-list">
         {reviews.map((r) => (
           <li key={r.reviewId} className="rv-item">
@@ -1038,7 +804,6 @@ function ReviewsTab({ reviews, totalPages, page, setPage, rvLoading }) {
           </li>
         ))}
       </ul>
-
       {page < totalPages - 1 && (
         <button className="rv-load-more" onClick={() => setPage((p) => p + 1)} disabled={rvLoading}>
           {rvLoading ? "불러오는 중..." : "리뷰 더보기"}
@@ -1048,20 +813,14 @@ function ReviewsTab({ reviews, totalPages, page, setPage, rvLoading }) {
   );
 }
 
+/* ── 문의 내역 탭 ── */
 function InquiriesTab({ inquiries, selectedInquiry, detailLoading, onSelectInquiry }) {
   const [openId, setOpenId] = useState(null);
 
-  if (inquiries.length === 0) {
-    return <p className="up-empty">등록된 문의 내역이 없습니다.</p>;
-  }
+  if (inquiries.length === 0) return <p className="up-empty">등록된 문의 내역이 없습니다.</p>;
 
   function handleClick(inquiryId) {
-    if (openId === inquiryId) {
-      setOpenId(null);
-    } else {
-      setOpenId(inquiryId);
-      onSelectInquiry(inquiryId);
-    }
+    if (openId === inquiryId) { setOpenId(null); } else { setOpenId(inquiryId); onSelectInquiry(inquiryId); }
   }
 
   return (
@@ -1070,25 +829,17 @@ function InquiriesTab({ inquiries, selectedInquiry, detailLoading, onSelectInqui
         const isOpen = openId === inquiry.inquiryId;
         const detail = selectedInquiry?.inquiryId === inquiry.inquiryId ? selectedInquiry : null;
         return (
-          <div
-            key={inquiry.inquiryId}
-            className="up-inquiry-item"
-            style={{ cursor: "pointer" }}
-            onClick={() => handleClick(inquiry.inquiryId)}
-          >
+          <div key={inquiry.inquiryId} className="up-inquiry-item" style={{ cursor: "pointer" }} onClick={() => handleClick(inquiry.inquiryId)}>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
               <span className="up-inquiry-category">{getInquiryCategoryLabel(inquiry.category)}</span>
               <strong>{inquiry.title}</strong>
-              <span className={`up-inquiry-status ${inquiry.inquiryStatus === "ANSWERED" ? "answered" : ""}`}>
-                {getInquiryStatusLabel(inquiry.inquiryStatus)}
-              </span>
+              <span className={`up-inquiry-status ${inquiry.inquiryStatus === "ANSWERED" ? "answered" : ""}`}>{getInquiryStatusLabel(inquiry.inquiryStatus)}</span>
               <span style={{ marginLeft: "auto", fontSize: "12px", color: "#aaa" }}>{isOpen ? "▲" : "▼"}</span>
             </div>
             <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
               <span className="up-inquiry-date">작성일 {formatDateTime(inquiry.createdAt)}</span>
               <span className="up-inquiry-date">답변일 {formatDateTime(inquiry.answeredAt)}</span>
             </div>
-
             {isOpen && (
               <div style={{ marginTop: "12px", padding: "12px", background: "#f8f9fa", borderRadius: "8px", display: "flex", flexDirection: "column", gap: "8px" }}>
                 {detailLoading && detail === null ? (
@@ -1113,20 +864,15 @@ function InquiriesTab({ inquiries, selectedInquiry, detailLoading, onSelectInqui
   );
 }
 
+/* ── 신고 내역 탭 ── */
 function ReportsTab({ reports }) {
-  const REASON_LABELS = {
-    FRAUD: "사기",
-    MISLEADING_INFO: "상품 정보 허위/불일치",
-    PROHIBITED_ITEM: "금지상품",
-    ETC: "기타",
-  };
+  const REASON_LABELS = { FRAUD: "사기", MISLEADING_INFO: "상품 정보 허위/불일치", PROHIBITED_ITEM: "금지상품", ETC: "기타" };
   const STATUS_LABELS = {
-    PENDING:  { text: "처리 중",  color: "#1565c0", bg: "#e3f2fd" },
-    APPROVED: { text: "승인",     color: "#2e7d32", bg: "#e8f5e9" },
-    REJECTED: { text: "반려",     color: "#c62828", bg: "#fdecea" },
-    DONE:     { text: "처리 완료", color: "#555",   bg: "#f5f5f5" },
+    PENDING:  { text: "처리 중",   color: "#1565c0", bg: "#e3f2fd" },
+    APPROVED: { text: "승인",      color: "#2e7d32", bg: "#e8f5e9" },
+    REJECTED: { text: "반려",      color: "#c62828", bg: "#fdecea" },
+    DONE:     { text: "처리 완료", color: "#555",    bg: "#f5f5f5" },
   };
-
   const [openId, setOpenId] = useState(null);
 
   if (reports.length === 0) return <p className="up-empty">신고 내역이 없습니다.</p>;
@@ -1137,39 +883,23 @@ function ReportsTab({ reports }) {
         const badge = STATUS_LABELS[r.reportStatus] || { text: r.reportStatus, color: "#555", bg: "#f5f5f5" };
         const isOpen = openId === r.reportId;
         return (
-          <div key={r.reportId} className="up-inquiry-item" style={{ cursor: "pointer" }}
-            onClick={() => setOpenId(isOpen ? null : r.reportId)}
-          >
+          <div key={r.reportId} className="up-inquiry-item" style={{ cursor: "pointer" }} onClick={() => setOpenId(isOpen ? null : r.reportId)}>
             <span className="up-inquiry-category">{REASON_LABELS[r.reasonCode] || r.reasonCode}</span>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
               <strong>
                 {r.targetNickname && <span>@{r.targetNickname} </span>}
                 <span style={{ fontWeight: 400, color: "#888", fontSize: "12px" }}>({r.targetMemberId})</span>
               </strong>
-              <span style={{
-                display: "inline-block",
-                padding: "2px 8px",
-                borderRadius: "12px",
-                fontSize: "11px",
-                fontWeight: 600,
-                background: badge.bg,
-                color: badge.color,
-              }}>
-                {badge.text}
-              </span>
+              <span style={{ display: "inline-block", padding: "2px 8px", borderRadius: "12px", fontSize: "11px", fontWeight: 600, background: badge.bg, color: badge.color }}>{badge.text}</span>
               <span style={{ marginLeft: "auto", fontSize: "12px", color: "#aaa" }}>{isOpen ? "▲" : "▼"}</span>
             </div>
             <span className="up-inquiry-date">신고일 {formatDateTime(r.createdAt)}</span>
-
             {isOpen && (
               <div style={{ marginTop: "12px", padding: "12px", background: "#f8f9fa", borderRadius: "8px", display: "flex", flexDirection: "column", gap: "8px" }}>
                 <div><span style={{ color: "#888", fontSize: "12px" }}>신고번호</span> <span style={{ fontSize: "13px" }}>{r.reportId}</span></div>
                 <div><span style={{ color: "#888", fontSize: "12px" }}>신고 사유</span> <span style={{ fontSize: "13px" }}>{REASON_LABELS[r.reasonCode] || r.reasonCode}</span></div>
                 <div><span style={{ color: "#888", fontSize: "12px" }}>신고 내용</span> <span style={{ fontSize: "13px" }}>{r.detail || "-"}</span></div>
-                
-                {r.processedReason && (
-                  <div><span style={{ color: "#888", fontSize: "12px" }}>처리 사유</span> <span style={{ fontSize: "13px" }}>{r.processedReason}</span></div>
-                )}
+                {r.processedReason && <div><span style={{ color: "#888", fontSize: "12px" }}>처리 사유</span> <span style={{ fontSize: "13px" }}>{r.processedReason}</span></div>}
                 <div><span style={{ color: "#888", fontSize: "12px" }}>처리 결과</span> <span style={{ fontSize: "13px", color: badge.color, fontWeight: 600 }}>{badge.text}</span></div>
               </div>
             )}
@@ -1181,29 +911,20 @@ function ReportsTab({ reports }) {
 }
 
 function EmptyProfileTab({ label }) {
-  return (
-    <p className="up-empty">
-      {label} 정보가 없습니다.
-    </p>
-  );
+  return <p className="up-empty">{label} 정보가 없습니다.</p>;
 }
 
-  // 정산 계좌 관리만
-  function AccountTab() {
+/* ── 계좌 관리 탭 ── */
+function AccountTab() {
   const BANK_OPTIONS = [
-    { value: "", label: "은행 선택" },
-    { value: "KB", label: "KB국민" },
-    { value: "SHINHAN", label: "신한" },
-    { value: "WOORI", label: "우리" },
+    { value: "",       label: "은행 선택" },
+    { value: "KB",     label: "KB국민" },
+    { value: "SHINHAN",label: "신한" },
+    { value: "WOORI",  label: "우리" },
   ];
-
   const BANK_LABELS = { KB: "KB국민은행", SHINHAN: "신한은행", WOORI: "우리은행" };
 
-  const [accountForm, setAccountForm] = useState({
-    bankCode: "",
-    accountNumber: "",
-    depositorName: "",
-  });
+  const [accountForm, setAccountForm] = useState({ bankCode: "", accountNumber: "", depositorName: "" });
   const [savedAccount, setSavedAccount] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [accountLoading, setAccountLoading] = useState(false);
@@ -1212,16 +933,8 @@ function EmptyProfileTab({ label }) {
   useEffect(() => {
     fetchAccountInfo().then((data) => {
       if (data?.bankCode) {
-        setSavedAccount({
-          bankCode: data.bankCode,
-          accountNumber: data.accountNumber,
-          depositorName: data.depositorName,
-        });
-        setAccountForm({
-          bankCode: data.bankCode,
-          accountNumber: data.accountNumber || "",
-          depositorName: data.depositorName || "",
-        });
+        setSavedAccount({ bankCode: data.bankCode, accountNumber: data.accountNumber, depositorName: data.depositorName });
+        setAccountForm({ bankCode: data.bankCode, accountNumber: data.accountNumber || "", depositorName: data.depositorName || "" });
       } else {
         setIsEditing(true);
       }
@@ -1229,10 +942,7 @@ function EmptyProfileTab({ label }) {
   }, []);
 
   async function handleAccountSave() {
-    if (!accountForm.bankCode || !accountForm.accountNumber || !accountForm.depositorName) {
-      alert("모든 항목을 입력해주세요.");
-      return;
-    }
+    if (!accountForm.bankCode || !accountForm.accountNumber || !accountForm.depositorName) { alert("모든 항목을 입력해주세요."); return; }
     setAccountLoading(true);
     try {
       await updateAccountInfo(accountForm);
@@ -1266,7 +976,6 @@ function EmptyProfileTab({ label }) {
     <div className="up-account-tab">
       <section className="up-account-card">
         <h3>계좌 관리</h3>
-
         {savedAccount && !isEditing ? (
           <div className="up-account-saved">
             <div className="up-account-saved-info">
@@ -1274,116 +983,76 @@ function EmptyProfileTab({ label }) {
             </div>
             <p className="up-account-number">{savedAccount.accountNumber} · {savedAccount.depositorName}</p>
             <div className="up-account-actions">
-              <button
-                className="up-account-edit-btn"
-                onClick={() => setIsEditing(true)}
-              >
-                수정
-              </button>
+              <button className="up-account-edit-btn" onClick={() => setIsEditing(true)}>수정</button>
               <span className="up-account-divider">|</span>
-              <button
-                className="up-account-delete-btn"
-                onClick={handleDelete}
-                disabled={accountLoading}
-              >
-                삭제
-              </button>
+              <button className="up-account-delete-btn" onClick={handleDelete} disabled={accountLoading}>삭제</button>
             </div>
           </div>
         ) : (
           <div className="up-account-form">
-  <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 10px" }}>
-    <tbody>
-      <tr>
-        <td style={{ width: "80px", color: "#555", fontSize: "13px", fontWeight: 600, paddingRight: "12px" }}>은행</td>
-        <td>
-          <select
-            style={{ height: "36px", padding: "0 8px", border: "1px solid #cfd8e3", borderRadius: "6px", fontSize: "13px" }}
-            value={accountForm.bankCode}
-            onChange={(e) => setAccountForm({ ...accountForm, bankCode: e.target.value })}
-          >
-            {BANK_OPTIONS.map((b) => (
-              <option key={b.value} value={b.value}>{b.label}</option>
-            ))}
-          </select>
-        </td>
-      </tr>
-      <tr>
-        <td style={{ color: "#555", fontSize: "13px", fontWeight: 600, paddingRight: "12px" }}>계좌번호</td>
-        <td>
-          <input
-            type="text"
-            placeholder="계좌번호 입력"
-            style={{ height: "36px", padding: "0 10px", border: "1px solid #cfd8e3", borderRadius: "6px", fontSize: "13px", width: "100%" }}
-            value={accountForm.accountNumber}
-            onChange={(e) => setAccountForm({ ...accountForm, accountNumber: e.target.value })}
-          />
-        </td>
-      </tr>
-      <tr>
-        <td style={{ color: "#555", fontSize: "13px", fontWeight: 600, paddingRight: "12px" }}>예금주</td>
-        <td>
-          <input
-            type="text"
-            placeholder="예금주명 입력"
-            style={{ height: "36px", padding: "0 10px", border: "1px solid #cfd8e3", borderRadius: "6px", fontSize: "13px", width: "100%" }}
-            value={accountForm.depositorName}
-            onChange={(e) => setAccountForm({ ...accountForm, depositorName: e.target.value })}
-          />
-        </td>
-      </tr>
-      <tr>
-        <td></td>
-        <td style={{ paddingTop: "6px" }}>
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button
-              className="up-btn-save"
-              onClick={handleAccountSave}
-              disabled={accountLoading}
-              style={{ height: "36px", padding: "0 20px", background: "#168f88", color: "#fff", border: "none", borderRadius: "6px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
-            >
-              {accountSaved ? "저장됨 ✓" : accountLoading ? "저장 중..." : "저장"}
-            </button>
-            {savedAccount && (
-              <button
-                className="up-account-cancel-btn"
-                onClick={() => {
-                  setAccountForm({ ...savedAccount });
-                  setIsEditing(false);
-                }}
-                style={{ height: "36px", padding: "0 16px", border: "1px solid #d4d4d4", borderRadius: "6px", background: "#fff", color: "#333", fontSize: "13px", cursor: "pointer" }}
-              >
-                취소
-              </button>
-            )}
+            <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 10px" }}>
+              <tbody>
+                <tr>
+                  <td style={{ width: "80px", color: "#555", fontSize: "13px", fontWeight: 600, paddingRight: "12px" }}>은행</td>
+                  <td>
+                    <select style={{ height: "36px", padding: "0 8px", border: "1px solid #cfd8e3", borderRadius: "6px", fontSize: "13px" }}
+                      value={accountForm.bankCode} onChange={(e) => setAccountForm({ ...accountForm, bankCode: e.target.value })}>
+                      {BANK_OPTIONS.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}
+                    </select>
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ color: "#555", fontSize: "13px", fontWeight: 600, paddingRight: "12px" }}>계좌번호</td>
+                  <td>
+                    <input type="text" placeholder="계좌번호 입력"
+                      style={{ height: "36px", padding: "0 10px", border: "1px solid #cfd8e3", borderRadius: "6px", fontSize: "13px", width: "100%" }}
+                      value={accountForm.accountNumber} onChange={(e) => setAccountForm({ ...accountForm, accountNumber: e.target.value })} />
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ color: "#555", fontSize: "13px", fontWeight: 600, paddingRight: "12px" }}>예금주</td>
+                  <td>
+                    <input type="text" placeholder="예금주명 입력"
+                      style={{ height: "36px", padding: "0 10px", border: "1px solid #cfd8e3", borderRadius: "6px", fontSize: "13px", width: "100%" }}
+                      value={accountForm.depositorName} onChange={(e) => setAccountForm({ ...accountForm, depositorName: e.target.value })} />
+                  </td>
+                </tr>
+                <tr>
+                  <td></td>
+                  <td style={{ paddingTop: "6px" }}>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <button className="up-btn-save" onClick={handleAccountSave} disabled={accountLoading}
+                        style={{ height: "36px", padding: "0 20px", background: "#168f88", color: "#fff", border: "none", borderRadius: "6px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
+                        {accountSaved ? "저장됨 ✓" : accountLoading ? "저장 중..." : "저장"}
+                      </button>
+                      {savedAccount && (
+                        <button className="up-account-cancel-btn"
+                          onClick={() => { setAccountForm({ ...savedAccount }); setIsEditing(false); }}
+                          style={{ height: "36px", padding: "0 16px", border: "1px solid #d4d4d4", borderRadius: "6px", background: "#fff", color: "#333", fontSize: "13px", cursor: "pointer" }}>
+                          취소
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</div>
         )}
       </section>
     </div>
   );
 }
 
+/* ── 회원 탈퇴 탭 ── */
 function WithdrawTab({ onWithdraw }) {
   return (
     <div className="up-account-tab">
       <section className="up-account-card">
         <div className="up-withdraw-box">
           <p className="up-withdraw-title">회원 탈퇴</p>
-          <p className="up-withdraw-desc">
-            회원 탈퇴 시 계정 상태가 탈퇴 처리되며, 다시 로그인할 수 없습니다.
-          </p>
-          <button
-            type="button"
-            className="up-withdraw-btn"
-            onClick={onWithdraw}
-          >
-            회원 탈퇴
-          </button>
+          <p className="up-withdraw-desc">회원 탈퇴 시 계정 상태가 탈퇴 처리되며, 다시 로그인할 수 없습니다.</p>
+          <button type="button" className="up-withdraw-btn" onClick={onWithdraw}>회원 탈퇴</button>
         </div>
       </section>
     </div>
@@ -1391,12 +1060,7 @@ function WithdrawTab({ onWithdraw }) {
 }
 
 /* ── 메인 페이지 ── */
-function UserProfilePage({
-  memberId,
-  hideFooter = false,
-  onNavigate,
-  pathname = "/mypage",
-}) {
+function UserProfilePage({ memberId, hideFooter = false, onNavigate, pathname = "/mypage" }) {
   const [seller, setSeller] = useState(null);
   const [sellerProducts, setSellerProducts] = useState([]);
   const [myProducts, setMyProducts] = useState([]);
@@ -1420,9 +1084,7 @@ function UserProfilePage({
   const [profileEditOpen, setProfileEditOpen] = useState(false);
   const timerRef = useRef(null);
   const currentTab = hideFooter ? getTabFromPath(pathname) : activeTab;
-  const profileTabs = hideFooter
-    ? PROFILE_TABS
-    : PROFILE_TABS.filter((tab) => tab.key !== "inquiries");
+  const profileTabs = hideFooter ? PROFILE_TABS : PROFILE_TABS.filter((tab) => tab.key !== "inquiries");
 
   function showToast(msg) {
     setToast(msg);
@@ -1438,10 +1100,7 @@ function UserProfilePage({
         try {
           const profile = await fetchMyProfile();
           const home = await getUserHome(profile?.memberId || memberId);
-          if (!ignore) {
-            setSeller(mapProfileToSeller(home?.profile || profile, memberId, home));
-          }
-          // 리뷰 요약 (헤더용)
+          if (!ignore) setSeller(mapProfileToSeller(home?.profile || profile, memberId, home));
           try {
             const rvData = await getSellerReviews(profile?.memberId || memberId, 0, 1);
             const reviewPage = rvData?.reviews ?? rvData?.data?.reviews ?? {};
@@ -1449,7 +1108,7 @@ function UserProfilePage({
               setAvgRating(rvData?.averageRating ?? rvData?.data?.averageRating ?? null);
               setTotalElements(readTotalElements(reviewPage));
             }
-        } catch (_) {}
+          } catch (_) {}
         } catch (error) {
           if (!ignore) {
             showToast(error.message || "프로필 정보를 불러올 수 없습니다.");
@@ -1460,10 +1119,7 @@ function UserProfilePage({
       }
 
       try {
-        const [home, products] = await Promise.all([
-          getUserHome(memberId),
-          getSellerProducts(memberId),
-        ]);
+        const [home, products] = await Promise.all([getUserHome(memberId), getSellerProducts(memberId)]);
         if (!ignore) {
           setSeller(mapProfileToSeller(home?.profile, memberId, home));
           setSellerProducts(toList(products).map(normalizeProduct));
@@ -1478,29 +1134,17 @@ function UserProfilePage({
     }
 
     loadProfile();
-
-    return () => {
-      ignore = true;
-      clearTimeout(timerRef.current);
-    };
+    return () => { ignore = true; clearTimeout(timerRef.current); };
   }, [hideFooter, memberId]);
 
   useEffect(() => {
-    if (hideFooter) {
-      return;
-    }
-
-    async function resetReviews() {
-      setPage(0);
-      setReviews([]);
-    }
-
-    resetReviews();
+    if (hideFooter) return;
+    setPage(0);
+    setReviews([]);
   }, [hideFooter, memberId]);
 
   useEffect(() => {
     if (!hideFooter) return;
-
     let ignore = false;
 
     async function loadTabData() {
@@ -1509,74 +1153,51 @@ function UserProfilePage({
 
         if (currentTab === "products") {
           const data = await fetchMyProducts(0, 15);
-          if (!ignore) {
-            const list = toList(data).map(normalizeProduct);
-            setMyProducts(list);
-            setSellerProducts(list);
-          }
+          if (!ignore) { const list = toList(data).map(normalizeProduct); setMyProducts(list); setSellerProducts(list); }
         }
-
         if (currentTab === "selling") {
           try {
             const sellData = await fetchOrders(0, 50, "SELL");
             if (!ignore) {
               const map = {};
-              toList(sellData).forEach((o) => {
-                if (o.productId && o.orderId) map[o.productId] = o.orderId;
-              });
+              toList(sellData).forEach((o) => { if (o.productId && o.orderId) map[o.productId] = o.orderId; });
               setSellOrderMap(map);
             }
-          } catch (_) { /* 맵 생성 실패 시 productId 그대로 사용 */ }
+          } catch (_) {}
         }
-
         if (currentTab === "orders") {
           const data = await fetchOrders(0, 15, "BUY");
-          if (!ignore) setOrders(toList(data)
-          .map(normalizeOrder)
-          .filter((o) => o.orderStatus !== 'CANCELLED')
-        );
+          if (!ignore) setOrders(toList(data).map(normalizeOrder).filter((o) => o.orderStatus !== "CANCELLED"));
         }
-
         if (currentTab === "wishlist") {
           const data = await fetchWishlist(0, 15);
           if (!ignore) setWishlist(toList(data).map(normalizeProduct));
         }
-
         if (currentTab === "settlements") {
           const data = await fetchSettlements(0, 20);
           if (!ignore) setSettlements(toList(data).map(normalizeSettlement));
         }
-
         if (currentTab === "inquiries") {
           const data = await fetchMyInquiries(0, 10);
-          if (!ignore) {
-            setInquiries(toList(data).map(normalizeInquiry));
-            setSelectedInquiry(null);
-          }
+          if (!ignore) { setInquiries(toList(data).map(normalizeInquiry)); setSelectedInquiry(null); }
         }
         if (currentTab === "reports") {
-       const data = await fetchMyReports(0, 20);
-         if (!ignore) setReports(toList(data));
+          const data = await fetchMyReports(0, 20);
+          if (!ignore) setReports(toList(data));
         }
       } catch (error) {
-        if (!ignore) {
-          showToast(error.message || "목록을 불러올 수 없습니다.");
-        }
+        if (!ignore) showToast(error.message || "목록을 불러올 수 없습니다.");
       } finally {
         if (!ignore) setTabLoading(false);
       }
     }
 
     loadTabData();
-
-    return () => {
-      ignore = true;
-    };
+    return () => { ignore = true; };
   }, [hideFooter, currentTab]);
 
   async function handleSelectInquiry(inquiryId) {
     if (!inquiryId) return;
-
     try {
       setDetailLoading(true);
       const data = await fetchMyInquiryDetail(inquiryId);
@@ -1587,40 +1208,29 @@ function UserProfilePage({
       setDetailLoading(false);
     }
   }
+
   async function handleCancelOrder(orderId) {
-  if (!window.confirm("이 주문을 취소하시겠습니까?")) return;
-  const session = JSON.parse(sessionStorage.getItem("nailed_session") || "null");
-  const buyerId = session?.member_id ?? session?.memberId ?? null;
-  if (!buyerId) { showToast("로그인이 필요합니다."); return; }
-  try {
-    const result = await cancelOrder(orderId, buyerId);
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.orderId === orderId
-          ? { ...o, orderStatus: "CANCELLED", cancelledAt: result.cancelledAt }
-          : o
-      )
-    );
-    showToast("주문이 취소되었습니다.");
-  } catch (error) {
-    showToast(error.message || "주문 취소에 실패했습니다.");
+    if (!window.confirm("이 주문을 취소하시겠습니까?")) return;
+    const session = JSON.parse(sessionStorage.getItem("nailed_session") || "null");
+    const buyerId = session?.member_id ?? session?.memberId ?? null;
+    if (!buyerId) { showToast("로그인이 필요합니다."); return; }
+    try {
+      const result = await cancelOrder(orderId, buyerId);
+      setOrders((prev) => prev.map((o) => o.orderId === orderId ? { ...o, orderStatus: "CANCELLED", cancelledAt: result.cancelledAt } : o));
+      showToast("주문이 취소되었습니다.");
+    } catch (error) {
+      showToast(error.message || "주문 취소에 실패했습니다.");
+    }
   }
-};
 
   async function handleSaveProfile({ shopInfo, profileFile }) {
     try {
       let profileImageUrl = null;
-
       if (profileFile) {
         const result = await uploadMyProfileImage(profileFile);
         profileImageUrl = typeof result === "string" ? result : result?.data ?? result;
       }
-
-      await updateMyProfile({
-        shopInfo,
-        ...(profileImageUrl && { profileImageUrl }),
-      });
-
+      await updateMyProfile({ shopInfo, ...(profileImageUrl && { profileImageUrl }) });
       alert("프로필이 수정되었습니다.");
       window.location.reload();
     } catch (error) {
@@ -1630,24 +1240,14 @@ function UserProfilePage({
   }
 
   async function handleWithdraw() {
-    const firstConfirm = window.confirm(
-      "정말 회원 탈퇴하시겠습니까?\n탈퇴 후 계정 복구가 어려울 수 있습니다."
-    );
-    if (!firstConfirm) return;
-
-    const secondConfirm = window.confirm(
-      "회원 탈퇴를 진행하면 현재 계정으로 다시 로그인할 수 없습니다.\n정말 탈퇴하시겠습니까?"
-    );
-    if (!secondConfirm) return;
-
+    if (!window.confirm("정말 회원 탈퇴하시겠습니까?\n탈퇴 후 계정 복구가 어려울 수 있습니다.")) return;
+    if (!window.confirm("회원 탈퇴를 진행하면 현재 계정으로 다시 로그인할 수 없습니다.\n정말 탈퇴하시겠습니까?")) return;
     try {
       await withdrawMe();
-
       sessionStorage.removeItem("nailed_session");
       sessionStorage.removeItem("accessToken");
       localStorage.removeItem("nailed_session");
       localStorage.removeItem("accessToken");
-
       alert("회원 탈퇴가 완료되었습니다.");
       window.location.href = "/";
     } catch (error) {
@@ -1658,7 +1258,6 @@ function UserProfilePage({
   useEffect(() => {
     if (!memberId) return;
     if (hideFooter && currentTab !== "reviews") return;
-
     let ignore = false;
 
     async function loadReviews() {
@@ -1668,30 +1267,20 @@ function UserProfilePage({
         if (!ignore) {
           const reviewPage = data?.reviews ?? data?.data?.reviews ?? {};
           const nextReviews = toList(reviewPage);
-
           setAvgRating(data?.averageRating ?? data?.data?.averageRating ?? null);
           setReviews((prev) => page === 0 ? nextReviews : [...prev, ...nextReviews]);
           setTotalElements(readTotalElements(reviewPage));
           setTotalPages(readTotalPages(reviewPage));
         }
       } catch (error) {
-        if (!ignore) {
-          showToast(error.message || "리뷰를 불러올 수 없습니다.");
-          setReviews([]);
-          setTotalElements(0);
-          setTotalPages(0);
-          setAvgRating(null);
-        }
+        if (!ignore) { showToast(error.message || "리뷰를 불러올 수 없습니다."); setReviews([]); setTotalElements(0); setTotalPages(0); setAvgRating(null); }
       } finally {
         if (!ignore) setRvLoading(false);
       }
     }
 
     loadReviews();
-
-    return () => {
-      ignore = true;
-    };
+    return () => { ignore = true; };
   }, [memberId, page, hideFooter, currentTab]);
 
   if (!seller) return (
@@ -1715,95 +1304,43 @@ function UserProfilePage({
         <div className="up-profile-inner">
           <div className="up-avatar">
             {seller.profileImageUrl ? (
-              <img
-                src={seller.profileImageUrl}
-                alt={`${seller.nickname} 프로필`}
-                onError={() => setSeller((prev) => prev ? { ...prev, profileImageUrl: "" } : prev)}
-              />
-            ) : (
-              seller.nickname.charAt(0)
-            )}
+              <img src={seller.profileImageUrl} alt={`${seller.nickname} 프로필`}
+                onError={() => setSeller((prev) => prev ? { ...prev, profileImageUrl: "" } : prev)} />
+            ) : seller.nickname.charAt(0)}
           </div>
           <div className="up-profile-info">
             <div className="up-name-row">
               <h1 className="up-nickname">{seller.nickname}</h1>
               <span className={`up-grade ${gradeClass}`}>{GRADE[seller.sellerGrade]}</span>
               {hideFooter && (
-              <button type="button" className="up-profile-edit-btn"   onClick={() => setProfileEditOpen(true)}>
-              프로필 수정
-            </button>
+                <button type="button" className="up-profile-edit-btn" onClick={() => setProfileEditOpen(true)}>프로필 수정</button>
               )}
             </div>
             <p className="up-handle">@{seller.memberId}</p>
             {seller.shopInfo && <p className="up-shop-info">{seller.shopInfo}</p>}
-              <div className="up-stats"></div>
+            <div className="up-stats"></div>
           </div>
           {hideFooter && (
-  <div className="up-profile-actions">
-    <button
-      type="button"
-      className="up-profile-edit-btn"
-      onClick={() => { if (onNavigate) onNavigate("/mypage/account"); }}
-    >
-      정산 계좌
-    </button>
-    <div style={{ position: "relative" }}>
-      <button
-        type="button"
-        style={{
-          background: "none",
-          border: "1px solid #3e7261",
-          borderRadius: "6px",
-          padding: "2px 10px",
-          cursor: "pointer",
-          fontSize: "13px",
-          color: "#555",
-        }}
-        onClick={(e) => {
-          e.stopPropagation();
-          const menu = e.currentTarget.nextSibling;
-          menu.style.display = menu.style.display === "block" ? "none" : "block";
-        }}
-      >
-        •••
-      </button>
-      <div
-        style={{
-          display: "none",
-          position: "absolute",
-          right: 0,
-          top: "110%",
-          background: "#fff",
-          border: "1px solid #e0e0e0",
-          borderRadius: "8px",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-          zIndex: 100,
-          minWidth: "70px",
-          padding: "6px 0",
-        }}
-      >
-        <button
-          type="button"
-          style={{
-            display: "block",
-            width: "100%",
-            padding: "1px 0px",
-            background: "none",
-            border: "none",
-            textAlign: "center",
-            fontSize: "13px",
-            color: "#e05c5c",
-            cursor: "pointer",
-            fontWeight: 600,
-          }}
-          onClick={() => { if (onNavigate) onNavigate("/mypage/withdraw"); }}
-        >
-          회원 탈퇴
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+            <div className="up-profile-actions">
+              <button type="button" className="up-profile-edit-btn" onClick={() => { if (onNavigate) onNavigate("/mypage/account"); }}>
+                정산 계좌
+              </button>
+              <div style={{ position: "relative" }}>
+                <button type="button"
+                  style={{ background: "none", border: "1px solid #3e7261", borderRadius: "6px", padding: "2px 10px", cursor: "pointer", fontSize: "13px", color: "#555" }}
+                  onClick={(e) => { e.stopPropagation(); const menu = e.currentTarget.nextSibling; menu.style.display = menu.style.display === "block" ? "none" : "block"; }}>
+                  •••
+                </button>
+                <div style={{ display: "none", position: "absolute", right: 0, top: "110%", background: "#fff", border: "1px solid #e0e0e0", borderRadius: "8px", boxShadow: "0 4px 12px rgba(0,0,0,0.1)", zIndex: 100, minWidth: "70px", padding: "6px 0" }}>
+                  <button type="button"
+                    style={{ display: "block", width: "100%", padding: "1px 0px", background: "none", border: "none", textAlign: "center", fontSize: "13px", color: "#e05c5c", cursor: "pointer", fontWeight: 600 }}
+                    onClick={() => { if (onNavigate) onNavigate("/mypage/withdraw"); }}>
+                    회원 탈퇴
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1811,18 +1348,11 @@ function UserProfilePage({
       <div className="up-tabs-bar">
         <div className="up-tabs-inner">
           {profileTabs.map(({ key, label }) => (
-            <button
-              key={key}
-              className={`up-tab ${currentTab === key ? "active" : ""}`}
+            <button key={key} className={`up-tab ${currentTab === key ? "active" : ""}`}
               onClick={() => {
-                if (hideFooter && onNavigate) {
-                  onNavigate(getPathFromTab(key));
-                  return;
-                }
-
+                if (hideFooter && onNavigate) { onNavigate(getPathFromTab(key)); return; }
                 setActiveTab(key);
-              }}
-            >
+              }}>
               {key === "reviews" && totalElements > 0 ? `${label} ${totalElements}` : label}
             </button>
           ))}
@@ -1834,67 +1364,33 @@ function UserProfilePage({
         {tabLoading && currentTab !== "reviews" && <p className="up-empty">불러오는 중...</p>}
 
         {!tabLoading && currentTab === "products" && (
-          <ProductsTab
-            products={hideFooter ? myProducts : sellerProducts}
-            emptyMessage="상품 정보가 없습니다."
-          />
+          <ProductsTab products={hideFooter ? myProducts : sellerProducts} emptyMessage="상품 정보가 없습니다." />
         )}
 
-        {/* hideFooter(마이페이지) 전용 탭들 */}
-       {!tabLoading && hideFooter && currentTab === "orders" && <OrdersTab orders={orders} onCancelOrder={handleCancelOrder} />}
-        {!tabLoading && hideFooter && currentTab === "selling" && <SellingTab />}
-        {!tabLoading && hideFooter && currentTab === "wishlist" && (
-          <ProductsTab
-            products={wishlist}
-            emptyMessage="찜 목록 정보가 없습니다."
-          />
-        )}
+        {!tabLoading && hideFooter && currentTab === "orders"      && <OrdersTab orders={orders} onCancelOrder={handleCancelOrder} />}
+        {!tabLoading && hideFooter && currentTab === "selling"     && <SellingTab />}
+        {!tabLoading && hideFooter && currentTab === "wishlist"    && <ProductsTab products={wishlist} emptyMessage="찜 목록 정보가 없습니다." />}
         {!tabLoading && hideFooter && currentTab === "settlements" && <SettlementTab settlements={settlements} />}
-        {!tabLoading && hideFooter && currentTab === "inquiries" && (
-          <InquiriesTab
-            inquiries={inquiries}
-            selectedInquiry={selectedInquiry}
-            detailLoading={detailLoading}
-            onSelectInquiry={handleSelectInquiry}
-          />
+        {!tabLoading && hideFooter && currentTab === "inquiries"   && (
+          <InquiriesTab inquiries={inquiries} selectedInquiry={selectedInquiry} detailLoading={detailLoading} onSelectInquiry={handleSelectInquiry} />
         )}
-        {!tabLoading && hideFooter && currentTab === "reports" && (
-  <ReportsTab reports={reports} />
-)}
-         {!tabLoading && hideFooter && currentTab === "account" && (
-  <AccountTab />
-)}
-{!tabLoading && hideFooter && currentTab === "withdraw" && (
-  <WithdrawTab onWithdraw={handleWithdraw} />
-)}
+        {!tabLoading && hideFooter && currentTab === "reports"     && <ReportsTab reports={reports} />}
+        {!tabLoading && hideFooter && currentTab === "account"     && <AccountTab />}
+        {!tabLoading && hideFooter && currentTab === "withdraw"    && <WithdrawTab onWithdraw={handleWithdraw} />}
 
         {currentTab === "reviews" && (
-          <ReviewsTab
-            reviews={reviews}
-            totalPages={totalPages}
-            page={page}
-            setPage={setPage}
-            rvLoading={rvLoading}
-          />
+          <ReviewsTab reviews={reviews} totalPages={totalPages} page={page} setPage={setPage} rvLoading={rvLoading} />
         )}
 
-        {/* selling, products, reviews, settlements 이외 탭은 EmptyProfileTab */}
-        {!hideFooter &&
-          currentTab !== "products" &&
-          currentTab !== "reviews" &&
-          currentTab !== "settlements" && (
-            <EmptyProfileTab label={profileTabs.find((tab) => tab.key === currentTab)?.label ?? "선택한 탭"} />
-          )}
+        {!hideFooter && currentTab !== "products" && currentTab !== "reviews" && currentTab !== "settlements" && (
+          <EmptyProfileTab label={profileTabs.find((tab) => tab.key === currentTab)?.label ?? "선택한 탭"} />
+        )}
       </div>
 
       {!hideFooter && <Footer />}
 
       {profileEditOpen && (
-        <ProfileSettingsModal
-          seller={seller}
-          onClose={() => setProfileEditOpen(false)}
-          onSave={handleSaveProfile}
-        />
+        <ProfileSettingsModal seller={seller} onClose={() => setProfileEditOpen(false)} onSave={handleSaveProfile} />
       )}
 
       {toast && <div className="pd-toast">{toast}</div>}
