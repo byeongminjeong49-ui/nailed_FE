@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import deliveryTruck from '../assets/deliverytruck.png';
-import deliveryBox from '../assets/deliverybox.jpg';
+import deliveryBox from '../assets/deliverybox.png';
+import shieldIcon from '../assets/shield.png';
 import Footer from "../components/common/Footer";
 import Header from "../components/common/Header";
 import ReportModal from "../components/ReportModal";
@@ -386,7 +387,7 @@ function ProductDetailPage({ productId }) {
                   {product.seller.averageRating != null && (
                     <span className="pd-seller-rating">★ {product.seller.averageRating.toFixed(1)}</span>
                   )}
-                  <span className="pd-seller-orders">거래 {product.seller.completedOrderCount}건</span>
+                  <span className="pd-seller-orders">리뷰 {product.seller.reviewCount}건</span>
                 </div>
               </div>
               <button className="pd-seller-link" onClick={() => navigate(`/user/${product.seller.memberId}`)}>
@@ -474,9 +475,7 @@ function ProductDetailPage({ productId }) {
                   }}
                   disabled={isSold}
                 >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                  </svg>
+                  <img src={shieldIcon} width="15" height="15" alt="shield" style={{filter: 'invert(1)'}} />
                   {isSold ? "판매완료" : "Nailed 안전결제"}
                 </button>
               )}
