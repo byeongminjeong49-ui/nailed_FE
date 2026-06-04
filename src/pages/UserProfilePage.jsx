@@ -694,7 +694,7 @@ function SellingTab() {
       ? <div className="product-visual"><img className="product-image" src={imageUrl} alt={o.productTitle} /></div>
       : <div className="product-visual" style={{ background: '#eef2f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa', fontSize: '12px' }}>NO IMAGE</div>
     }
-    {o.orderStatus === 'DELIVERED' && <div className="up-card-sold">SOLD</div>}
+    {['SHIPPING', 'DELIVERED'].includes(o.orderStatus) && <div className="up-card-sold">SOLD</div>}
   </div>
   <div className="up-card-body">
     <p className="up-card-name">{o.productTitle}</p>

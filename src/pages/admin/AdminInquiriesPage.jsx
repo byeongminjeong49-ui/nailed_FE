@@ -222,11 +222,6 @@ function AdminInquiriesPage() {
 
   return (
     <div className="admin-page admin-inquiries-page">
-      <div className="admin-page-title">
-        <h1>1:1 문의 관리</h1>
-        <p>고객 1:1 문의를 확인하고 답변을 등록합니다.</p>
-      </div>
-
       <section className="admin-card admin-inquiry-filter">
         <div className="filter-tabs">
           {STATUS_FILTERS.map((filter) => (

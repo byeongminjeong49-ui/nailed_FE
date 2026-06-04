@@ -16,7 +16,7 @@ const PRODUCT_STATUS_CLASS_NAMES = {
 };
 
 const PAGE_SIZE = 10;
-const PRODUCT_SORT = "productId,asc";
+const DEFAULT_PRODUCT_SORT = "";
 
 function toAssetUrl(url) {
   if (!url) return "";
@@ -53,10 +53,6 @@ function getPageNumbers(currentPage, totalPages) {
     { length: end - adjustedStart + 1 },
     (_, index) => adjustedStart + index,
   );
-}
-
-function sortByIdAsc(items, field) {
-  return [...items].sort((a, b) => Number(a?.[field] ?? 0) - Number(b?.[field] ?? 0));
 }
 
 function ProductThumbnail({ product }) {
@@ -106,6 +102,8 @@ function AdminProductsPage() {
   const [keyword, setKeyword] = useState("");
   const [appliedKeyword, setAppliedKeyword] = useState("");
   const [productStatus, setProductStatus] = useState("");
+  const [sort, setSort] = useState(DEFAULT_PRODUCT_SORT);
+  const [appliedSort, setAppliedSort] = useState(DEFAULT_PRODUCT_SORT);
   const [page, setPage] = useState(0);
   const [products, setProducts] = useState([]);
   const [pageInfo, setPageInfo] = useState({
@@ -137,13 +135,13 @@ function AdminProductsPage() {
           size: PAGE_SIZE,
           keyword: appliedKeyword,
           productStatus,
-          sort: PRODUCT_SORT,
+          sort: appliedSort,
         });
 
         if (ignore) return;
 
         const content = Array.isArray(data?.content) ? data.content : [];
-        setProducts(sortByIdAsc(content, "productId"));
+        setProducts(content);
         setPageInfo({
           pageNumber: data?.pageNumber ?? page,
           pageSize: data?.pageSize ?? PAGE_SIZE,
@@ -175,19 +173,13 @@ function AdminProductsPage() {
     return () => {
       ignore = true;
     };
-  }, [appliedKeyword, page, productStatus]);
+  }, [appliedKeyword, appliedSort, page, productStatus]);
 
   function handleSearchSubmit(event) {
     event.preventDefault();
     setPage(0);
     setAppliedKeyword(keyword.trim());
-  }
-
-  function handleReset() {
-    setKeyword("");
-    setAppliedKeyword("");
-    setProductStatus("");
-    setPage(0);
+    setAppliedSort(sort);
   }
 
   function handleStatusChange(event) {
@@ -195,13 +187,15 @@ function AdminProductsPage() {
     setPage(0);
   }
 
+  function handleSortChange(event) {
+    const nextSort = event.target.value;
+    setSort(nextSort);
+    setAppliedSort(nextSort);
+    setPage(0);
+  }
+
   return (
     <div className="admin-page admin-products-page">
-      <div className="admin-page-title">
-        <h1>상품 관리</h1>
-        <p>등록된 상품을 조회하고 판매 상태 기준으로 확인합니다.</p>
-      </div>
-
       <div className="admin-content-main">
         <section className="admin-card search-filter-card">
           <form className="filter-row admin-filter-row-compact" onSubmit={handleSearchSubmit}>
@@ -228,39 +222,19 @@ function AdminProductsPage() {
               </select>
             </div>
 
+            <div className="filter-field">
+              <label htmlFor="admin-product-sort">상품등록일</label>
+              <select id="admin-product-sort" value={sort} onChange={handleSortChange}>
+                <option value="">전체</option>
+                <option value="createdAt,desc">최신순</option>
+                <option value="createdAt,asc">오래된순</option>
+              </select>
+            </div>
+
             <button className="admin-primary-button" type="submit">
               검색
             </button>
           </form>
-
-          <div className="filter-tabs">
-            <button
-              className={!productStatus ? "is-active" : ""}
-              type="button"
-              onClick={() => {
-                setProductStatus("");
-                setPage(0);
-              }}
-            >
-              전체
-            </button>
-            {Object.entries(PRODUCT_STATUS_LABELS).map(([value, label]) => (
-              <button
-                className={productStatus === value ? "is-active" : ""}
-                type="button"
-                key={value}
-                onClick={() => {
-                  setProductStatus(value);
-                  setPage(0);
-                }}
-              >
-                {label}
-              </button>
-            ))}
-            <button className="reset-button" type="button" onClick={handleReset}>
-              초기화
-            </button>
-          </div>
         </section>
 
         <section className="admin-card table-card">

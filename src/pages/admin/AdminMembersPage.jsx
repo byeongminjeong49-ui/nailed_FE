@@ -31,7 +31,7 @@ const SELLER_GRADE_LABELS = {
 
 const PAGE_SIZE = 10;
 const MEMBER_ROLE = "USER";
-const MEMBER_SORT = "memberId,asc";
+const DEFAULT_MEMBER_SORT = "";
 
 function formatDate(value) {
   if (!value) return "-";
@@ -56,15 +56,13 @@ function getPageNumbers(currentPage, totalPages) {
   );
 }
 
-function sortByIdAsc(items, field) {
-  return [...items].sort((a, b) => Number(a?.[field] ?? 0) - Number(b?.[field] ?? 0));
-}
-
 function AdminMembersPage() {
   const [keyword, setKeyword] = useState("");
   const [appliedKeyword, setAppliedKeyword] = useState("");
   const [status, setStatus] = useState("");
   const [sellerGrade, setSellerGrade] = useState("");
+  const [sort, setSort] = useState(DEFAULT_MEMBER_SORT);
+  const [appliedSort, setAppliedSort] = useState(DEFAULT_MEMBER_SORT);
   const [page, setPage] = useState(0);
   const [members, setMembers] = useState([]);
   const [pageInfo, setPageInfo] = useState({
@@ -98,13 +96,13 @@ function AdminMembersPage() {
           role: MEMBER_ROLE,
           status,
           sellerGrade,
-          sort: MEMBER_SORT,
+          sort: appliedSort,
         });
 
         if (ignore) return;
 
         const content = Array.isArray(data?.content) ? data.content : [];
-        setMembers(sortByIdAsc(content.filter((member) => member?.role !== "ADMIN"), "memberId"));
+        setMembers(content.filter((member) => member?.role !== "ADMIN"));
         setPageInfo({
           pageNumber: data?.pageNumber ?? page,
           pageSize: data?.pageSize ?? PAGE_SIZE,
@@ -136,20 +134,13 @@ function AdminMembersPage() {
     return () => {
       ignore = true;
     };
-  }, [appliedKeyword, page, sellerGrade, status]);
+  }, [appliedKeyword, appliedSort, page, sellerGrade, status]);
 
   function handleSearchSubmit(event) {
     event.preventDefault();
     setPage(0);
     setAppliedKeyword(keyword.trim());
-  }
-
-  function handleReset() {
-    setKeyword("");
-    setAppliedKeyword("");
-    setStatus("");
-    setSellerGrade("");
-    setPage(0);
+    setAppliedSort(sort);
   }
 
   function handleStatusChange(event) {
@@ -162,13 +153,15 @@ function AdminMembersPage() {
     setPage(0);
   }
 
+  function handleSortChange(event) {
+    const nextSort = event.target.value;
+    setSort(nextSort);
+    setAppliedSort(nextSort);
+    setPage(0);
+  }
+
   return (
     <div className="admin-page admin-members-page">
-      <div className="admin-page-title">
-        <h1>회원 관리</h1>
-        <p>회원 정보를 조회하고 권한과 상태 기준으로 확인합니다.</p>
-      </div>
-
       <div className="admin-content-main">
         <section className="admin-card search-filter-card">
           <form className="filter-row admin-filter-row-member" onSubmit={handleSearchSubmit}>
@@ -207,39 +200,19 @@ function AdminMembersPage() {
               </select>
             </div>
 
+            <div className="filter-field">
+              <label htmlFor="admin-member-sort">가입일</label>
+              <select id="admin-member-sort" value={sort} onChange={handleSortChange}>
+                <option value="">전체</option>
+                <option value="createdAt,desc">최신순</option>
+                <option value="createdAt,asc">오래된순</option>
+              </select>
+            </div>
+
             <button className="admin-primary-button" type="submit">
               검색
             </button>
           </form>
-
-          <div className="filter-tabs">
-            <button
-              className={!status ? "is-active" : ""}
-              type="button"
-              onClick={() => {
-                setStatus("");
-                setPage(0);
-              }}
-            >
-              전체
-            </button>
-            {Object.entries(STATUS_LABELS).map(([value, label]) => (
-              <button
-                className={status === value ? "is-active" : ""}
-                type="button"
-                key={value}
-                onClick={() => {
-                  setStatus(value);
-                  setPage(0);
-                }}
-              >
-                {label}
-              </button>
-            ))}
-            <button className="reset-button" type="button" onClick={handleReset}>
-              초기화
-            </button>
-          </div>
         </section>
 
         <section className="admin-card table-card">

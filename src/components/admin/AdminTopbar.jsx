@@ -11,11 +11,13 @@ function readAdminSession() {
   }
 }
 
-function AdminTopbar() {
+function AdminTopbar({ pageMeta }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const profileRef = useRef(null);
   const session = readAdminSession();
+  const title = pageMeta?.title || "관리자";
+  const subtitle = pageMeta?.subtitle || "";
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -36,7 +38,10 @@ function AdminTopbar() {
 
   return (
     <header className="admin-topbar">
-      <div className="admin-topbar-spacer" />
+      <div className="admin-topbar-title">
+        <h1>{title}</h1>
+        {subtitle && <p>{subtitle}</p>}
+      </div>
 
       <div className="admin-profile" ref={profileRef}>
         <button

@@ -20,7 +20,7 @@ const ORDER_STATUS_CLASS_NAMES = {
 };
 
 const PAGE_SIZE = 10;
-const ORDER_SORT = "orderId,asc";
+const DEFAULT_ORDER_SORT = "";
 
 function toAssetUrl(url) {
   if (!url) return "";
@@ -57,10 +57,6 @@ function getPageNumbers(currentPage, totalPages) {
     { length: end - adjustedStart + 1 },
     (_, index) => adjustedStart + index,
   );
-}
-
-function sortByIdAsc(items, field) {
-  return [...items].sort((a, b) => Number(a?.[field] ?? 0) - Number(b?.[field] ?? 0));
 }
 
 function OrderThumbnail({ order }) {
@@ -110,10 +106,8 @@ function AdminOrdersPage() {
   const [keyword, setKeyword] = useState("");
   const [appliedKeyword, setAppliedKeyword] = useState("");
   const [orderStatus, setOrderStatus] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  const [appliedDateFrom, setAppliedDateFrom] = useState("");
-  const [appliedDateTo, setAppliedDateTo] = useState("");
+  const [sort, setSort] = useState(DEFAULT_ORDER_SORT);
+  const [appliedSort, setAppliedSort] = useState(DEFAULT_ORDER_SORT);
   const [page, setPage] = useState(0);
   const [orders, setOrders] = useState([]);
   const [pageInfo, setPageInfo] = useState({
@@ -145,15 +139,13 @@ function AdminOrdersPage() {
           size: PAGE_SIZE,
           keyword: appliedKeyword,
           orderStatus,
-          dateFrom: appliedDateFrom,
-          dateTo: appliedDateTo,
-          sort: ORDER_SORT,
+          sort: appliedSort,
         });
 
         if (ignore) return;
 
         const content = Array.isArray(data?.content) ? data.content : [];
-        setOrders(sortByIdAsc(content, "orderId"));
+        setOrders(content);
         setPageInfo({
           pageNumber: data?.pageNumber ?? page,
           pageSize: data?.pageSize ?? PAGE_SIZE,
@@ -185,25 +177,13 @@ function AdminOrdersPage() {
     return () => {
       ignore = true;
     };
-  }, [appliedDateFrom, appliedDateTo, appliedKeyword, orderStatus, page]);
+  }, [appliedKeyword, appliedSort, orderStatus, page]);
 
   function handleSearchSubmit(event) {
     event.preventDefault();
     setPage(0);
     setAppliedKeyword(keyword.trim());
-    setAppliedDateFrom(dateFrom);
-    setAppliedDateTo(dateTo);
-  }
-
-  function handleReset() {
-    setKeyword("");
-    setAppliedKeyword("");
-    setOrderStatus("");
-    setDateFrom("");
-    setDateTo("");
-    setAppliedDateFrom("");
-    setAppliedDateTo("");
-    setPage(0);
+    setAppliedSort(sort);
   }
 
   function handleStatusChange(event) {
@@ -211,13 +191,15 @@ function AdminOrdersPage() {
     setPage(0);
   }
 
+  function handleSortChange(event) {
+    const nextSort = event.target.value;
+    setSort(nextSort);
+    setAppliedSort(nextSort);
+    setPage(0);
+  }
+
   return (
     <div className="admin-page admin-orders-page">
-      <div className="admin-page-title">
-        <h1>주문 관리</h1>
-        <p>주문 정보를 조회하고 주문 상태와 기간 기준으로 확인합니다.</p>
-      </div>
-
       <div className="admin-content-main">
         <section className="admin-card search-filter-card">
           <form className="filter-row admin-filter-row-date" onSubmit={handleSearchSubmit}>
@@ -238,8 +220,8 @@ function AdminOrdersPage() {
               <label htmlFor="admin-order-status">주문 상태</label>
               <select id="admin-order-status" value={orderStatus} onChange={handleStatusChange}>
                 <option value="">전체</option>
-                <option value="REQUESTED">주문접수</option>
                 <option value="PAID">결제완료</option>
+                <option value="REQUESTED">주문접수</option>
                 <option value="SHIPPING">배송중</option>
                 <option value="DELIVERED">배송완료</option>
                 <option value="CANCELLED">취소</option>
@@ -247,58 +229,18 @@ function AdminOrdersPage() {
             </div>
 
             <div className="filter-field">
-              <label htmlFor="admin-order-date-from">시작일</label>
-              <input
-                id="admin-order-date-from"
-                type="date"
-                value={dateFrom}
-                onChange={(event) => setDateFrom(event.target.value)}
-              />
-            </div>
-
-            <div className="filter-field">
-              <label htmlFor="admin-order-date-to">종료일</label>
-              <input
-                id="admin-order-date-to"
-                type="date"
-                value={dateTo}
-                onChange={(event) => setDateTo(event.target.value)}
-              />
+              <label htmlFor="admin-order-sort">주문등록일</label>
+              <select id="admin-order-sort" value={sort} onChange={handleSortChange}>
+                <option value="">전체</option>
+                <option value="updatedAt,desc">최신순</option>
+                <option value="updatedAt,asc">오래된순</option>
+              </select>
             </div>
 
             <button className="admin-primary-button" type="submit">
               검색
             </button>
           </form>
-
-          <div className="filter-tabs">
-            <button
-              className={!orderStatus ? "is-active" : ""}
-              type="button"
-              onClick={() => {
-                setOrderStatus("");
-                setPage(0);
-              }}
-            >
-              전체
-            </button>
-            {Object.entries(ORDER_STATUS_LABELS).map(([value, label]) => (
-              <button
-                className={orderStatus === value ? "is-active" : ""}
-                type="button"
-                key={value}
-                onClick={() => {
-                  setOrderStatus(value);
-                  setPage(0);
-                }}
-              >
-                {label}
-              </button>
-            ))}
-            <button className="reset-button" type="button" onClick={handleReset}>
-              초기화
-            </button>
-          </div>
         </section>
 
         <section className="admin-card table-card">

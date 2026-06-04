@@ -54,7 +54,8 @@ const DETAIL_SUMMARY_FETCH_SIZE = 30;
 const DETAIL_SUMMARY_PAGE_SIZE = 3;
 const DETAIL_REPORT_HISTORY_SIZE = 100;
 const REPORT_TARGET_TYPE = "MEMBER";
-const REPORT_SORT = "reportId,asc";
+const DEFAULT_REPORT_SORT = "";
+const REPORT_HISTORY_SORT = "reportId,asc";
 const PRODUCT_SORT = "productId,asc";
 const ORDER_SORT = "orderId,asc";
 
@@ -112,7 +113,7 @@ async function fetchTargetReportHistory(targetKeyword) {
       size: DETAIL_REPORT_HISTORY_SIZE,
       keyword: targetKeyword,
       targetType: REPORT_TARGET_TYPE,
-      sort: REPORT_SORT,
+      sort: REPORT_HISTORY_SORT,
     });
 
   const firstPageData = await request(0);
@@ -417,10 +418,8 @@ function AdminReportsPage() {
   const [appliedKeyword, setAppliedKeyword] = useState("");
   const [reasonCode, setReasonCode] = useState("");
   const [status, setStatus] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  const [appliedDateFrom, setAppliedDateFrom] = useState("");
-  const [appliedDateTo, setAppliedDateTo] = useState("");
+  const [sort, setSort] = useState(DEFAULT_REPORT_SORT);
+  const [appliedSort, setAppliedSort] = useState(DEFAULT_REPORT_SORT);
   const [page, setPage] = useState(0);
   const [reports, setReports] = useState([]);
   const [selectedReport, setSelectedReport] = useState(null);
@@ -460,15 +459,13 @@ function AdminReportsPage() {
           targetType: REPORT_TARGET_TYPE,
           reasonCode,
           status,
-          dateFrom: appliedDateFrom,
-          dateTo: appliedDateTo,
-          sort: REPORT_SORT,
+          sort: appliedSort,
         });
 
         if (ignore) return;
 
         const content = Array.isArray(data?.content) ? data.content : [];
-        setReports(sortByIdAsc(content.filter((report) => !report?.targetType || report.targetType === REPORT_TARGET_TYPE), "reportId"));
+        setReports(content.filter((report) => !report?.targetType || report.targetType === REPORT_TARGET_TYPE));
         setPageInfo({
           pageNumber: data?.pageNumber ?? page,
           pageSize: data?.pageSize ?? PAGE_SIZE,
@@ -500,7 +497,7 @@ function AdminReportsPage() {
     return () => {
       ignore = true;
     };
-  }, [appliedDateFrom, appliedDateTo, appliedKeyword, page, reasonCode, status]);
+  }, [appliedKeyword, appliedSort, page, reasonCode, status]);
 
   useEffect(() => {
     let ignore = false;
@@ -570,21 +567,7 @@ function AdminReportsPage() {
     event.preventDefault();
     setPage(0);
     setAppliedKeyword(keyword.trim());
-    setAppliedDateFrom(dateFrom);
-    setAppliedDateTo(dateTo);
-  }
-
-  function handleReset() {
-    setKeyword("");
-    setAppliedKeyword("");
-    setReasonCode("");
-    setStatus("");
-    setDateFrom("");
-    setDateTo("");
-    setAppliedDateFrom("");
-    setAppliedDateTo("");
-    setPage(0);
-    setSelectedReport(null);
+    setAppliedSort(sort);
   }
 
   function handleReasonChange(event) {
@@ -597,13 +580,15 @@ function AdminReportsPage() {
     setPage(0);
   }
 
+  function handleSortChange(event) {
+    const nextSort = event.target.value;
+    setSort(nextSort);
+    setAppliedSort(nextSort);
+    setPage(0);
+  }
+
   return (
     <div className="admin-page">
-      <div className="admin-page-title">
-        <h1>신고 관리</h1>
-        <p>회원 신고 내역을 조회하고 사유와 처리 상태 기준으로 확인합니다.</p>
-      </div>
-
       <div className="admin-content-main">
         <section className="admin-card search-filter-card">
           <form className="filter-row admin-filter-row-report" onSubmit={handleSearchSubmit}>
@@ -635,7 +620,6 @@ function AdminReportsPage() {
               <label htmlFor="admin-report-status">처리 상태</label>
               <select id="admin-report-status" value={status} onChange={handleStatusChange}>
                 <option value="">전체</option>
-                <option value="PENDING">대기</option>
                 <option value="APPROVED">승인</option>
                 <option value="REJECTED">반려</option>
                 <option value="DONE">완료</option>
@@ -643,58 +627,18 @@ function AdminReportsPage() {
             </div>
 
             <div className="filter-field">
-              <label htmlFor="admin-report-date-from">시작일</label>
-              <input
-                id="admin-report-date-from"
-                type="date"
-                value={dateFrom}
-                onChange={(event) => setDateFrom(event.target.value)}
-              />
-            </div>
-
-            <div className="filter-field">
-              <label htmlFor="admin-report-date-to">종료일</label>
-              <input
-                id="admin-report-date-to"
-                type="date"
-                value={dateTo}
-                onChange={(event) => setDateTo(event.target.value)}
-              />
+              <label htmlFor="admin-report-sort">신고 등록일</label>
+              <select id="admin-report-sort" value={sort} onChange={handleSortChange}>
+                <option value="">전체</option>
+                <option value="createdAt,desc">최신순</option>
+                <option value="createdAt,asc">오래된순</option>
+              </select>
             </div>
 
             <button className="admin-primary-button" type="submit">
               검색
             </button>
           </form>
-
-          <div className="filter-tabs">
-            <button
-              className={!status ? "is-active" : ""}
-              type="button"
-              onClick={() => {
-                setStatus("");
-                setPage(0);
-              }}
-            >
-              전체
-            </button>
-            {Object.entries(REPORT_STATUS_LABELS).map(([value, label]) => (
-              <button
-                className={status === value ? "is-active" : ""}
-                type="button"
-                key={value}
-                onClick={() => {
-                  setStatus(value);
-                  setPage(0);
-                }}
-              >
-                {label}
-              </button>
-            ))}
-            <button className="reset-button" type="button" onClick={handleReset}>
-              초기화
-            </button>
-          </div>
         </section>
 
         <section className="admin-card table-card">

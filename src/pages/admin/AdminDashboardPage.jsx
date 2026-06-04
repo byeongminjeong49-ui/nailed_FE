@@ -98,19 +98,19 @@ function SalesBoard({ transactionAmount, commissionRevenue }) {
       <div className="dashboard-section-head">
         <div>
           <h2>매출 현황판</h2>
-          <p>DELIVERED 주문 기준 금액 현황</p>
+          <p>REQUESTED·SHIPPING·DELIVERED 기준 금액 현황</p>
         </div>
       </div>
       <div className="sales-card-grid">
         <article className="sales-summary-card">
           <span>사이트 전체 거래액</span>
           <strong>{formatWon(transactionAmount)}</strong>
-          <p>DELIVERED 기준 상품금액 합계</p>
+          <p>REQUESTED·SHIPPING·DELIVERED 기준 최종 결제금액 합계</p>
         </article>
         <article className="sales-summary-card">
           <span>사이트 매출</span>
           <strong>{formatWon(commissionRevenue)}</strong>
-          <p>DELIVERED 기준 수수료 매출</p>
+          <p>주문별 수수료 10원 단위 반올림 합계</p>
         </article>
       </div>
     </section>
@@ -299,11 +299,6 @@ function AdminDashboardPage() {
 
   return (
     <div className="admin-page dashboard-page">
-      <div className="admin-page-title">
-        <h1>관리자 대시보드</h1>
-        <p>전체 운영 현황과 주요 상태 비율을 실제 DB 통계 기준으로 확인합니다.</p>
-      </div>
-
       {loading && <p className="admin-inquiry-message">대시보드 통계를 불러오는 중입니다.</p>}
       {errorMessage && <p className="admin-inquiry-message">{errorMessage}</p>}
 
