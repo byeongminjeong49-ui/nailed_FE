@@ -23,6 +23,17 @@ export async function fetchAdminMembers({
   return authRequest(`/api/admin/members?${params.toString()}`);
 }
 
+export async function createAdminMemberPenalty(memberId, payload) {
+  return authRequest(`/api/admin/members/${encodeURIComponent(memberId)}/penalties`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getAdminMemberPenalties(memberId) {
+  return authRequest(`/api/admin/members/${encodeURIComponent(memberId)}/penalties`);
+}
+
 export async function getAdminProducts({
   page = 0,
   size = 10,
@@ -52,6 +63,13 @@ export async function getAdminProducts({
   return authRequest(`/api/admin/products?${params.toString()}`);
 }
 
+export async function hideAdminProduct(productId, reason) {
+  return authRequest(`/api/admin/products/${encodeURIComponent(productId)}/hide`, {
+    method: "PATCH",
+    body: JSON.stringify({ reason }),
+  });
+}
+
 export async function getAdminOrders({
   page = 0,
   size = 10,
@@ -73,6 +91,13 @@ export async function getAdminOrders({
   if (sort) params.set("sort", sort);
 
   return authRequest(`/api/admin/orders?${params.toString()}`);
+}
+
+export async function cancelAdminOrder(orderId, reason) {
+  return authRequest(`/api/admin/orders/${encodeURIComponent(orderId)}/cancel`, {
+    method: "PATCH",
+    body: JSON.stringify({ reason }),
+  });
 }
 
 export async function getAdminReports({
@@ -100,6 +125,20 @@ export async function getAdminReports({
   if (sort) params.set("sort", sort);
 
   return authRequest(`/api/admin/reports?${params.toString()}`);
+}
+
+export async function rejectAdminReport(reportId, reason) {
+  return authRequest(`/api/admin/reports/${encodeURIComponent(reportId)}/reject`, {
+    method: "PATCH",
+    body: JSON.stringify({ reason }),
+  });
+}
+
+export async function penalizeAdminReport(reportId, payload) {
+  return authRequest(`/api/admin/reports/${encodeURIComponent(reportId)}/penalize`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
 }
 
 export async function getAdminDashboard() {

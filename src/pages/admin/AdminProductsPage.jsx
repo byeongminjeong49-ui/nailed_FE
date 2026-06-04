@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { getAdminProducts } from "../../api/adminApi";
+import { getAdminProducts, hideAdminProduct } from "../../api/adminApi";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
@@ -98,6 +98,17 @@ function ProductThumbnail({ product }) {
   );
 }
 
+function DetailItem({ label, value }) {
+  const displayValue = value ?? "-";
+
+  return (
+    <div className="admin-detail-item">
+      <dt>{label}</dt>
+      <dd>{displayValue === "" ? "-" : displayValue}</dd>
+    </div>
+  );
+}
+
 function AdminProductsPage() {
   const [keyword, setKeyword] = useState("");
   const [appliedKeyword, setAppliedKeyword] = useState("");
@@ -116,6 +127,13 @@ function AdminProductsPage() {
   });
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [openActionProductId, setOpenActionProductId] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedProductForHide, setSelectedProductForHide] = useState(null);
+  const [hideReason, setHideReason] = useState("");
+  const [hideMessage, setHideMessage] = useState("");
+  const [hideSubmitting, setHideSubmitting] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const pageNumbers = useMemo(
     () => getPageNumbers(pageInfo.pageNumber, pageInfo.totalPages),
@@ -173,7 +191,16 @@ function AdminProductsPage() {
     return () => {
       ignore = true;
     };
-  }, [appliedKeyword, appliedSort, page, productStatus]);
+  }, [appliedKeyword, appliedSort, page, productStatus, reloadKey]);
+
+  useEffect(() => {
+    function closeActionMenu() {
+      setOpenActionProductId(null);
+    }
+
+    document.addEventListener("click", closeActionMenu);
+    return () => document.removeEventListener("click", closeActionMenu);
+  }, []);
 
   function handleSearchSubmit(event) {
     event.preventDefault();
@@ -192,6 +219,69 @@ function AdminProductsPage() {
     setSort(nextSort);
     setAppliedSort(nextSort);
     setPage(0);
+  }
+
+  function handleActionMenuClick(action, product) {
+    setOpenActionProductId(null);
+    if (action === "상세보기") {
+      setSelectedProduct(product);
+      return;
+    }
+
+    if (action === "상품숨김") {
+      if (product?.productStatus === "DELETED") {
+        setErrorMessage("이미 숨김 처리된 상품입니다.");
+        return;
+      }
+
+      setSelectedProductForHide(product);
+      setHideReason("");
+      setHideMessage("");
+      return;
+    }
+
+    console.log("[admin products action]", action, product?.productId);
+  }
+
+  function handleHideModalClose() {
+    if (hideSubmitting) return;
+    setSelectedProductForHide(null);
+    setHideReason("");
+    setHideMessage("");
+  }
+
+  async function handleHideSubmit(event) {
+    event.preventDefault();
+
+    const reason = hideReason.trim();
+    if (!reason) {
+      setHideMessage("상품숨김 사유를 입력해주세요.");
+      return;
+    }
+
+    if (reason.length > 500) {
+      setHideMessage("상품숨김 사유는 500자 이내로 입력해주세요.");
+      return;
+    }
+
+    if (!selectedProductForHide?.productId) {
+      setHideMessage("상품 정보를 확인할 수 없습니다.");
+      return;
+    }
+
+    setHideSubmitting(true);
+    setHideMessage("");
+
+    try {
+      await hideAdminProduct(selectedProductForHide.productId, reason);
+      setSelectedProductForHide(null);
+      setHideReason("");
+      setReloadKey((current) => current + 1);
+    } catch (error) {
+      setHideMessage(error.message || "상품숨김 처리에 실패했습니다.");
+    } finally {
+      setHideSubmitting(false);
+    }
   }
 
   return (
@@ -262,18 +352,19 @@ function AdminProductsPage() {
                   <th>판매자</th>
                   <th>등록일</th>
                   <th>수정일</th>
+                  <th>관리</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="12" className="admin-inquiry-empty">
+                    <td colSpan="13" className="admin-inquiry-empty">
                       상품 목록을 불러오는 중입니다.
                     </td>
                   </tr>
                 ) : products.length === 0 ? (
                   <tr>
-                    <td colSpan="12" className="admin-inquiry-empty">
+                    <td colSpan="13" className="admin-inquiry-empty">
                       상품 데이터가 없습니다.
                     </td>
                   </tr>
@@ -298,6 +389,42 @@ function AdminProductsPage() {
                       <td>{product.sellerNickname || product.sellerUserid || "-"}</td>
                       <td>{formatDate(product.createdAt)}</td>
                       <td>{formatDate(product.updatedAt)}</td>
+                      <td className="row-action-cell" onClick={(event) => event.stopPropagation()}>
+                        <button
+                          className="row-action-button"
+                          type="button"
+                          aria-expanded={openActionProductId === product.productId}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setOpenActionProductId((current) => (
+                              current === product.productId ? null : product.productId
+                            ));
+                          }}
+                        >
+                          관리
+                        </button>
+                        {openActionProductId === product.productId && (
+                          <div className="row-action-menu">
+                            {[
+                              { label: "상세보기" },
+                              {
+                                label: "상품숨김",
+                                disabled: product.productStatus === "DELETED",
+                              },
+                            ].map((action) => (
+                              <button
+                                type="button"
+                                key={action.label}
+                                disabled={action.disabled}
+                                title={action.disabled ? "이미 숨김 처리된 상품입니다." : undefined}
+                                onClick={() => handleActionMenuClick(action.label, product)}
+                              >
+                                {action.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </td>
                     </tr>
                   ))
                 )}
@@ -334,6 +461,110 @@ function AdminProductsPage() {
           </div>
         </section>
       </div>
+
+      {selectedProduct && (
+        <div className="admin-detail-modal-backdrop" role="presentation" onClick={() => setSelectedProduct(null)}>
+          <section
+            className="admin-detail-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-product-detail-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="admin-detail-modal-head">
+              <h2 id="admin-product-detail-title">상품 상세</h2>
+              <button type="button" aria-label="상품 상세 닫기" onClick={() => setSelectedProduct(null)}>
+                ×
+              </button>
+            </div>
+            <div className="admin-detail-media-row">
+              <ProductThumbnail product={selectedProduct} />
+              <div>
+                <strong>{selectedProduct.title || "-"}</strong>
+                <span>상품 ID {selectedProduct.productId ?? "-"}</span>
+              </div>
+            </div>
+            <dl className="admin-detail-grid">
+              <DetailItem label="상품 ID" value={selectedProduct.productId} />
+              <DetailItem label="상품명" value={selectedProduct.title} />
+              <DetailItem label="브랜드" value={selectedProduct.brandName} />
+              <DetailItem label="카테고리" value={selectedProduct.categoryPath || selectedProduct.categoryName} />
+              <DetailItem label="가격" value={formatPrice(selectedProduct.price)} />
+              <DetailItem
+                label="상품 상태"
+                value={PRODUCT_STATUS_LABELS[selectedProduct.productStatus] || selectedProduct.productStatus}
+              />
+              <DetailItem label="조회수" value={selectedProduct.viewCount ?? 0} />
+              <DetailItem label="찜 수" value={selectedProduct.wishlistCount ?? 0} />
+              <DetailItem label="판매자" value={selectedProduct.sellerNickname || selectedProduct.sellerUserid} />
+              <DetailItem label="등록일" value={formatDate(selectedProduct.createdAt)} />
+              <DetailItem label="수정일" value={formatDate(selectedProduct.updatedAt)} />
+              <DetailItem label="삭제 사유" value={selectedProduct.deletedReason} />
+              <DetailItem label="삭제일" value={formatDate(selectedProduct.deletedAt)} />
+            </dl>
+          </section>
+        </div>
+      )}
+
+      {selectedProductForHide && (
+        <div className="admin-detail-modal-backdrop" role="presentation" onClick={handleHideModalClose}>
+          <section
+            className="admin-detail-modal admin-hide-product-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-product-hide-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="admin-detail-modal-head">
+              <h2 id="admin-product-hide-title">상품숨김</h2>
+              <button type="button" aria-label="상품숨김 닫기" onClick={handleHideModalClose}>
+                ×
+              </button>
+            </div>
+            <form className="admin-detail-form" onSubmit={handleHideSubmit}>
+              <div className="admin-detail-media-row">
+                <ProductThumbnail product={selectedProductForHide} />
+                <div>
+                  <strong>{selectedProductForHide.title || "-"}</strong>
+                  <span>상품 ID {selectedProductForHide.productId ?? "-"}</span>
+                </div>
+              </div>
+
+              <label className="admin-detail-field" htmlFor="admin-product-hide-reason">
+                <span>숨김 사유</span>
+                <textarea
+                  id="admin-product-hide-reason"
+                  className="admin-detail-textarea"
+                  value={hideReason}
+                  maxLength={500}
+                  placeholder="관리자 상품 숨김 사유를 입력하세요."
+                  disabled={hideSubmitting}
+                  onChange={(event) => {
+                    setHideReason(event.target.value);
+                    setHideMessage("");
+                  }}
+                />
+              </label>
+              <div className="admin-detail-helper">{hideReason.length}/500</div>
+              {hideMessage && <p className="admin-detail-error">{hideMessage}</p>}
+
+              <div className="admin-detail-modal-actions">
+                <button
+                  className="admin-detail-secondary-button"
+                  type="button"
+                  disabled={hideSubmitting}
+                  onClick={handleHideModalClose}
+                >
+                  취소
+                </button>
+                <button className="admin-detail-danger-button" type="submit" disabled={hideSubmitting}>
+                  {hideSubmitting ? "처리 중" : "숨김 처리"}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

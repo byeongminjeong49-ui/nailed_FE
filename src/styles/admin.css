@@ -635,6 +635,59 @@
   overflow-x: hidden;
 }
 
+.admin-members-page .table-card,
+.admin-products-page .table-card,
+.admin-orders-page .table-card,
+.admin-reports-page .table-card,
+.admin-members-page .admin-content-main > .table-card .admin-table-wrap,
+.admin-products-page .admin-content-main > .table-card .admin-table-wrap,
+.admin-orders-page .admin-content-main > .table-card .admin-table-wrap,
+.admin-reports-page .admin-content-main > .table-card .admin-table-wrap {
+  max-height: none;
+  overflow: visible;
+}
+
+.admin-members-page .admin-table-wrap,
+.admin-products-page .admin-table-wrap,
+.admin-orders-page .admin-table-wrap,
+.admin-reports-page .admin-table-wrap {
+  overflow: visible;
+}
+
+.admin-members-page .admin-table,
+.admin-products-page .admin-table,
+.admin-orders-page .admin-table,
+.admin-reports-page .admin-table {
+  min-width: 0;
+  table-layout: fixed;
+}
+
+.admin-members-page .admin-table th,
+.admin-members-page .admin-table td,
+.admin-products-page .admin-table th,
+.admin-products-page .admin-table td,
+.admin-orders-page .admin-table th,
+.admin-orders-page .admin-table td,
+.admin-reports-page .admin-table th,
+.admin-reports-page .admin-table td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-members-page .admin-table td,
+.admin-products-page .admin-table td,
+.admin-orders-page .admin-table td,
+.admin-reports-page .admin-table td {
+  white-space: nowrap;
+}
+
+.admin-members-page .table-pagination,
+.admin-products-page .table-pagination,
+.admin-orders-page .table-pagination,
+.admin-reports-page .table-pagination {
+  border-top: 1px solid var(--admin-border);
+}
+
 .admin-products-page .table-card,
 .admin-orders-page .table-card,
 .admin-products-page .admin-content-main > .table-card .admin-table-wrap,
@@ -656,19 +709,52 @@
 .admin-orders-page .admin-table td {
   height: auto;
   min-height: 38px;
-  padding: 8px 7px;
+  padding: 8px 6px;
   line-height: 1.35;
   vertical-align: middle;
-  white-space: normal;
+  white-space: nowrap;
   word-break: keep-all;
-  overflow-wrap: anywhere;
+}
+
+.admin-members-page .admin-table th,
+.admin-members-page .admin-table td,
+.admin-reports-page .admin-table th,
+.admin-reports-page .admin-table td {
+  padding-inline: 8px;
+}
+
+.admin-members-page .admin-table th:nth-child(1),
+.admin-members-page .admin-table td:nth-child(1) {
+  width: 13%;
+}
+
+.admin-members-page .admin-table th:nth-child(4),
+.admin-members-page .admin-table td:nth-child(4) {
+  width: 8%;
+}
+
+.admin-members-page .admin-table th:nth-child(5),
+.admin-members-page .admin-table td:nth-child(5),
+.admin-members-page .admin-table th:nth-child(6),
+.admin-members-page .admin-table td:nth-child(6) {
+  width: 10%;
+}
+
+.admin-members-page .admin-table th:nth-child(7),
+.admin-members-page .admin-table td:nth-child(7) {
+  width: 96px;
+}
+
+.admin-members-page .admin-table th:nth-child(8),
+.admin-members-page .admin-table td:nth-child(8) {
+  width: 76px;
 }
 
 .admin-product-table th:nth-child(1),
 .admin-product-table td:nth-child(1),
 .admin-order-table th:nth-child(2),
 .admin-order-table td:nth-child(2) {
-  width: 52px;
+  width: 46px;
   text-align: center;
 }
 
@@ -676,7 +762,7 @@
 .admin-product-table td:nth-child(2),
 .admin-order-table th:nth-child(1),
 .admin-order-table td:nth-child(1) {
-  width: 8%;
+  width: 7%;
 }
 
 .admin-product-table th:nth-child(3),
@@ -692,15 +778,38 @@
 .admin-order-table td:nth-child(7),
 .admin-order-table th:nth-child(8),
 .admin-order-table td:nth-child(8) {
-  width: 8%;
+  width: 7%;
 }
 
 .admin-product-table th:nth-child(8),
 .admin-product-table td:nth-child(8),
 .admin-product-table th:nth-child(9),
 .admin-product-table td:nth-child(9) {
-  width: 5%;
+  width: 4%;
   text-align: center;
+}
+
+.admin-product-table th:nth-child(4),
+.admin-product-table td:nth-child(4),
+.admin-product-table th:nth-child(10),
+.admin-product-table td:nth-child(10),
+.admin-order-table th:nth-child(4),
+.admin-order-table td:nth-child(4),
+.admin-order-table th:nth-child(5),
+.admin-order-table td:nth-child(5) {
+  width: 8%;
+}
+
+.admin-product-table th:nth-child(5),
+.admin-product-table td:nth-child(5) {
+  width: 9%;
+}
+
+.admin-product-table th:nth-child(7),
+.admin-product-table td:nth-child(7),
+.admin-order-table th:nth-child(6),
+.admin-order-table td:nth-child(6) {
+  width: 7%;
 }
 
 .admin-product-table th:nth-child(11),
@@ -713,7 +822,54 @@
 .admin-order-table td:nth-child(10),
 .admin-order-table th:nth-child(11),
 .admin-order-table td:nth-child(11) {
+  width: 7%;
+}
+
+.admin-product-table th:nth-child(13),
+.admin-product-table td:nth-child(13),
+.admin-order-table th:nth-child(12),
+.admin-order-table td:nth-child(12),
+.admin-report-table th:nth-child(11),
+.admin-report-table td:nth-child(11) {
+  width: 76px;
+}
+
+.admin-report-table th:nth-child(1),
+.admin-report-table td:nth-child(1) {
   width: 8%;
+}
+
+.admin-report-table th:nth-child(2),
+.admin-report-table td:nth-child(2),
+.admin-report-table th:nth-child(4),
+.admin-report-table td:nth-child(4) {
+  width: 9%;
+}
+
+.admin-report-table th:nth-child(3),
+.admin-report-table td:nth-child(3),
+.admin-report-table th:nth-child(7),
+.admin-report-table td:nth-child(7) {
+  width: 8%;
+}
+
+.admin-report-table th:nth-child(5),
+.admin-report-table td:nth-child(5) {
+  width: 12%;
+}
+
+.admin-report-table th:nth-child(6),
+.admin-report-table td:nth-child(6),
+.admin-report-table th:nth-child(8),
+.admin-report-table td:nth-child(8) {
+  width: 13%;
+}
+
+.admin-report-table th:nth-child(9),
+.admin-report-table td:nth-child(9),
+.admin-report-table th:nth-child(10),
+.admin-report-table td:nth-child(10) {
+  width: 86px;
 }
 
 .status-badge {
@@ -772,6 +928,419 @@
   color: var(--admin-text);
   font-weight: 700;
   cursor: pointer;
+}
+
+.row-action-cell {
+  position: relative;
+  width: 76px;
+  overflow: visible;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.admin-members-page .admin-table td.row-action-cell,
+.admin-products-page .admin-table td.row-action-cell,
+.admin-orders-page .admin-table td.row-action-cell,
+.admin-reports-page .admin-table td.row-action-cell {
+  overflow: visible;
+}
+
+.admin-members-page .admin-table tbody tr:has(.row-action-button[aria-expanded="true"]),
+.admin-products-page .admin-table tbody tr:has(.row-action-button[aria-expanded="true"]),
+.admin-orders-page .admin-table tbody tr:has(.row-action-button[aria-expanded="true"]),
+.admin-reports-page .admin-table tbody tr:has(.row-action-button[aria-expanded="true"]) {
+  position: relative;
+  z-index: 60;
+}
+
+.row-action-button {
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  background: var(--admin-surface);
+  color: var(--admin-text);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.row-action-button:hover,
+.row-action-button[aria-expanded="true"] {
+  border-color: #bfdbfe;
+  color: var(--admin-primary);
+  background: #eff6ff;
+}
+
+.row-action-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 1000;
+  min-width: 118px;
+  padding: 6px;
+  display: grid;
+  gap: 3px;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  background: var(--admin-surface);
+  box-shadow: var(--admin-shadow);
+}
+
+.row-action-menu-wide {
+  min-width: 188px;
+}
+
+.row-action-menu button {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--admin-text);
+  font-size: 12px;
+  font-weight: 800;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.row-action-menu button:hover {
+  color: var(--admin-primary);
+  background: #eff6ff;
+}
+
+.row-action-menu button:disabled {
+  color: var(--admin-muted);
+  background: transparent;
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.admin-detail-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  padding: 24px;
+  display: grid;
+  place-items: center;
+  background: rgba(15, 23, 42, 0.42);
+}
+
+.admin-detail-modal {
+  width: min(720px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  background: var(--admin-surface);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+}
+
+.admin-detail-modal-head {
+  min-height: 58px;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.admin-detail-modal-head h2 {
+  margin: 0;
+  color: var(--admin-text);
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+.admin-detail-modal-head button {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  background: var(--admin-surface-muted);
+  color: var(--admin-text);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.admin-detail-grid {
+  margin: 0;
+  padding: 18px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-detail-grid-compact {
+  padding: 0;
+}
+
+.admin-detail-item {
+  min-width: 0;
+  padding: 12px;
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  background: var(--admin-surface-muted);
+}
+
+.admin-detail-item dt {
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.admin-detail-item dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--admin-text);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.admin-detail-media-row {
+  margin: 18px 18px 0;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  background: var(--admin-surface-muted);
+}
+
+.admin-detail-media-row strong,
+.admin-detail-media-row span {
+  display: block;
+}
+
+.admin-detail-media-row strong {
+  color: var(--admin-text);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.admin-detail-media-row span {
+  margin-top: 4px;
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.admin-detail-form {
+  padding: 0 18px 18px;
+  display: grid;
+  gap: 12px;
+}
+
+.admin-hide-product-modal {
+  width: min(560px, calc(100vw - 32px));
+}
+
+.admin-member-penalty-modal {
+  width: min(620px, calc(100vw - 32px));
+}
+
+.admin-member-penalty-history-modal {
+  width: min(900px, calc(100vw - 32px));
+}
+
+.admin-report-process-modal {
+  width: min(640px, calc(100vw - 32px));
+}
+
+.admin-order-cancel-modal {
+  width: min(640px, calc(100vw - 32px));
+}
+
+.admin-detail-field {
+  display: grid;
+  gap: 8px;
+  color: var(--admin-text);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.admin-detail-select {
+  height: 38px;
+  width: 100%;
+  padding: 0 12px;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  background: var(--admin-surface);
+  color: var(--admin-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.admin-detail-select:focus {
+  outline: 2px solid #bfdbfe;
+  border-color: var(--admin-primary);
+}
+
+.admin-detail-textarea {
+  min-height: 132px;
+  width: 100%;
+  padding: 12px;
+  resize: vertical;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  background: var(--admin-surface);
+  color: var(--admin-text);
+  font: inherit;
+  line-height: 1.5;
+}
+
+.admin-detail-textarea:focus {
+  outline: 2px solid #bfdbfe;
+  border-color: var(--admin-primary);
+}
+
+.admin-detail-helper {
+  margin-top: -6px;
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-align: right;
+}
+
+.admin-detail-error {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.admin-report-process-note {
+  padding: 10px 12px;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: var(--admin-primary);
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.45;
+}
+
+.admin-report-process-detail {
+  padding: 12px;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  background: var(--admin-surface-muted);
+}
+
+.admin-report-process-detail span {
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.admin-report-process-detail p {
+  margin: 6px 0 0;
+  color: var(--admin-text);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.admin-order-cancel-shipping-note {
+  padding: 10px 12px;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  background: #fff7ed;
+  color: #9a3412;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.45;
+}
+
+.admin-detail-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.admin-detail-secondary-button,
+.admin-detail-danger-button {
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.admin-detail-secondary-button {
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface);
+  color: var(--admin-text);
+}
+
+.admin-detail-danger-button {
+  border: 1px solid #dc2626;
+  background: #dc2626;
+  color: #fff;
+}
+
+.admin-detail-secondary-button:disabled,
+.admin-detail-danger-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.admin-penalty-history-list {
+  overflow-x: auto;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+}
+
+.admin-penalty-history-list table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--admin-surface);
+}
+
+.admin-penalty-history-list th,
+.admin-penalty-history-list td {
+  min-height: 34px;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--admin-border);
+  color: var(--admin-text);
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: left;
+  vertical-align: top;
+}
+
+.admin-penalty-history-list th {
+  background: var(--admin-surface-muted);
+  color: var(--admin-muted);
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.admin-penalty-history-list td {
+  font-weight: 800;
+}
+
+.admin-penalty-history-list td:nth-child(3) {
+  min-width: 180px;
+  overflow-wrap: anywhere;
+}
+
+.admin-penalty-history-list tr:last-child td {
+  border-bottom: 0;
 }
 
 .table-pagination {

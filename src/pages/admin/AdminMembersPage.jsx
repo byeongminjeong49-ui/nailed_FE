@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { fetchAdminMembers } from "../../api/adminApi";
+import {
+  createAdminMemberPenalty,
+  fetchAdminMembers,
+  getAdminMemberPenalties,
+} from "../../api/adminApi";
 
 const ROLE_LABELS = {
   ADMIN: "관리자",
@@ -29,6 +33,12 @@ const SELLER_GRADE_LABELS = {
   DIAMOND: "다이아몬드",
 };
 
+const PENALTY_TYPE_LABELS = {
+  WARNING: "경고",
+  SUSPEND: "기간정지",
+  BAN: "영구정지",
+};
+
 const PAGE_SIZE = 10;
 const MEMBER_ROLE = "USER";
 const DEFAULT_MEMBER_SORT = "";
@@ -56,6 +66,17 @@ function getPageNumbers(currentPage, totalPages) {
   );
 }
 
+function DetailItem({ label, value }) {
+  const displayValue = value ?? "-";
+
+  return (
+    <div className="admin-detail-item">
+      <dt>{label}</dt>
+      <dd>{displayValue === "" ? "-" : displayValue}</dd>
+    </div>
+  );
+}
+
 function AdminMembersPage() {
   const [keyword, setKeyword] = useState("");
   const [appliedKeyword, setAppliedKeyword] = useState("");
@@ -75,6 +96,20 @@ function AdminMembersPage() {
   });
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [openActionMemberId, setOpenActionMemberId] = useState(null);
+  const [selectedMember, setSelectedMember] = useState(null);
+  const [selectedPenaltyMember, setSelectedPenaltyMember] = useState(null);
+  const [penaltyType, setPenaltyType] = useState("WARNING");
+  const [penaltyReason, setPenaltyReason] = useState("");
+  const [penaltyDays, setPenaltyDays] = useState(7);
+  const [penaltyMessage, setPenaltyMessage] = useState("");
+  const [penaltySubmitting, setPenaltySubmitting] = useState(false);
+  const [selectedPenaltyHistoryMember, setSelectedPenaltyHistoryMember] = useState(null);
+  const [penaltyHistories, setPenaltyHistories] = useState([]);
+  const [penaltyHistoryLoading, setPenaltyHistoryLoading] = useState(false);
+  const [penaltyHistoryMessage, setPenaltyHistoryMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
 
   const pageNumbers = useMemo(
     () => getPageNumbers(pageInfo.pageNumber, pageInfo.totalPages),
@@ -134,7 +169,16 @@ function AdminMembersPage() {
     return () => {
       ignore = true;
     };
-  }, [appliedKeyword, appliedSort, page, sellerGrade, status]);
+  }, [appliedKeyword, appliedSort, page, sellerGrade, status, reloadKey]);
+
+  useEffect(() => {
+    function closeActionMenu() {
+      setOpenActionMemberId(null);
+    }
+
+    document.addEventListener("click", closeActionMenu);
+    return () => document.removeEventListener("click", closeActionMenu);
+  }, []);
 
   function handleSearchSubmit(event) {
     event.preventDefault();
@@ -158,6 +202,120 @@ function AdminMembersPage() {
     setSort(nextSort);
     setAppliedSort(nextSort);
     setPage(0);
+  }
+
+  function handleActionMenuClick(action, member) {
+    setOpenActionMemberId(null);
+    if (action === "상세보기") {
+      setSelectedMember(member);
+      return;
+    }
+
+    if (action === "제재등록") {
+      if (member?.status === "WITHDRAWN" || member?.status === "BANNED") {
+        setErrorMessage("탈퇴 또는 영구정지 회원은 제재등록을 할 수 없습니다.");
+        return;
+      }
+
+      setSelectedPenaltyMember(member);
+      setPenaltyType("WARNING");
+      setPenaltyReason("");
+      setPenaltyDays(7);
+      setPenaltyMessage("");
+      return;
+    }
+
+    if (action === "제재이력") {
+      openPenaltyHistoryModal(member);
+      return;
+    }
+
+    console.log("[admin members action]", action, member?.memberId);
+  }
+
+  function closePenaltyModal() {
+    if (penaltySubmitting) return;
+    setSelectedPenaltyMember(null);
+    setPenaltyType("WARNING");
+    setPenaltyReason("");
+    setPenaltyDays(7);
+    setPenaltyMessage("");
+  }
+
+  async function handlePenaltySubmit(event) {
+    event.preventDefault();
+
+    const reason = penaltyReason.trim();
+    if (!reason) {
+      setPenaltyMessage("제재 사유를 입력해주세요.");
+      return;
+    }
+
+    if (reason.length > 500) {
+      setPenaltyMessage("제재 사유는 500자 이내로 입력해주세요.");
+      return;
+    }
+
+    if (!selectedPenaltyMember?.memberId) {
+      setPenaltyMessage("회원 정보를 확인할 수 없습니다.");
+      return;
+    }
+
+    const payload = {
+      penaltyType,
+      reason,
+    };
+
+    if (penaltyType === "SUSPEND") {
+      payload.penaltyDays = Number(penaltyDays);
+    }
+
+    setPenaltySubmitting(true);
+    setPenaltyMessage("");
+
+    try {
+      await createAdminMemberPenalty(selectedPenaltyMember.memberId, payload);
+      setSelectedPenaltyMember(null);
+      setPenaltyType("WARNING");
+      setPenaltyReason("");
+      setPenaltyDays(7);
+      setSuccessMessage("회원 제재가 등록되었습니다.");
+      setReloadKey((current) => current + 1);
+    } catch (error) {
+      setPenaltyMessage(error.message || "회원 제재 등록에 실패했습니다.");
+    } finally {
+      setPenaltySubmitting(false);
+    }
+  }
+
+  async function openPenaltyHistoryModal(member) {
+    setSelectedPenaltyHistoryMember(member);
+    setPenaltyHistories([]);
+    setPenaltyHistoryMessage("");
+    setPenaltyHistoryLoading(true);
+
+    try {
+      const data = await getAdminMemberPenalties(member.memberId);
+      const histories = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.content)
+          ? data.content
+          : Array.isArray(data?.penalties)
+            ? data.penalties
+            : [];
+      setPenaltyHistories(histories);
+    } catch (error) {
+      setPenaltyHistoryMessage(error.message || "제재이력 조회에 실패했습니다.");
+    } finally {
+      setPenaltyHistoryLoading(false);
+    }
+  }
+
+  function closePenaltyHistoryModal() {
+    setSelectedPenaltyHistoryMember(null);
+    setPenaltyHistories([]);
+    setPenaltyHistoryMessage("");
+    setPenaltyHistoryLoading(false);
   }
 
   return (
@@ -223,6 +381,7 @@ function AdminMembersPage() {
           </div>
 
           {errorMessage && <p className="admin-inquiry-message">{errorMessage}</p>}
+          {successMessage && <p className="admin-inquiry-message is-success">{successMessage}</p>}
 
           <div className="admin-table-wrap">
             <table className="admin-table">
@@ -235,18 +394,19 @@ function AdminMembersPage() {
                   <th>판매등급</th>
                   <th>상태</th>
                   <th>가입일</th>
+                  <th>관리</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="7" className="admin-inquiry-empty">
+                    <td colSpan="8" className="admin-inquiry-empty">
                       회원 목록을 불러오는 중입니다.
                     </td>
                   </tr>
                 ) : members.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="admin-inquiry-empty">
+                    <td colSpan="8" className="admin-inquiry-empty">
                       회원 데이터가 없습니다.
                     </td>
                   </tr>
@@ -264,6 +424,41 @@ function AdminMembersPage() {
                         </span>
                       </td>
                       <td>{formatDate(member.createdAt)}</td>
+                      <td className="row-action-cell" onClick={(event) => event.stopPropagation()}>
+                        <button
+                          className="row-action-button"
+                          type="button"
+                          aria-expanded={openActionMemberId === member.memberId}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setOpenActionMemberId((current) => (current === member.memberId ? null : member.memberId));
+                          }}
+                        >
+                          관리
+                        </button>
+                        {openActionMemberId === member.memberId && (
+                          <div className="row-action-menu">
+                            {[
+                              { label: "상세보기" },
+                              {
+                                label: "제재등록",
+                                disabled: member.status === "WITHDRAWN" || member.status === "BANNED",
+                              },
+                              { label: "제재이력" },
+                            ].map((action) => (
+                              <button
+                                type="button"
+                                key={action.label}
+                                disabled={action.disabled}
+                                title={action.disabled ? "탈퇴 또는 영구정지 회원은 제재등록을 할 수 없습니다." : undefined}
+                                onClick={() => handleActionMenuClick(action.label, member)}
+                              >
+                                {action.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </td>
                     </tr>
                   ))
                 )}
@@ -300,6 +495,208 @@ function AdminMembersPage() {
           </div>
         </section>
       </div>
+
+      {selectedMember && (
+        <div className="admin-detail-modal-backdrop" role="presentation" onClick={() => setSelectedMember(null)}>
+          <section
+            className="admin-detail-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-member-detail-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="admin-detail-modal-head">
+              <h2 id="admin-member-detail-title">회원 상세</h2>
+              <button type="button" aria-label="회원 상세 닫기" onClick={() => setSelectedMember(null)}>
+                ×
+              </button>
+            </div>
+            <dl className="admin-detail-grid">
+              <DetailItem label="회원 ID" value={selectedMember.memberId} />
+              <DetailItem label="아이디" value={selectedMember.userid} />
+              <DetailItem label="닉네임" value={selectedMember.nickname} />
+              <DetailItem label="이름" value={selectedMember.name || selectedMember.memberName} />
+              <DetailItem label="권한" value={ROLE_LABELS[selectedMember.role] || selectedMember.role} />
+              <DetailItem
+                label="회원 상태"
+                value={STATUS_LABELS[selectedMember.status] || selectedMember.status}
+              />
+              <DetailItem label="판매등급" value={selectedMember.sellerGrade} />
+              <DetailItem label="가입일" value={formatDate(selectedMember.createdAt)} />
+              <DetailItem label="최근 수정일" value={formatDate(selectedMember.updatedAt)} />
+              <DetailItem label="최근 로그인일" value={formatDate(selectedMember.lastLoginAt)} />
+              <DetailItem label="로그인 횟수" value={selectedMember.loginCount} />
+              <DetailItem label="로그인 실패 횟수" value={selectedMember.loginFailCount} />
+            </dl>
+          </section>
+        </div>
+      )}
+
+      {selectedPenaltyMember && (
+        <div className="admin-detail-modal-backdrop" role="presentation" onClick={closePenaltyModal}>
+          <section
+            className="admin-detail-modal admin-member-penalty-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-member-penalty-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="admin-detail-modal-head">
+              <h2 id="admin-member-penalty-title">제재등록</h2>
+              <button type="button" aria-label="제재등록 닫기" onClick={closePenaltyModal}>
+                ×
+              </button>
+            </div>
+            <form className="admin-detail-form" onSubmit={handlePenaltySubmit}>
+              <dl className="admin-detail-grid admin-detail-grid-compact">
+                <DetailItem label="회원 ID" value={selectedPenaltyMember.memberId} />
+                <DetailItem label="아이디" value={selectedPenaltyMember.userid} />
+                <DetailItem label="닉네임" value={selectedPenaltyMember.nickname} />
+                <DetailItem
+                  label="현재 회원 상태"
+                  value={STATUS_LABELS[selectedPenaltyMember.status] || selectedPenaltyMember.status}
+                />
+              </dl>
+
+              <label className="admin-detail-field" htmlFor="admin-member-penalty-type">
+                <span>제재 유형</span>
+                <select
+                  id="admin-member-penalty-type"
+                  className="admin-detail-select"
+                  value={penaltyType}
+                  disabled={penaltySubmitting}
+                  onChange={(event) => {
+                    setPenaltyType(event.target.value);
+                    setPenaltyMessage("");
+                  }}
+                >
+                  <option value="WARNING">경고</option>
+                  <option value="SUSPEND">기간정지</option>
+                  <option value="BAN">영구정지</option>
+                </select>
+              </label>
+
+              {penaltyType === "SUSPEND" && (
+                <label className="admin-detail-field" htmlFor="admin-member-penalty-days">
+                  <span>정지 기간</span>
+                  <select
+                    id="admin-member-penalty-days"
+                    className="admin-detail-select"
+                    value={penaltyDays}
+                    disabled={penaltySubmitting}
+                    onChange={(event) => setPenaltyDays(Number(event.target.value))}
+                  >
+                    <option value={3}>3일</option>
+                    <option value={7}>7일</option>
+                    <option value={30}>30일</option>
+                  </select>
+                </label>
+              )}
+
+              <label className="admin-detail-field" htmlFor="admin-member-penalty-reason">
+                <span>제재 사유</span>
+                <textarea
+                  id="admin-member-penalty-reason"
+                  className="admin-detail-textarea"
+                  value={penaltyReason}
+                  maxLength={500}
+                  placeholder="제재 사유를 입력하세요."
+                  disabled={penaltySubmitting}
+                  onChange={(event) => {
+                    setPenaltyReason(event.target.value);
+                    setPenaltyMessage("");
+                  }}
+                />
+              </label>
+              <div className="admin-detail-helper">{penaltyReason.length}/500</div>
+              {penaltyMessage && <p className="admin-detail-error">{penaltyMessage}</p>}
+
+              <div className="admin-detail-modal-actions">
+                <button
+                  className="admin-detail-secondary-button"
+                  type="button"
+                  disabled={penaltySubmitting}
+                  onClick={closePenaltyModal}
+                >
+                  취소
+                </button>
+                <button className="admin-detail-danger-button" type="submit" disabled={penaltySubmitting}>
+                  {penaltySubmitting ? "등록 중" : "제재등록"}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
+
+      {selectedPenaltyHistoryMember && (
+        <div className="admin-detail-modal-backdrop" role="presentation" onClick={closePenaltyHistoryModal}>
+          <section
+            className="admin-detail-modal admin-member-penalty-history-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-member-penalty-history-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="admin-detail-modal-head">
+              <h2 id="admin-member-penalty-history-title">제재이력</h2>
+              <button type="button" aria-label="제재이력 닫기" onClick={closePenaltyHistoryModal}>
+                ×
+              </button>
+            </div>
+            <div className="admin-detail-form">
+              <dl className="admin-detail-grid admin-detail-grid-compact">
+                <DetailItem label="회원 ID" value={selectedPenaltyHistoryMember.memberId} />
+                <DetailItem label="아이디" value={selectedPenaltyHistoryMember.userid} />
+                <DetailItem label="닉네임" value={selectedPenaltyHistoryMember.nickname} />
+                <DetailItem
+                  label="현재 회원 상태"
+                  value={STATUS_LABELS[selectedPenaltyHistoryMember.status] || selectedPenaltyHistoryMember.status}
+                />
+              </dl>
+
+              {penaltyHistoryLoading ? (
+                <p className="admin-inquiry-empty">제재이력을 불러오는 중입니다.</p>
+              ) : penaltyHistoryMessage ? (
+                <p className="admin-detail-error">{penaltyHistoryMessage}</p>
+              ) : penaltyHistories.length === 0 ? (
+                <p className="admin-inquiry-empty">등록된 제재 이력이 없습니다.</p>
+              ) : (
+                <div className="admin-penalty-history-list">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>제재번호</th>
+                        <th>제재유형</th>
+                        <th>사유</th>
+                        <th>기간</th>
+                        <th>시작일</th>
+                        <th>종료일</th>
+                        <th>등록일</th>
+                        <th>신고ID</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {penaltyHistories.map((penalty) => (
+                        <tr key={penalty.penaltyId ?? `${penalty.memberId}-${penalty.createdAt}`}>
+                          <td>{penalty.penaltyId ?? "-"}</td>
+                          <td>{PENALTY_TYPE_LABELS[penalty.penaltyType] || penalty.penaltyType || "-"}</td>
+                          <td title={penalty.reason || ""}>{penalty.reason || "-"}</td>
+                          <td>{penalty.penaltyDays ? `${penalty.penaltyDays}일` : "-"}</td>
+                          <td>{formatDate(penalty.startsAt)}</td>
+                          <td>{formatDate(penalty.endsAt)}</td>
+                          <td>{formatDate(penalty.createdAt)}</td>
+                          <td>{penalty.reportId ?? "-"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

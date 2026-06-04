@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { getAdminOrders } from "../../api/adminApi";
+import { cancelAdminOrder, getAdminOrders } from "../../api/adminApi";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
@@ -21,6 +21,7 @@ const ORDER_STATUS_CLASS_NAMES = {
 
 const PAGE_SIZE = 10;
 const DEFAULT_ORDER_SORT = "";
+const ADMIN_CANCEL_ALLOWED_STATUSES = ["PAID", "REQUESTED", "SHIPPING"];
 
 function toAssetUrl(url) {
   if (!url) return "";
@@ -102,6 +103,17 @@ function OrderThumbnail({ order }) {
   );
 }
 
+function DetailItem({ label, value }) {
+  const displayValue = value ?? "-";
+
+  return (
+    <div className="admin-detail-item">
+      <dt>{label}</dt>
+      <dd>{displayValue === "" ? "-" : displayValue}</dd>
+    </div>
+  );
+}
+
 function AdminOrdersPage() {
   const [keyword, setKeyword] = useState("");
   const [appliedKeyword, setAppliedKeyword] = useState("");
@@ -120,6 +132,14 @@ function AdminOrdersPage() {
   });
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [openActionOrderId, setOpenActionOrderId] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [selectedCancelOrder, setSelectedCancelOrder] = useState(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelMessage, setCancelMessage] = useState("");
+  const [cancelSubmitting, setCancelSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
 
   const pageNumbers = useMemo(
     () => getPageNumbers(pageInfo.pageNumber, pageInfo.totalPages),
@@ -146,6 +166,11 @@ function AdminOrdersPage() {
 
         const content = Array.isArray(data?.content) ? data.content : [];
         setOrders(content);
+        setSelectedOrder((current) => {
+          if (!current?.orderId) return current;
+          const refreshedOrder = content.find((order) => order.orderId === current.orderId);
+          return refreshedOrder ? { ...current, ...refreshedOrder } : current;
+        });
         setPageInfo({
           pageNumber: data?.pageNumber ?? page,
           pageSize: data?.pageSize ?? PAGE_SIZE,
@@ -177,7 +202,16 @@ function AdminOrdersPage() {
     return () => {
       ignore = true;
     };
-  }, [appliedKeyword, appliedSort, orderStatus, page]);
+  }, [appliedKeyword, appliedSort, orderStatus, page, reloadKey]);
+
+  useEffect(() => {
+    function closeActionMenu() {
+      setOpenActionOrderId(null);
+    }
+
+    document.addEventListener("click", closeActionMenu);
+    return () => document.removeEventListener("click", closeActionMenu);
+  }, []);
 
   function handleSearchSubmit(event) {
     event.preventDefault();
@@ -196,6 +230,95 @@ function AdminOrdersPage() {
     setSort(nextSort);
     setAppliedSort(nextSort);
     setPage(0);
+  }
+
+  function handleActionMenuClick(action, order) {
+    setOpenActionOrderId(null);
+    if (action === "상세보기") {
+      setSelectedOrder(order);
+      return;
+    }
+
+    if (action === "관리자 권한 주문 강제 취소") {
+      if (!ADMIN_CANCEL_ALLOWED_STATUSES.includes(order?.orderStatus)) {
+        setErrorMessage("배송완료 또는 취소 주문은 관리자 권한으로 강제 취소할 수 없습니다.");
+        return;
+      }
+
+      setSelectedCancelOrder(order);
+      setCancelReason("");
+      setCancelMessage("");
+      return;
+    }
+
+    console.log("[admin orders action]", action, order?.orderId);
+  }
+
+  function updateCancelledOrder(updatedOrder, fallbackOrderId) {
+    const targetOrderId = updatedOrder?.orderId ?? fallbackOrderId;
+    if (!targetOrderId) return;
+
+    setOrders((current) => (
+      current.map((order) => (
+        order.orderId === targetOrderId
+          ? { ...order, ...updatedOrder }
+          : order
+      ))
+    ));
+
+    setSelectedOrder((current) => (
+      current?.orderId === targetOrderId
+        ? { ...current, ...updatedOrder }
+        : current
+    ));
+  }
+
+  function closeCancelModal() {
+    if (cancelSubmitting) return;
+    setSelectedCancelOrder(null);
+    setCancelReason("");
+    setCancelMessage("");
+  }
+
+  async function handleCancelSubmit(event) {
+    event.preventDefault();
+
+    const reason = cancelReason.trim();
+    if (!reason) {
+      setCancelMessage("주문 강제 취소 사유를 입력해주세요.");
+      return;
+    }
+
+    if (reason.length > 500) {
+      setCancelMessage("주문 강제 취소 사유는 500자 이내로 입력해주세요.");
+      return;
+    }
+
+    if (!selectedCancelOrder?.orderId) {
+      setCancelMessage("주문 정보를 확인할 수 없습니다.");
+      return;
+    }
+
+    if (!ADMIN_CANCEL_ALLOWED_STATUSES.includes(selectedCancelOrder.orderStatus)) {
+      setCancelMessage("배송완료 또는 취소 주문은 관리자 권한으로 강제 취소할 수 없습니다.");
+      return;
+    }
+
+    setCancelSubmitting(true);
+    setCancelMessage("");
+
+    try {
+      const updatedOrder = await cancelAdminOrder(selectedCancelOrder.orderId, reason);
+      updateCancelledOrder(updatedOrder, selectedCancelOrder.orderId);
+      setSelectedCancelOrder(null);
+      setCancelReason("");
+      setSuccessMessage("주문 강제 취소가 완료되었습니다.");
+      setReloadKey((current) => current + 1);
+    } catch (error) {
+      setCancelMessage(error.message || "주문 강제 취소에 실패했습니다.");
+    } finally {
+      setCancelSubmitting(false);
+    }
   }
 
   return (
@@ -251,6 +374,7 @@ function AdminOrdersPage() {
           </div>
 
           {errorMessage && <p className="admin-inquiry-message">{errorMessage}</p>}
+          {successMessage && <p className="admin-inquiry-message is-success">{successMessage}</p>}
 
           <div className="admin-table-wrap">
             <table className="admin-table admin-order-table">
@@ -267,18 +391,19 @@ function AdminOrdersPage() {
                   <th>결제일</th>
                   <th>완료일</th>
                   <th>수정일</th>
+                  <th>관리</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="11" className="admin-inquiry-empty">
+                    <td colSpan="12" className="admin-inquiry-empty">
                       주문 목록을 불러오는 중입니다.
                     </td>
                   </tr>
                 ) : orders.length === 0 ? (
                   <tr>
-                    <td colSpan="11" className="admin-inquiry-empty">
+                    <td colSpan="12" className="admin-inquiry-empty">
                       주문 데이터가 없습니다.
                     </td>
                   </tr>
@@ -309,6 +434,42 @@ function AdminOrdersPage() {
                       <td>{formatDate(order.paidAt)}</td>
                       <td>{formatDate(order.completedAt)}</td>
                       <td>{formatDate(order.updatedAt)}</td>
+                      <td className="row-action-cell" onClick={(event) => event.stopPropagation()}>
+                        <button
+                          className="row-action-button"
+                          type="button"
+                          aria-expanded={openActionOrderId === order.orderId}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setOpenActionOrderId((current) => (current === order.orderId ? null : order.orderId));
+                          }}
+                        >
+                          관리
+                        </button>
+                        {openActionOrderId === order.orderId && (
+                          <div className="row-action-menu row-action-menu-wide">
+                            {[
+                              { label: "상세보기" },
+                              { label: "배송정보" },
+                              { label: "구매자·판매자 정보" },
+                              {
+                                label: "관리자 권한 주문 강제 취소",
+                                disabled: !ADMIN_CANCEL_ALLOWED_STATUSES.includes(order.orderStatus),
+                              },
+                            ].map((action) => (
+                              <button
+                                type="button"
+                                key={action.label}
+                                disabled={action.disabled}
+                                title={action.disabled ? "배송완료 또는 취소 주문은 강제 취소할 수 없습니다." : undefined}
+                                onClick={() => handleActionMenuClick(action.label, order)}
+                              >
+                                {action.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </td>
                     </tr>
                   ))
                 )}
@@ -345,6 +506,127 @@ function AdminOrdersPage() {
           </div>
         </section>
       </div>
+
+      {selectedOrder && (
+        <div className="admin-detail-modal-backdrop" role="presentation" onClick={() => setSelectedOrder(null)}>
+          <section
+            className="admin-detail-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-order-detail-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="admin-detail-modal-head">
+              <h2 id="admin-order-detail-title">주문 상세</h2>
+              <button type="button" aria-label="주문 상세 닫기" onClick={() => setSelectedOrder(null)}>
+                ×
+              </button>
+            </div>
+            <div className="admin-detail-media-row">
+              <OrderThumbnail order={selectedOrder} />
+              <div>
+                <strong>{selectedOrder.productTitle || "-"}</strong>
+                <span>주문번호 {selectedOrder.orderId || "-"}</span>
+              </div>
+            </div>
+            <dl className="admin-detail-grid">
+              <DetailItem label="주문번호" value={selectedOrder.orderId} />
+              <DetailItem label="상품명" value={selectedOrder.productTitle} />
+              <DetailItem label="상품 ID" value={selectedOrder.productId} />
+              <DetailItem label="구매자" value={selectedOrder.buyerNickname || selectedOrder.buyerUserid} />
+              <DetailItem label="판매자" value={selectedOrder.sellerNickname || selectedOrder.sellerUserid} />
+              <DetailItem
+                label="주문상태"
+                value={ORDER_STATUS_LABELS[selectedOrder.orderStatus] || selectedOrder.orderStatus}
+              />
+              <DetailItem label="상품금액" value={formatPrice(selectedOrder.product?.price)} />
+              <DetailItem label="최종결제금액" value={formatPrice(selectedOrder.finalPrice)} />
+              <DetailItem label="결제일" value={formatDate(selectedOrder.paidAt)} />
+              <DetailItem label="주문접수일" value={formatDate(selectedOrder.requestedAt)} />
+              <DetailItem label="배송일" value={formatDate(selectedOrder.shippedAt)} />
+              <DetailItem label="완료일" value={formatDate(selectedOrder.completedAt)} />
+              <DetailItem label="수정일" value={formatDate(selectedOrder.updatedAt)} />
+              <DetailItem label="취소일" value={formatDate(selectedOrder.cancelledAt)} />
+              <DetailItem label="취소사유" value={selectedOrder.cancelReason || selectedOrder.cancelRequestReason} />
+            </dl>
+          </section>
+        </div>
+      )}
+
+      {selectedCancelOrder && (
+        <div className="admin-detail-modal-backdrop" role="presentation" onClick={closeCancelModal}>
+          <section
+            className="admin-detail-modal admin-order-cancel-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-order-cancel-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="admin-detail-modal-head">
+              <h2 id="admin-order-cancel-title">관리자 권한 주문 강제 취소</h2>
+              <button type="button" aria-label="주문 강제 취소 닫기" onClick={closeCancelModal}>
+                ×
+              </button>
+            </div>
+            <form className="admin-detail-form" onSubmit={handleCancelSubmit}>
+              <dl className="admin-detail-grid admin-detail-grid-compact">
+                <DetailItem label="주문번호" value={selectedCancelOrder.orderId} />
+                <DetailItem label="상품명" value={selectedCancelOrder.productTitle || selectedCancelOrder.title} />
+                <DetailItem label="구매자" value={selectedCancelOrder.buyerNickname || selectedCancelOrder.buyerUserid || selectedCancelOrder.buyerName} />
+                <DetailItem label="판매자" value={selectedCancelOrder.sellerNickname || selectedCancelOrder.sellerUserid || selectedCancelOrder.sellerName} />
+                <DetailItem
+                  label="현재 주문상태"
+                  value={ORDER_STATUS_LABELS[selectedCancelOrder.orderStatus] || selectedCancelOrder.orderStatus}
+                />
+                <DetailItem label="최종결제금액" value={formatPrice(selectedCancelOrder.finalPrice)} />
+              </dl>
+
+              <div className="admin-report-process-note">
+                관리자 권한으로 주문을 강제 취소합니다.<br />
+                취소 후 주문 상태는 CANCELLED로 변경되며, 연결 상품은 판매중 상태로 복구됩니다.
+              </div>
+
+              {selectedCancelOrder.orderStatus === "SHIPPING" && (
+                <div className="admin-order-cancel-shipping-note">
+                  배송정보는 분쟁 기록 확인을 위해 유지됩니다.
+                </div>
+              )}
+
+              <label className="admin-detail-field" htmlFor="admin-order-cancel-reason">
+                <span>취소 사유</span>
+                <textarea
+                  id="admin-order-cancel-reason"
+                  className="admin-detail-textarea"
+                  value={cancelReason}
+                  maxLength={500}
+                  placeholder="관리자 권한 주문 강제 취소 사유를 입력하세요."
+                  disabled={cancelSubmitting}
+                  onChange={(event) => {
+                    setCancelReason(event.target.value);
+                    setCancelMessage("");
+                  }}
+                />
+              </label>
+              <div className="admin-detail-helper">{cancelReason.length}/500</div>
+              {cancelMessage && <p className="admin-detail-error">{cancelMessage}</p>}
+
+              <div className="admin-detail-modal-actions">
+                <button
+                  className="admin-detail-secondary-button"
+                  type="button"
+                  disabled={cancelSubmitting}
+                  onClick={closeCancelModal}
+                >
+                  취소
+                </button>
+                <button className="admin-detail-danger-button" type="submit" disabled={cancelSubmitting}>
+                  {cancelSubmitting ? "처리 중" : "강제 취소"}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

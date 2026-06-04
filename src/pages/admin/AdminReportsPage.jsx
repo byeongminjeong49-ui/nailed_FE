@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { getAdminOrders, getAdminProducts, getAdminReports } from "../../api/adminApi";
+import {
+  getAdminOrders,
+  getAdminProducts,
+  getAdminReports,
+  penalizeAdminReport,
+  rejectAdminReport,
+} from "../../api/adminApi";
 
 const TARGET_TYPE_LABELS = {
   MEMBER: "회원",
@@ -47,6 +53,12 @@ const SELLER_GRADE_LABELS = {
   SILVER: "실버",
   GOLD: "골드",
   DIAMOND: "다이아몬드",
+};
+
+const PENALTY_TYPE_LABELS = {
+  WARNING: "경고",
+  SUSPEND: "기간정지",
+  BAN: "영구정지",
 };
 
 const PAGE_SIZE = 10;
@@ -191,6 +203,10 @@ function getTargetSellerGrade(report) {
   ]);
 }
 
+function getReportDetailText(report) {
+  return getFirstValue(report, ["detail", "description", "content"]);
+}
+
 function isSameReportTarget(report, targetReport) {
   const selectedId = String(getTargetMemberId(report) || "").trim();
   const selectedName = String(getTargetMemberName(report) || "").trim();
@@ -252,6 +268,15 @@ function SummaryPagination({ page, totalPages, onChange }) {
 function DetailItem({ label, value }) {
   return (
     <div>
+      <dt>{label}</dt>
+      <dd>{value || "-"}</dd>
+    </div>
+  );
+}
+
+function ModalDetailItem({ label, value }) {
+  return (
+    <div className="admin-detail-item">
       <dt>{label}</dt>
       <dd>{value || "-"}</dd>
     </div>
@@ -428,6 +453,19 @@ function AdminReportsPage() {
   const [targetReports, setTargetReports] = useState([]);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailMessage, setDetailMessage] = useState("");
+  const [openActionReportId, setOpenActionReportId] = useState(null);
+  const [selectedRejectReport, setSelectedRejectReport] = useState(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectMessage, setRejectMessage] = useState("");
+  const [rejectSubmitting, setRejectSubmitting] = useState(false);
+  const [selectedPenalizeReport, setSelectedPenalizeReport] = useState(null);
+  const [penaltyType, setPenaltyType] = useState("WARNING");
+  const [penaltyReason, setPenaltyReason] = useState("");
+  const [penaltyDays, setPenaltyDays] = useState(7);
+  const [penaltyMessage, setPenaltyMessage] = useState("");
+  const [penaltySubmitting, setPenaltySubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
   const [pageInfo, setPageInfo] = useState({
     pageNumber: 0,
     pageSize: 10,
@@ -465,7 +503,13 @@ function AdminReportsPage() {
         if (ignore) return;
 
         const content = Array.isArray(data?.content) ? data.content : [];
-        setReports(content.filter((report) => !report?.targetType || report.targetType === REPORT_TARGET_TYPE));
+        const filteredReports = content.filter((report) => !report?.targetType || report.targetType === REPORT_TARGET_TYPE);
+        setReports(filteredReports);
+        setSelectedReport((current) => {
+          if (!current?.reportId) return current;
+          const refreshedReport = filteredReports.find((report) => report.reportId === current.reportId);
+          return refreshedReport ? { ...current, ...refreshedReport } : current;
+        });
         setPageInfo({
           pageNumber: data?.pageNumber ?? page,
           pageSize: data?.pageSize ?? PAGE_SIZE,
@@ -497,7 +541,16 @@ function AdminReportsPage() {
     return () => {
       ignore = true;
     };
-  }, [appliedKeyword, appliedSort, page, reasonCode, status]);
+  }, [appliedKeyword, appliedSort, page, reasonCode, status, reloadKey]);
+
+  useEffect(() => {
+    function closeActionMenu() {
+      setOpenActionReportId(null);
+    }
+
+    document.addEventListener("click", closeActionMenu);
+    return () => document.removeEventListener("click", closeActionMenu);
+  }, []);
 
   useEffect(() => {
     let ignore = false;
@@ -587,8 +640,162 @@ function AdminReportsPage() {
     setPage(0);
   }
 
+  function handleActionMenuClick(action, report) {
+    setOpenActionReportId(null);
+    if (action === "상세보기") {
+      setSelectedReport(report);
+      return;
+    }
+
+    if (action === "반려처리") {
+      if (report?.status !== "APPROVED") {
+        setErrorMessage("승인 상태의 신고만 반려처리할 수 있습니다.");
+        return;
+      }
+
+      setSelectedRejectReport(report);
+      setRejectReason("");
+      setRejectMessage("");
+      return;
+    }
+
+    if (action === "제재처리") {
+      if (report?.status !== "APPROVED") {
+        setErrorMessage("승인 상태의 신고만 제재처리할 수 있습니다.");
+        return;
+      }
+
+      setSelectedPenalizeReport(report);
+      setPenaltyType("WARNING");
+      setPenaltyReason("");
+      setPenaltyDays(7);
+      setPenaltyMessage("");
+      return;
+    }
+
+    console.log("[admin reports action]", action, report?.reportId);
+  }
+
+  function updateProcessedReport(updatedReport, fallbackReportId) {
+    const targetReportId = updatedReport?.reportId ?? fallbackReportId;
+    if (!targetReportId) return;
+
+    setReports((current) => (
+      current.map((report) => (
+        report.reportId === targetReportId
+          ? { ...report, ...updatedReport }
+          : report
+      ))
+    ));
+
+    setSelectedReport((current) => (
+      current?.reportId === targetReportId
+        ? { ...current, ...updatedReport }
+        : current
+    ));
+  }
+
+  function closeRejectModal() {
+    if (rejectSubmitting) return;
+    setSelectedRejectReport(null);
+    setRejectReason("");
+    setRejectMessage("");
+  }
+
+  async function handleRejectSubmit(event) {
+    event.preventDefault();
+
+    const reason = rejectReason.trim();
+    if (!reason) {
+      setRejectMessage("반려 사유를 입력해주세요.");
+      return;
+    }
+
+    if (reason.length > 500) {
+      setRejectMessage("반려 사유는 500자 이내로 입력해주세요.");
+      return;
+    }
+
+    if (!selectedRejectReport?.reportId) {
+      setRejectMessage("신고 정보를 확인할 수 없습니다.");
+      return;
+    }
+
+    setRejectSubmitting(true);
+    setRejectMessage("");
+
+    try {
+      const updatedReport = await rejectAdminReport(selectedRejectReport.reportId, reason);
+      updateProcessedReport(updatedReport, selectedRejectReport.reportId);
+      setSelectedRejectReport(null);
+      setRejectReason("");
+      setSuccessMessage("신고 반려처리가 완료되었습니다.");
+      setReloadKey((current) => current + 1);
+    } catch (error) {
+      setRejectMessage(error.message || "신고 반려처리에 실패했습니다.");
+    } finally {
+      setRejectSubmitting(false);
+    }
+  }
+
+  function closePenalizeModal() {
+    if (penaltySubmitting) return;
+    setSelectedPenalizeReport(null);
+    setPenaltyType("WARNING");
+    setPenaltyReason("");
+    setPenaltyDays(7);
+    setPenaltyMessage("");
+  }
+
+  async function handlePenalizeSubmit(event) {
+    event.preventDefault();
+
+    const reason = penaltyReason.trim();
+    if (!reason) {
+      setPenaltyMessage("제재 사유를 입력해주세요.");
+      return;
+    }
+
+    if (reason.length > 500) {
+      setPenaltyMessage("제재 사유는 500자 이내로 입력해주세요.");
+      return;
+    }
+
+    if (!selectedPenalizeReport?.reportId) {
+      setPenaltyMessage("신고 정보를 확인할 수 없습니다.");
+      return;
+    }
+
+    const payload = {
+      penaltyType,
+      reason,
+    };
+
+    if (penaltyType === "SUSPEND") {
+      payload.penaltyDays = Number(penaltyDays);
+    }
+
+    setPenaltySubmitting(true);
+    setPenaltyMessage("");
+
+    try {
+      const updatedReport = await penalizeAdminReport(selectedPenalizeReport.reportId, payload);
+      updateProcessedReport(updatedReport, selectedPenalizeReport.reportId);
+      setSelectedPenalizeReport(null);
+      setPenaltyType("WARNING");
+      setPenaltyReason("");
+      setPenaltyDays(7);
+      setSuccessMessage("신고 제재처리가 완료되었습니다.");
+      setReloadKey((current) => current + 1);
+    } catch (error) {
+      setPenaltyMessage(error.message || "신고 제재처리에 실패했습니다.");
+    } finally {
+      setPenaltySubmitting(false);
+    }
+  }
+
   return (
-    <div className="admin-page">
+    <div className="admin-page admin-reports-page">
       <div className="admin-content-main">
         <section className="admin-card search-filter-card">
           <form className="filter-row admin-filter-row-report" onSubmit={handleSearchSubmit}>
@@ -649,9 +856,10 @@ function AdminReportsPage() {
           </div>
 
           {errorMessage && <p className="admin-inquiry-message">{errorMessage}</p>}
+          {successMessage && <p className="admin-inquiry-message is-success">{successMessage}</p>}
 
           <div className="admin-table-wrap">
-            <table className="admin-table" style={{ minWidth: 1180 }}>
+            <table className="admin-table admin-report-table">
               <thead>
                 <tr>
                   <th>신고번호</th>
@@ -664,18 +872,19 @@ function AdminReportsPage() {
                   <th>처리 사유</th>
                   <th>처리일</th>
                   <th>신고일</th>
+                  <th>관리</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="10" className="admin-inquiry-empty">
+                    <td colSpan="11" className="admin-inquiry-empty">
                       신고 목록을 불러오는 중입니다.
                     </td>
                   </tr>
                 ) : reports.length === 0 ? (
                   <tr>
-                    <td colSpan="10" className="admin-inquiry-empty">
+                    <td colSpan="11" className="admin-inquiry-empty">
                       신고 데이터가 없습니다.
                     </td>
                   </tr>
@@ -710,6 +919,44 @@ function AdminReportsPage() {
                       <td title={report.processedReason || ""}>{report.processedReason || "-"}</td>
                       <td>{formatDate(report.processedAt)}</td>
                       <td>{formatDate(report.createdAt)}</td>
+                      <td
+                        className="row-action-cell"
+                        onClick={(event) => event.stopPropagation()}
+                        onKeyDown={(event) => event.stopPropagation()}
+                      >
+                        <button
+                          className="row-action-button"
+                          type="button"
+                          aria-expanded={openActionReportId === report.reportId}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setOpenActionReportId((current) => (
+                              current === report.reportId ? null : report.reportId
+                            ));
+                          }}
+                        >
+                          관리
+                        </button>
+                        {openActionReportId === report.reportId && (
+                          <div className="row-action-menu">
+                            {[
+                              { label: "상세보기" },
+                              { label: "반려처리", disabled: report.status !== "APPROVED" },
+                              { label: "제재처리", disabled: report.status !== "APPROVED" },
+                            ].map((action) => (
+                              <button
+                                type="button"
+                                key={action.label}
+                                disabled={action.disabled}
+                                title={action.disabled ? "승인 상태의 신고만 처리할 수 있습니다." : undefined}
+                                onClick={() => handleActionMenuClick(action.label, report)}
+                              >
+                                {action.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </td>
                     </tr>
                   ))
                 )}
@@ -756,6 +1003,171 @@ function AdminReportsPage() {
           onClose={() => setSelectedReport(null)}
         />
       </div>
+
+      {selectedRejectReport && (
+        <div className="admin-detail-modal-backdrop" role="presentation" onClick={closeRejectModal}>
+          <section
+            className="admin-detail-modal admin-report-process-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-report-reject-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="admin-detail-modal-head">
+              <h2 id="admin-report-reject-title">반려처리</h2>
+              <button type="button" aria-label="반려처리 닫기" onClick={closeRejectModal}>
+                ×
+              </button>
+            </div>
+            <form className="admin-detail-form" onSubmit={handleRejectSubmit}>
+              <dl className="admin-detail-grid admin-detail-grid-compact">
+                <ModalDetailItem label="신고 ID" value={selectedRejectReport.reportId} />
+                <ModalDetailItem label="신고자" value={selectedRejectReport.reporterNickname || selectedRejectReport.reporterUserid} />
+                <ModalDetailItem label="신고 대상 회원" value={getTargetMemberName(selectedRejectReport)} />
+                <ModalDetailItem label="신고 사유" value={REASON_LABELS[selectedRejectReport.reasonCode] || selectedRejectReport.reasonCode} />
+                <ModalDetailItem label="현재 처리 상태" value={REPORT_STATUS_LABELS[selectedRejectReport.status] || selectedRejectReport.status} />
+              </dl>
+
+              <label className="admin-detail-field" htmlFor="admin-report-reject-reason">
+                <span>반려 사유</span>
+                <textarea
+                  id="admin-report-reject-reason"
+                  className="admin-detail-textarea"
+                  value={rejectReason}
+                  maxLength={500}
+                  placeholder="반려 사유를 입력하세요."
+                  disabled={rejectSubmitting}
+                  onChange={(event) => {
+                    setRejectReason(event.target.value);
+                    setRejectMessage("");
+                  }}
+                />
+              </label>
+              <div className="admin-detail-helper">{rejectReason.length}/500</div>
+              {rejectMessage && <p className="admin-detail-error">{rejectMessage}</p>}
+
+              <div className="admin-detail-modal-actions">
+                <button
+                  className="admin-detail-secondary-button"
+                  type="button"
+                  disabled={rejectSubmitting}
+                  onClick={closeRejectModal}
+                >
+                  취소
+                </button>
+                <button className="admin-detail-danger-button" type="submit" disabled={rejectSubmitting}>
+                  {rejectSubmitting ? "처리 중" : "반려처리"}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
+
+      {selectedPenalizeReport && (
+        <div className="admin-detail-modal-backdrop" role="presentation" onClick={closePenalizeModal}>
+          <section
+            className="admin-detail-modal admin-report-process-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-report-penalize-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="admin-detail-modal-head">
+              <h2 id="admin-report-penalize-title">제재처리</h2>
+              <button type="button" aria-label="제재처리 닫기" onClick={closePenalizeModal}>
+                ×
+              </button>
+            </div>
+            <form className="admin-detail-form" onSubmit={handlePenalizeSubmit}>
+              <dl className="admin-detail-grid admin-detail-grid-compact">
+                <ModalDetailItem label="신고 ID" value={selectedPenalizeReport.reportId} />
+                <ModalDetailItem label="신고 대상 회원" value={getTargetMemberName(selectedPenalizeReport)} />
+                <ModalDetailItem label="신고 사유" value={REASON_LABELS[selectedPenalizeReport.reasonCode] || selectedPenalizeReport.reasonCode} />
+                <ModalDetailItem label="현재 처리 상태" value={REPORT_STATUS_LABELS[selectedPenalizeReport.status] || selectedPenalizeReport.status} />
+              </dl>
+
+              <div className="admin-report-process-note">
+                신고 대상 회원에게 제재가 적용됩니다.
+              </div>
+
+              {getReportDetailText(selectedPenalizeReport) && (
+                <div className="admin-report-process-detail">
+                  <span>신고 상세 내용</span>
+                  <p>{getReportDetailText(selectedPenalizeReport)}</p>
+                </div>
+              )}
+
+              <label className="admin-detail-field" htmlFor="admin-report-penalty-type">
+                <span>제재 유형</span>
+                <select
+                  id="admin-report-penalty-type"
+                  className="admin-detail-select"
+                  value={penaltyType}
+                  disabled={penaltySubmitting}
+                  onChange={(event) => {
+                    setPenaltyType(event.target.value);
+                    setPenaltyMessage("");
+                  }}
+                >
+                  {Object.entries(PENALTY_TYPE_LABELS).map(([value, label]) => (
+                    <option value={value} key={value}>{label}</option>
+                  ))}
+                </select>
+              </label>
+
+              {penaltyType === "SUSPEND" && (
+                <label className="admin-detail-field" htmlFor="admin-report-penalty-days">
+                  <span>정지 기간</span>
+                  <select
+                    id="admin-report-penalty-days"
+                    className="admin-detail-select"
+                    value={penaltyDays}
+                    disabled={penaltySubmitting}
+                    onChange={(event) => setPenaltyDays(Number(event.target.value))}
+                  >
+                    <option value={3}>3일</option>
+                    <option value={7}>7일</option>
+                    <option value={30}>30일</option>
+                  </select>
+                </label>
+              )}
+
+              <label className="admin-detail-field" htmlFor="admin-report-penalty-reason">
+                <span>제재 사유</span>
+                <textarea
+                  id="admin-report-penalty-reason"
+                  className="admin-detail-textarea"
+                  value={penaltyReason}
+                  maxLength={500}
+                  placeholder="제재 사유를 입력하세요."
+                  disabled={penaltySubmitting}
+                  onChange={(event) => {
+                    setPenaltyReason(event.target.value);
+                    setPenaltyMessage("");
+                  }}
+                />
+              </label>
+              <div className="admin-detail-helper">{penaltyReason.length}/500</div>
+              {penaltyMessage && <p className="admin-detail-error">{penaltyMessage}</p>}
+
+              <div className="admin-detail-modal-actions">
+                <button
+                  className="admin-detail-secondary-button"
+                  type="button"
+                  disabled={penaltySubmitting}
+                  onClick={closePenalizeModal}
+                >
+                  취소
+                </button>
+                <button className="admin-detail-danger-button" type="submit" disabled={penaltySubmitting}>
+                  {penaltySubmitting ? "처리 중" : "제재처리"}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
     </div>
   );
 }
