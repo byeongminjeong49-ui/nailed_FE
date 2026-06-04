@@ -169,22 +169,38 @@ function formatWon(value) {
 }
 
 function normalizeProduct(product) {
-  const isSold = Boolean(product?.isSold);
+  const productStatus = String(
+    product?.productStatus ||
+    product?.product_status ||
+    ""
+  ).toUpperCase();
+
+  const orderStatus = String(
+    product?.orderStatus ||
+    product?.order_status ||
+    ""
+  ).toUpperCase();
+
+  const isSold =
+    Boolean(product?.isSold) ||
+    Boolean(product?.is_sold) ||
+    productStatus === "SOLD";
+
   return {
     ...product,
-    productId: product?.productId,
-    title: product?.title || product?.productTitle || "상품명 없음",
-    price: Number(product?.price ?? product?.finalPrice ?? 0),
-    productStatus: product?.productStatus || "",
-    orderStatus: product?.orderStatus || "",
+    productId: product?.productId ?? product?.product_id,
+    title: product?.title || product?.productTitle || product?.product_title || "상품명 없음",
+    price: Number(product?.price ?? product?.finalPrice ?? product?.final_price ?? 0),
+    productStatus,
+    orderStatus,
     isSold,
-    conditionLabel: product?.conditionLabel || product?.conditionCode || "",
-    brandName: product?.brandName || "",
+    conditionLabel: product?.conditionLabel || product?.conditionCode || product?.condition_code || "",
+    brandName: product?.brandName || product?.brand_name || "",
     size: product?.size || "",
-    categoryCode: product?.categoryCode || "",
-    categoryName: product?.categoryName || "",
-    categoryPath: product?.categoryPath || "",
-    wishlistCount: product?.wishlistCount ?? 0,
+    categoryCode: product?.categoryCode || product?.category_code || "",
+    categoryName: product?.categoryName || product?.category_name || "",
+    categoryPath: product?.categoryPath || product?.category_path || "",
+    wishlistCount: product?.wishlistCount ?? product?.wishlist_count ?? 0,
   };
 }
 function getProfileImageUrl(profile) {
@@ -556,7 +572,17 @@ function ProductsTab({ products, emptyMessage = "조건에 맞는 상품이 없�
 }
 
 function isSoldProduct(product) {
-  return Boolean(product?.isSold);
+  const productStatus = String(
+    product?.productStatus ||
+    product?.product_status ||
+    ""
+  ).toUpperCase();
+
+  return (
+    Boolean(product?.isSold) ||
+    Boolean(product?.is_sold) ||
+    productStatus === "SOLD"
+  );
 }
 
 function matchesGender(product, gender) {
@@ -779,11 +805,16 @@ function SellingTab() {
     onClick={() => s.productId && navigate(`/product/${s.productId}`)}
    style={{ cursor: s.productId ? 'pointer' : 'default' }}
   >
+  <div style={{ position: "relative" }}>
   {imageUrl ? (
     <img className="up-settlement-img" src={imageUrl} alt={s.productTitle} />
   ) : (
     <div className="up-settlement-no-img">NO IMAGE</div>
   )}
+  {(s.orderStatus === "DELIVERED" || s.orderStatus === "SHIPPING") && (
+  <div className="up-card-sold">SOLD</div>
+)}
+</div>
 </div>
 
             <div className="up-settlement-body">
@@ -1017,84 +1048,71 @@ function ReviewsTab({ reviews, totalPages, page, setPage, rvLoading }) {
   );
 }
 
-function InquiriesTab({
-  inquiries,
-  selectedInquiry,
-  detailLoading,
-  onSelectInquiry,
-}) {
+function InquiriesTab({ inquiries, selectedInquiry, detailLoading, onSelectInquiry }) {
+  const [openId, setOpenId] = useState(null);
+
   if (inquiries.length === 0) {
     return <p className="up-empty">등록된 문의 내역이 없습니다.</p>;
   }
 
+  function handleClick(inquiryId) {
+    if (openId === inquiryId) {
+      setOpenId(null);
+    } else {
+      setOpenId(inquiryId);
+      onSelectInquiry(inquiryId);
+    }
+  }
+
   return (
-    <div className="up-inquiry-layout">
-      <div className="up-inquiry-list" aria-label="1:1 문의 내역">
-        {inquiries.map((inquiry) => (
-          <button
-            type="button"
-            className={`up-inquiry-item ${selectedInquiry?.inquiryId === inquiry.inquiryId ? "active" : ""}`}
+    <div className="up-inquiry-list" aria-label="1:1 문의 내역">
+      {inquiries.map((inquiry) => {
+        const isOpen = openId === inquiry.inquiryId;
+        const detail = selectedInquiry?.inquiryId === inquiry.inquiryId ? selectedInquiry : null;
+        return (
+          <div
             key={inquiry.inquiryId}
-            onClick={() => onSelectInquiry(inquiry.inquiryId)}
+            className="up-inquiry-item"
+            style={{ cursor: "pointer" }}
+            onClick={() => handleClick(inquiry.inquiryId)}
           >
-            <span className="up-inquiry-category">{getInquiryCategoryLabel(inquiry.category)}</span>
-            <strong>{inquiry.title}</strong>
-            <span className={`up-inquiry-status ${inquiry.inquiryStatus === "ANSWERED" ? "answered" : ""}`}>
-              {getInquiryStatusLabel(inquiry.inquiryStatus)}
-            </span>
-            <span className="up-inquiry-date">작성일 {formatDateTime(inquiry.createdAt)}</span>
-            <span className="up-inquiry-date">답변일 {formatDateTime(inquiry.answeredAt)}</span>
-          </button>
-        ))}
-      </div>
-
-      <article className="up-inquiry-detail">
-        {detailLoading && <p className="up-inquiry-placeholder">문의 상세를 불러오는 중...</p>}
-
-        {!detailLoading && !selectedInquiry && (
-          <p className="up-inquiry-placeholder">문의 항목을 선택하면 상세 내용을 확인할 수 있습니다.</p>
-        )}
-
-        {!detailLoading && selectedInquiry && (
-          <>
-            <div className="up-inquiry-detail-head">
-              <span className="up-inquiry-category">{getInquiryCategoryLabel(selectedInquiry.category)}</span>
-              <h2>{selectedInquiry.title}</h2>
-              <span className={`up-inquiry-status ${selectedInquiry.inquiryStatus === "ANSWERED" ? "answered" : ""}`}>
-                {getInquiryStatusLabel(selectedInquiry.inquiryStatus)}
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+              <span className="up-inquiry-category">{getInquiryCategoryLabel(inquiry.category)}</span>
+              <strong>{inquiry.title}</strong>
+              <span className={`up-inquiry-status ${inquiry.inquiryStatus === "ANSWERED" ? "answered" : ""}`}>
+                {getInquiryStatusLabel(inquiry.inquiryStatus)}
               </span>
+              <span style={{ marginLeft: "auto", fontSize: "12px", color: "#aaa" }}>{isOpen ? "▲" : "▼"}</span>
+            </div>
+            <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+              <span className="up-inquiry-date">작성일 {formatDateTime(inquiry.createdAt)}</span>
+              <span className="up-inquiry-date">답변일 {formatDateTime(inquiry.answeredAt)}</span>
             </div>
 
-            <dl className="up-inquiry-meta">
-              <div>
-                <dt>작성일</dt>
-                <dd>{formatDateTime(selectedInquiry.createdAt)}</dd>
+            {isOpen && (
+              <div style={{ marginTop: "12px", padding: "12px", background: "#f8f9fa", borderRadius: "8px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                {detailLoading && detail === null ? (
+                  <p style={{ fontSize: "13px", color: "#888" }}>불러오는 중...</p>
+                ) : detail ? (
+                  <>
+                    <div><span style={{ color: "#888", fontSize: "12px" }}>문의 내용</span> <span style={{ fontSize: "13px" }}>{detail.content || "-"}</span></div>
+                    <div>
+                      <span style={{ color: "#888", fontSize: "12px" }}>답변 내용</span>{" "}
+                      <span style={{ fontSize: "13px" }}>
+                        {detail.inquiryStatus === "ANSWERED" && detail.answerContent ? detail.answerContent : "아직 답변이 등록되지 않았습니다."}
+                      </span>
+                    </div>
+                  </>
+                ) : null}
               </div>
-              <div>
-                <dt>답변일</dt>
-                <dd>{formatDateTime(selectedInquiry.answeredAt)}</dd>
-              </div>
-            </dl>
-
-            <section className="up-inquiry-section">
-              <h3>문의 내용</h3>
-              <p>{selectedInquiry.content || "-"}</p>
-            </section>
-
-            <section className="up-inquiry-section answer">
-              <h3>답변 내용</h3>
-              {selectedInquiry.inquiryStatus === "ANSWERED" && selectedInquiry.answerContent ? (
-                <p>{selectedInquiry.answerContent}</p>
-              ) : (
-                <p className="up-inquiry-placeholder">아직 답변이 등록되지 않았습니다.</p>
-              )}
-            </section>
-          </>
-        )}
-      </article>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
+
 function ReportsTab({ reports }) {
   const REASON_LABELS = {
     FRAUD: "사기",
@@ -1148,6 +1166,10 @@ function ReportsTab({ reports }) {
                 <div><span style={{ color: "#888", fontSize: "12px" }}>신고번호</span> <span style={{ fontSize: "13px" }}>{r.reportId}</span></div>
                 <div><span style={{ color: "#888", fontSize: "12px" }}>신고 사유</span> <span style={{ fontSize: "13px" }}>{REASON_LABELS[r.reasonCode] || r.reasonCode}</span></div>
                 <div><span style={{ color: "#888", fontSize: "12px" }}>신고 내용</span> <span style={{ fontSize: "13px" }}>{r.detail || "-"}</span></div>
+                
+                {r.processedReason && (
+                  <div><span style={{ color: "#888", fontSize: "12px" }}>처리 사유</span> <span style={{ fontSize: "13px" }}>{r.processedReason}</span></div>
+                )}
                 <div><span style={{ color: "#888", fontSize: "12px" }}>처리 결과</span> <span style={{ fontSize: "13px", color: badge.color, fontWeight: 600 }}>{badge.text}</span></div>
               </div>
             )}
@@ -1714,27 +1736,7 @@ function UserProfilePage({
             </div>
             <p className="up-handle">@{seller.memberId}</p>
             {seller.shopInfo && <p className="up-shop-info">{seller.shopInfo}</p>}
-            <div className="up-stats">
-              
-               {seller.completedOrderCount > 0 && (
-    <span>판매 완료 <strong>{seller.completedOrderCount}</strong>건</span>
-  )}
-
-              {totalElements > 0 && (
-                <>
-                  <span className="up-stats-dot">·</span>
-
-                  <span>리뷰 <strong>{totalElements}</strong>건</span>
-                </>
-              )}
-              {avgRating != null && (
-                <>
-                  <span className="up-stats-dot">·</span>
-                  <span style={{ color: "#f5b400" }}>★</span>
-                  <span><strong>{avgRating.toFixed(1)}</strong></span>
-                </>
-              )}
-            </div>
+              <div className="up-stats"></div>
           </div>
           {hideFooter && (
   <div className="up-profile-actions">
