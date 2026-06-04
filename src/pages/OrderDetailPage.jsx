@@ -346,6 +346,14 @@ const handleConfirmOrder = async () => {
 
         {isBuyer ? (
   <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+    {order.orderStatus === 'PAID' && (
+      <button
+        style={{ ...s.backBtn, marginTop: '0', flex: 1, color: '#c62828', borderColor: '#c62828' }}
+        onClick={handleCancel}
+      >
+        주문 취소
+      </button>
+    )}
     <button
       style={{ ...s.backBtn, marginTop: '0', flex: 1 }}
       onClick={() => navigate('/')}
