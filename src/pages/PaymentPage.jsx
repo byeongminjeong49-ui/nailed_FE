@@ -283,12 +283,20 @@ const sellerBadge   = pendingOrder?.sellerBadge    || 'Bronze';
                 <div style={{ fontSize: '12px', color: '#888', marginTop: '3px' }}>판매자 발송 후 택배사 사정에 따라 달라질 수 있습니다</div>
               </div>
             </div>
-            <div style={s.refundBox}>
-              <strong>취소 / 환불 정책</strong><br />
-              · 배송 전: 마이페이지에서 직접 취소 가능<br />
-              · 배송 후: 판매자와 협의 후 반품 진행<br />
-              · 상품 상태 허위 기재 시 Nailed 고객센터에 신고 가능
-            </div>
+<div style={{
+  backgroundColor: '#F0FAFA',
+  borderLeft: '3px solid #2A9D8F',
+  borderRadius: '6px',
+  padding: '14px 16px',
+  marginTop: '12px'
+}}>
+  <strong>취소 정책</strong>
+  <ul style={{ marginTop: '8px', paddingLeft: '16px', lineHeight: '1.9' }}>
+    <li>결제 완료 상태에서만 취소 가능합니다.</li>
+    <li>주문 접수 이후에는 취소가 불가합니다.</li>
+    <li>취소 시 상품은 자동으로 판매 상태로 전환됩니다.</li>
+  </ul>
+</div>
           </div>
 
           <button style={s.payBtn} onClick={() => navigate(`/order/detail/${orderId}`)}>주문 상세 보기</button>
