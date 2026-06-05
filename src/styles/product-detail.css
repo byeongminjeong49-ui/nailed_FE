@@ -1,6 +1,6 @@
-﻿/* ?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧
-   ?곹뭹 ?곸꽭 ?섏씠吏
-   ?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧 */
+﻿/* ════════════════════════════════
+   상품 상세 페이지
+   ════════════════════════════════ */
 
 .pd-page {
   background: #fff;
@@ -13,7 +13,7 @@
   padding: 40px 24px 120px;
 }
 
-/* ?? 鍮듦?猷??? */
+/* ── 브레드크럼 (네비게이션) ── */
 .pd-breadcrumb {
   display: flex;
   align-items: center;
@@ -23,10 +23,10 @@
   color: #bbb;
 }
 .pd-breadcrumb a { color: #bbb; transition: color 0.15s; }
-.pd-breadcrumb a:hover { color: #151515; }c
+.pd-breadcrumb a:hover { color: #151515; }
 .pd-breadcrumb span:last-child { color: #555; }
 
-/* ?? 蹂몃Ц 2???덉씠?꾩썐 ?? */
+/* ── 바디 2단 레이아웃 ── */
 .pd-body {
   display: grid;
   grid-template-columns: minmax(0, 360px) 1fr;
@@ -34,14 +34,14 @@
   align-items: start;
 }
 
-/* ?? ?쇱そ 而щ읆 ?? */
+/* ── 왼쪽 컬럼 레이아웃 ── */
 .pd-left-col {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-/* ?? 媛ㅻ윭由??? */
+/* ── 갤러리 이미지 ── */
 .pd-gallery {
   display: flex;
   flex-direction: column;
@@ -152,7 +152,7 @@
 .pd-thumb.active { border-color: #151515; }
 .pd-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-/* ?? ?먮ℓ??移대뱶 ?? */
+/* ── 판매자 카드 ── */
 .pd-seller-card {
   padding: 16px 18px;
   border: 1px solid #e8e8e8;
@@ -213,7 +213,7 @@
 }
 .pd-seller-link:hover { border-color: #151515; color: #151515; }
 
-/* ?? ?ㅻⅨ履??⑤꼸 ?? */
+/* ── 상품 정보 오른쪽 영역 ── */
 .pd-info {
   display: flex;
   flex-direction: column;
@@ -244,7 +244,7 @@
 .pd-icon-btn.on { color: #111; border-color: #ccc; background: #fff; }
 .pd-icon-btn span { font-size: 12px; line-height: 1; font-weight: 700; }
 
-/* 移댄뀒怨좊━ + ?쒓컙 (?ㅻ챸/?댁떆 ?꾨옒) */
+/* ── 카테고리 + 시간 ── */
 .pd-info-footer {
   display: flex;
   align-items: center;
@@ -330,7 +330,7 @@
   letter-spacing: 0;
 }
 
-/* ?? 硫뷀? ???? */
+/* ── 상태 배지 영역 ── */
 .pd-meta-row {
   display: flex;
   align-items: center;
@@ -358,14 +358,14 @@
 .pd-meta-item svg { opacity: 0.7; }
 .pd-meta-dot { color: #ddd; font-size: 12px; }
 
-/* ?? ?⑤꼸 ?대? 援щ텇???? */
+/* ── 정보 구분선 ── */
 .pd-info-divider {
   border: 0;
   border-top: 1px solid #f0f0f0;
   margin: 22px 0;
 }
 
-/* ?? ?곹뭹 ?ㅻ챸 ?? */
+/* ── 상품 설명 ── */
 .pd-desc-wrap { margin-bottom: 4px; }
 .pd-desc {
   font-size: 14px;
@@ -396,7 +396,7 @@
 }
 .pd-desc-toggle-arrow.up { transform: rotate(270deg); }
 
-/* ?? ?댁떆?쒓렇 ?? */
+/* ── 해시태그 ── */
 .pd-hashtags {
   display: flex;
   flex-wrap: wrap;
@@ -412,7 +412,7 @@
   font-weight: 500;
 }
 
-/* ?? ?ㅽ럺 ?몃씪??(?ㅻ챸 ?꾨옒) ?? */
+/* ── 스펙 목록 ── */
 .pd-spec-list {
   margin: 18px 0 0;
   padding: 0;
@@ -432,7 +432,7 @@
 .pd-spec-item dt { width: 60px; flex-shrink: 0; color: #aaa; font-weight: 500; }
 .pd-spec-item dd { margin: 0; color: #333; font-weight: 500; }
 
-/* ?? ?덉쟾寃곗젣 ?몃씪??諛곕꼫 ?? */
+/* ── 안전거래 표시 인라인 ── */
 .pd-safe-inline {
   display: flex;
   align-items: center;
@@ -447,7 +447,6 @@
 }
 .pd-safe-inline svg { flex-shrink: 0; }
 
-/* ?? CTA 踰꾪듉 ?? */
 /* ── 상태 배지 + 태그 묶음 ── */
 .pd-meta-tags {
   display: flex;
@@ -501,6 +500,7 @@
   font-weight: 500;
 }
 
+/* ── CTA 버튼 (구매/수정) ── */
 .pd-actions {
   display: flex;
   align-items: stretch;
@@ -541,7 +541,7 @@
 }
 .pd-edit-btn:hover { background: #f7f7f7; }
 
-/* ?? ?섎떒 ?뱀뀡 怨듯넻 ?? */
+/* ── 하단 섹션 레이아웃 ── */
 .pd-divider {
   border: 0;
   border-top: 1px solid #efefef;
@@ -559,7 +559,7 @@
   letter-spacing: -0.3px;
 }
 
-/* ?? ?곹뭹 ?뺣낫 ?뚯씠釉??? */
+/* ── 상품 정보 테이블 ── */
 .pd-info-grid {
   display: flex;
   flex-direction: column;
@@ -605,7 +605,7 @@
 .cond-C { background: #fff3e0; color: #e65100; }
 .cond-D { background: #fce4ec; color: #c62828; }
 
-/* ?? ?꾩퐫?붿뼵 (?덉떖嫄곕옒쨌諛곗넚쨌?섎텋) ?? */
+/* ── 아코디언 (배송안내·반품·교환) ── */
 .pd-accordion { display: flex; flex-direction: column; margin-top: 48px; }
 .pd-acc-item { border-bottom: 1px solid #e7e7e7; }
 .pd-acc-item:first-child { border-top: 1px solid #e7e7e7; }
@@ -689,7 +689,7 @@
 }
 .pd-safe-warn { color: #e53935; }
 
-/* ?? ?뱀뀡 ??댄? ???? */
+/* ── 섹션 타이틀 행 ── */
 .pd-section-title-row {
   display: flex;
   align-items: baseline;
@@ -710,7 +710,7 @@
 }
 .pd-section-link:hover { color: #151515; }
 
-/* ?? ?먮ℓ??由щ럭 ?? */
+/* ── 판매자 리뷰 ── */
 .pd-rv-summary {
   display: flex;
   gap: 32px;
@@ -769,7 +769,7 @@
 }
 .pd-rv-more:hover { border-color: #151515; color: #151515; }
 
-/* ?? 鍮꾩듂???곹뭹 ?? */
+/* ── 연관 상품 ── */
 .pd-related-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
@@ -798,7 +798,7 @@
 .pd-related-name { font-size: 12px; font-weight: 500; color: #444; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0 0 5px; }
 .pd-related-price { font-size: 13px; font-weight: 700; color: #0f0f0f; margin: 0; }
 
-/* ?? ?좎뒪???? */
+/* ── 토스트 알림 ── */
 .pd-toast {
   position: fixed;
   top: 24px;
@@ -817,7 +817,7 @@
 }
 @keyframes toastFade { from { opacity: 0; transform: translateX(-50%) translateY(-8px); } }
 
-/* ?? 濡쒕뵫 / ?먮윭 ?? */
+/* ── 로딩 / 오류 ── */
 .pd-loading, .pd-error {
   min-height: 60vh;
   display: flex;
@@ -837,7 +837,7 @@
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ?? ?좉퀬 紐⑤떖 ?? */
+/* ── 신고 모달 ── */
 .report-overlay {
   position: fixed;
   inset: 0;
@@ -970,7 +970,6 @@
 }
 .report-done-btn:hover { border-color: #151515; }
 
-/* ?? 諛섏쓳???? */
 /* ── 왼쪽 컬럼: 비슷한 상품 (가로 썸네일 한 줄) ── */
 .pd-related-strip {
   margin-top: 8px;
