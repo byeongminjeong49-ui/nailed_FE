@@ -144,3 +144,12 @@ export async function penalizeAdminReport(reportId, payload) {
 export async function getAdminDashboard() {
   return authRequest("/api/admin/dashboard");
 }
+
+export async function getDashboardTrends({ period = "DAILY", range } = {}) {
+  const params = new URLSearchParams({
+    period,
+    range: range ?? (period === "MONTHLY" ? 12 : 30),
+  });
+
+  return authRequest(`/api/admin/dashboard/trends?${params.toString()}`);
+}
