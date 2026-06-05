@@ -3,12 +3,17 @@ import { authRequest, getAuthorizationHeader, getValidAccessToken } from "./auth
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
+const instance = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true,
+});
+
 async function request(path, options = {}) {
   const { body, headers, method = "GET", ...restOptions } = options;
 
   try {
-    const response = await axios({
-      url: `${API_BASE_URL}${path}`,
+    const response = await instance({
+      url: path,
       method,
       data: body,
       headers: {
