@@ -13,6 +13,13 @@ const TREND_METRICS = [
   { key: "orders", title: "유효 주문 수", unit: "건", dailyType: "line" },
   { key: "reports", title: "신고 수", unit: "건", dailyType: "bar" },
   { key: "inquiries", title: "문의 수", unit: "건", dailyType: "bar" },
+  {
+    key: "onSaleProducts",
+    title: "판매중 상품 수",
+    unit: "개",
+    dailyType: "line",
+    description: "현재 판매중 · 등록일 기준",
+  },
 ];
 
 const MEMBER_STATUS_LABELS = {
@@ -313,7 +320,7 @@ function TrendCard({ metric, period, points }) {
       <div className="trend-card-head">
         <div>
           <h3>{metric.title}</h3>
-          <p>{chartType === "line" ? "꺾은선 그래프" : "막대 차트"}</p>
+          <p>{metric.description || (chartType === "line" ? "꺾은선 그래프" : "막대 차트")}</p>
         </div>
       </div>
       <div className="trend-card-body">
