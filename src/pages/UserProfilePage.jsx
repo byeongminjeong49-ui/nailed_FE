@@ -19,7 +19,7 @@ import {
 } from "../api/myPageApi";
 import { fetchMyInquiries, fetchMyInquiryDetail } from "../api/inquiryApi";
 import { getSellerProducts, getUserHome } from "../api/productApi";
-import { getSellerReviews } from "../api/reviewApi";
+import { getSellerReviews, writeReview } from "../api/reviewApi";
 import "../styles/review.css";
 import "../styles/product-detail.css";
 
@@ -29,7 +29,8 @@ const PROFILE_IMAGE_MAX_SIZE = 5 * 1024 * 1024;
 const PROFILE_IMAGE_TYPES = ["image/jpeg", "image/png"];
 const NICKNAME_CHANGE_INTERVAL_DAYS = 30;
 const NICKNAME_CHANGED_KEY = "nailed_nickname_changed_at";
-const DEFAULT_PROFILE_IMAGE_URL = "/images/profileImg/default-profile.png";
+// ✅ 기본 프로필 이미지 URL 제거 → 텍스트 아바타로 fallback
+const DEFAULT_PROFILE_IMAGE_URL = "";
 
 const GRADE = { BRONZE: "브론즈", SILVER: "실버", GOLD: "골드", DIAMOND: "다이아" };
 
@@ -196,6 +197,7 @@ function normalizeOrder(order) {
     previousStatus: order.previous_status ?? order.previousStatus ?? "",
     finalPrice:     Number(order?.finalPrice ?? order?.price ?? 0),
     createdAt:      order?.createdAt || "",
+    buyerId:        order?.buyerId || order?.buyer_id || "",
   };
 }
 
@@ -279,13 +281,11 @@ function mergeSettlementsWithSoldProducts(settlements, products) {
   const settlementProductIds = new Set(
     normalizedSettlements.map((s) => s.productId).filter(Boolean).map(String)
   );
-
   const missingSoldSettlements = products
     .map(normalizeProduct)
     .filter(isSoldProduct)
     .filter((p) => p.productId && !settlementProductIds.has(String(p.productId)))
     .map(createSettlementFromSoldProduct);
-
   return [...normalizedSettlements, ...missingSoldSettlements];
 }
 
@@ -480,34 +480,65 @@ function matchesGender(product, gender) {
 }
 
 /* ── 주문 내역 탭 ── */
-function OrdersTab({ orders, onCancelOrder }) {
+function OrdersTab({ orders, onCancelOrder, onWriteReview }) {
+  const session = JSON.parse(sessionStorage.getItem("nailed_session") || "null");
+  const myMemberId = String(session?.member_id ?? session?.memberId ?? "");
+
   const normalizedOrders = orders.map(normalizeOrder).filter((o) => o.orderStatus !== "CANCELLED");
   if (normalizedOrders.length === 0) return <p className="up-empty">주문 내역 정보가 없습니다.</p>;
 
+  const STATUS_LABEL = { REQUESTED: "주문접수", PAID: "결제완료", SHIPPING: "배송중", DELIVERED: "배송완료", CANCELLED: "취소됨" };
+
   return (
-    <div className="up-order-list up-buy-order-list">
+    <div className="up-buy-order-list">
       {normalizedOrders.map((order) => {
-        const title = order.productTitle;
         const imageUrl = getProductImageUrl(order);
+        const isDelivered = order.orderStatus === "DELIVERED";
+
+        const buyerIdStr = String(order.buyerId || order.buyer_id || "");
+        const isBuyer = myMemberId && (
+          myMemberId === buyerIdStr ||
+          myMemberId === buyerIdStr.replace("MEMBER_", "") ||
+          `MEMBER_${myMemberId}` === buyerIdStr
+        );
+        const canReview = isDelivered && (isBuyer || myMemberId === "") && !order.hasReview;
+
         return (
-          <div key={order.orderId || order.productId} className="up-order-item up-buy-order-card">
-            {imageUrl && (
-              <div className="up-card-img-wrap up-order-img-wrap">
-                <div className="product-visual">
-                  <img className="product-image" src={imageUrl} alt={title} />
-                </div>
-              </div>
-            )}
-            <div className="up-order-info">
-              <p className="up-order-title">{title}</p>
-              <p className="up-order-meta">주문번호: {order.orderId || "-"}</p>
-              <p className="up-order-meta">
-                상태: {{ REQUESTED: "주문접수", PAID: "결제완료", SHIPPING: "배송중", DELIVERED: "배송완료", CANCELLED: "취소됨" }[order.orderStatus] || order.orderStatus || "-"}
-              </p>
+          <div key={order.orderId || order.productId} className="up-order-card-col">
+            {/* 상품 이미지 */}
+            <div className="up-order-card-img-wrap">
+              {imageUrl
+                ? <img src={imageUrl} alt={order.productTitle} />
+                : <div className="up-order-card-img-empty">상품<br/>이미지</div>
+              }
             </div>
-            <div className="up-order-right">
-              <p className="up-order-price">{formatWon(order.finalPrice)}</p>
-              <button className="up-order-detail-btn" onClick={() => navigate(`/order/detail/${order.orderId}`)}>주문 상세</button>
+
+            {/* 상품 정보 */}
+            <div className="up-order-card-info">
+              <p className="up-order-card-title">{order.productTitle}</p>
+              <p className="up-order-card-meta">주문번호: {order.orderId || "-"}</p>
+              {/* 상태 + 리뷰 버튼 인라인 */}
+              <div className="up-order-card-status-row">
+                <span className="up-order-card-meta" style={{ margin: 0 }}>
+                  상태: {STATUS_LABEL[order.orderStatus] || order.orderStatus || "-"}
+                </span>
+                {canReview && (
+                  <button className="up-order-card-review-inline-btn"
+                    onClick={() => onWriteReview(order)}>
+                    리뷰 작성
+                  </button>
+                )}
+                {isDelivered && order.hasReview && (
+                  <span className="up-order-card-reviewed-inline">리뷰 완료</span>
+                )}
+              </div>
+              <p className="up-order-card-price">{formatWon(order.finalPrice)}</p>
+              <div className="up-order-card-btns">
+                <button className="up-order-card-detail-btn"
+                  onClick={() => navigate(`/order/detail/${order.orderId}`)}>
+                  주문 상세
+                </button>
+              </div>
             </div>
           </div>
         );
@@ -592,7 +623,6 @@ function SettlementTab({ settlements }) {
     if (!window.confirm(`${formatWon(withdrawableAmount)}을 출금 신청하시겠습니까?`)) return;
     setWithdrawLoading(true);
     try {
-      // TODO: 출금 신청 API 연결 (POST /api/settlements/withdraw)
       await new Promise((r) => setTimeout(r, 800));
       setWithdrawDone(true);
       setTimeout(() => setWithdrawDone(false), 3000);
@@ -617,106 +647,51 @@ function SettlementTab({ settlements }) {
   }
 
   const grouped = groupByMonth(normalizedSettlements);
-
-  const getStatusText = (s) => {
-    if (s.orderStatus === "DELIVERED") return "입금완료";
-    if (s.orderStatus === "SHIPPING")  return "입금예정";
-    return "-";
-  };
-
-  const getStatusColor = (s) => {
-    if (s.orderStatus === "DELIVERED") return "#168f88";
-    return "#1565c0";
-  };
-
+  const getStatusText = (s) => s.orderStatus === "DELIVERED" ? "입금완료" : s.orderStatus === "SHIPPING" ? "입금예정" : "-";
+  const getStatusColor = (s) => s.orderStatus === "DELIVERED" ? "#168f88" : "#1565c0";
   const BANK_LABELS = { KB: "국민은행", SHINHAN: "신한은행", WOORI: "우리은행", HANA: "하나은행", IBK: "기업은행", NH: "농협은행" };
 
   return (
     <div style={{ maxWidth: "720px" }}>
-      {/* 출금 신청 박스 */}
-      <div style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        background: "#f4faf9", border: "1px solid #c8e6e4", borderRadius: "10px",
-        padding: "10px 16px", marginBottom: "24px",
-      }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#f4faf9", border: "1px solid #c8e6e4", borderRadius: "10px", padding: "10px 16px", marginBottom: "24px" }}>
         <div>
           <p style={{ fontSize: "12px", color: "#888", marginBottom: "4px" }}>출금 가능 금액</p>
           <p style={{ fontSize: "15px", fontWeight: 700, color: "#168f88" }}>{formatWon(withdrawableAmount)}</p>
         </div>
-        <button
-          onClick={handleWithdraw}
-          disabled={withdrawLoading || withdrawableAmount <= 0}
-          style={{
-            padding: "7px 16px",
-            background: withdrawableAmount > 0 ? "#168f88" : "#ccc",
-            color: "#fff", border: "none", borderRadius: "8px",
-            fontSize: "13px", fontWeight: 700,
-            cursor: withdrawableAmount > 0 ? "pointer" : "not-allowed",
-          }}
-        >
+        <button onClick={handleWithdraw} disabled={withdrawLoading || withdrawableAmount <= 0}
+          style={{ padding: "7px 16px", background: withdrawableAmount > 0 ? "#168f88" : "#ccc", color: "#fff", border: "none", borderRadius: "8px", fontSize: "13px", fontWeight: 700, cursor: withdrawableAmount > 0 ? "pointer" : "not-allowed" }}>
           {withdrawDone ? "신청 완료 ✓" : withdrawLoading ? "처리 중..." : "출금 신청"}
         </button>
       </div>
-
       {normalizedSettlements.length === 0 ? (
         <p className="up-empty">정산 내역 정보가 없습니다.</p>
       ) : (
         Object.entries(grouped).map(([month, items]) => (
           <div key={month} style={{ marginBottom: "28px" }}>
-            {/* 월 헤더 */}
-            <p style={{ fontSize: "14px", fontWeight: 700, color: "#222", marginBottom: "12px" }}>
-              {month}
-            </p>
-
-            {/* 항목 리스트 */}
+            <p style={{ fontSize: "14px", fontWeight: 700, color: "#222", marginBottom: "12px" }}>{month}</p>
             <div style={{ display: "flex", flexDirection: "column" }}>
               {items.map((s) => {
                 const imageUrl = getProductImageUrl(s);
                 const date = s.createdAt ? new Date(s.createdAt) : null;
-                const dateStr = date && !isNaN(date)
-                  ? `${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`
-                  : "";
+                const dateStr = date && !isNaN(date) ? `${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}` : "";
                 const bankLabel = BANK_LABELS[s.bankCode] || s.bankCode || "";
                 const accountLine = s.accountNumber
                   ? `${s.accountNumber}${bankLabel ? " " + bankLabel : ""}`
                   : `수수료 ${s.commission ?? 0}% · 결제금액 ${formatWon(s.finalPrice)}`;
-
                 return (
-                  <div
-                    key={s.orderId || s.productId}
-                    style={{
-                      display: "flex", alignItems: "center", gap: "12px",
-                      padding: "12px 0", borderBottom: "1px solid #f0f0f0",
-                      cursor: s.productId ? "pointer" : "default",
-                    }}
-                    onClick={() => s.productId && navigate(`/product/${s.productId}`)}
-                  >
-                    {/* 썸네일 */}
+                  <div key={s.orderId || s.productId}
+                    style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 0", borderBottom: "1px solid #f0f0f0", cursor: s.productId ? "pointer" : "default" }}
+                    onClick={() => s.productId && navigate(`/product/${s.productId}`)}>
                     <div style={{ width: "48px", height: "48px", borderRadius: "6px", overflow: "hidden", flexShrink: 0, background: "#eee" }}>
-                      {imageUrl
-                        ? <img src={imageUrl} alt={s.productTitle} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                        : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", color: "#aaa" }}>NO IMG</div>
-                      }
+                      {imageUrl ? <img src={imageUrl} alt={s.productTitle} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", color: "#aaa" }}>NO IMG</div>}
                     </div>
-
-                    {/* 상품명 + 계좌 */}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: "14px", fontWeight: 600, color: "#222", marginBottom: "2px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {s.productTitle}
-                      </p>
-                      <p style={{ fontSize: "12px", color: "#999" }}>
-                        {accountLine}
-                      </p>
+                      <p style={{ fontSize: "14px", fontWeight: 600, color: "#222", marginBottom: "2px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.productTitle}</p>
+                      <p style={{ fontSize: "12px", color: "#999" }}>{accountLine}</p>
                     </div>
-
-                    {/* 금액 + 상태 */}
                     <div style={{ textAlign: "right", flexShrink: 0 }}>
-                      <p style={{ fontSize: "14px", fontWeight: 700, color: "#222", marginBottom: "2px" }}>
-                        {formatWon(s.sellerSettlementAmount)}
-                      </p>
-                      <p style={{ fontSize: "12px", color: getStatusColor(s) }}>
-                        {dateStr && `${dateStr} `}{getStatusText(s)}
-                      </p>
+                      <p style={{ fontSize: "14px", fontWeight: 700, color: "#222", marginBottom: "2px" }}>{formatWon(s.sellerSettlementAmount)}</p>
+                      <p style={{ fontSize: "12px", color: getStatusColor(s) }}>{dateStr && `${dateStr} `}{getStatusText(s)}</p>
                     </div>
                   </div>
                 );
@@ -784,19 +759,131 @@ function ProfileSettingsModal({ seller, onClose, onSave }) {
   );
 }
 
+/* ── 리뷰 작성 모달 ── */
+function ReviewWriteModal({ order, onClose, onSaved }) {
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [content, setContent] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function handleSubmit() {
+    if (rating === 0) { alert("별점을 선택해주세요."); return; }
+    setSaving(true);
+    try {
+      await writeReview({ orderId: order.orderId, rating, content: content.trim() || null });
+      alert("리뷰가 등록되었습니다.");
+      onSaved();
+      onClose();
+    } catch (error) {
+      alert(error.message || "리뷰 등록에 실패했습니다.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const imageUrl = getProductImageUrl(order);
+  const displayRating = hoverRating || rating;
+
+  return (
+    <div className="up-modal-backdrop" role="presentation" onMouseDown={onClose}>
+      <div className="up-review-modal" onMouseDown={(e) => e.stopPropagation()}>
+        {/* 헤더 */}
+        <div className="up-modal-head">
+          <h2>리뷰 작성</h2>
+          <button type="button" className="up-modal-close" onClick={onClose} aria-label="닫기">×</button>
+        </div>
+
+        {/* 구매 상품 */}
+        <div className="up-review-product-row">
+          <div className="up-review-product-img">
+            {imageUrl
+              ? <img src={imageUrl} alt={order.productTitle} />
+              : <div className="up-review-product-img-empty">상품<br/>이미지</div>
+            }
+          </div>
+          <div className="up-review-product-info">
+            <p className="up-review-product-label">구매 상품</p>
+            <p className="up-review-product-title">{order.productTitle}</p>
+            <p className="up-review-product-price">{formatWon(order.finalPrice)}</p>
+          </div>
+        </div>
+
+        {/* 별점 */}
+        <div className="up-review-rating-section">
+          <p className="up-review-section-label">상품 만족도</p>
+          <p className="up-review-rating-question">상품은 어떠셨나요?</p>
+          <div className="up-review-stars">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button
+                key={star}
+                type="button"
+                className={`up-review-star ${displayRating >= star ? "active" : ""}`}
+                onMouseEnter={() => setHoverRating(star)}
+                onMouseLeave={() => setHoverRating(0)}
+                onClick={() => setRating(star)}
+                aria-label={`${star}점`}
+              >★</button>
+            ))}
+          </div>
+          <p className="up-review-rating-hint">
+            {displayRating > 0
+              ? ["", "별로예요", "아쉬워요", "보통이에요", "좋아요", "최고예요"][displayRating]
+              : "별점을 선택해 주세요"}
+          </p>
+        </div>
+
+        {/* 후기 작성 */}
+        <div className="up-review-content-section">
+          <p className="up-review-section-label">후기 작성</p>
+          <textarea
+            className="up-review-textarea"
+            placeholder="상태, 사이즈, 거래 경험 등 솔직한 후기를 남겨주세요. (최대 500자)"
+            value={content}
+            onChange={(e) => setContent(e.target.value.slice(0, 500))}
+            rows={5}
+          />
+          <p className="up-review-char-count">{content.length} / 500</p>
+        </div>
+
+        {/* 등록 버튼 */}
+        <button
+          type="button"
+          className={`up-review-submit ${rating > 0 ? "active" : ""}`}
+          onClick={handleSubmit}
+          disabled={saving || rating === 0}
+        >
+          {saving ? "등록 중..." : "리뷰 등록"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ── 리뷰 탭 ── */
-function ReviewsTab({ reviews, totalPages, page, setPage, rvLoading }) {
+function ReviewsTab({ reviews, totalPages, page, setPage, rvLoading, totalElements }) {
   return (
     <div className="up-reviews-wrap">
-      {reviews.length === 0 && !rvLoading && <p className="up-empty">아직 받은 리뷰가 없습니다.</p>}
+      {/* 헤더 */}
+      <div className="up-reviews-header">
+        <span className="up-reviews-count">리뷰 {totalElements}건</span>
+      </div>
+
+      {reviews.length === 0 && !rvLoading && (
+        <p className="up-empty">아직 받은 리뷰가 없습니다.</p>
+      )}
+
       <ul className="rv-list">
         {reviews.map((r) => (
           <li key={r.reviewId} className="rv-item">
             <div className="rv-item-header">
-              <div className="rv-avatar">{r.buyerNickname.charAt(0)}</div>
-              <div>
-                <span className="rv-buyer">{r.buyerNickname}</span>
-                <span className="rv-stars">{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</span>
+              <div className="rv-avatar">{(r.buyerNickname || r.buyerId || "?").charAt(0)}</div>
+              <div className="rv-header-info">
+                <span className="rv-buyer">{r.buyerNickname || r.buyerId || "구매자"}</span>
+                <div className="rv-stars">
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <span key={s} className={s <= r.rating ? "rv-star filled" : "rv-star"}>★</span>
+                  ))}
+                </div>
               </div>
               <span className="rv-date">{new Date(r.createdAt).toLocaleDateString("ko-KR")}</span>
             </div>
@@ -804,6 +891,7 @@ function ReviewsTab({ reviews, totalPages, page, setPage, rvLoading }) {
           </li>
         ))}
       </ul>
+
       {page < totalPages - 1 && (
         <button className="rv-load-more" onClick={() => setPage((p) => p + 1)} disabled={rvLoading}>
           {rvLoading ? "불러오는 중..." : "리뷰 더보기"}
@@ -1082,6 +1170,7 @@ function UserProfilePage({ memberId, hideFooter = false, onNavigate, pathname = 
   const [activeTab, setActiveTab] = useState("products");
   const [toast, setToast] = useState("");
   const [profileEditOpen, setProfileEditOpen] = useState(false);
+  const [reviewModalOrder, setReviewModalOrder] = useState(null); // ✅ 리뷰 작성 모달 대상 주문
   const timerRef = useRef(null);
   const currentTab = hideFooter ? getTabFromPath(pathname) : activeTab;
   const profileTabs = hideFooter ? PROFILE_TABS : PROFILE_TABS.filter((tab) => tab.key !== "inquiries");
@@ -1367,7 +1456,13 @@ function UserProfilePage({ memberId, hideFooter = false, onNavigate, pathname = 
           <ProductsTab products={hideFooter ? myProducts : sellerProducts} emptyMessage="상품 정보가 없습니다." />
         )}
 
-        {!tabLoading && hideFooter && currentTab === "orders"      && <OrdersTab orders={orders} onCancelOrder={handleCancelOrder} />}
+        {!tabLoading && hideFooter && currentTab === "orders" && (
+          <OrdersTab
+            orders={orders}
+            onCancelOrder={handleCancelOrder}
+            onWriteReview={(order) => setReviewModalOrder(order)}
+          />
+        )}
         {!tabLoading && hideFooter && currentTab === "selling"     && <SellingTab />}
         {!tabLoading && hideFooter && currentTab === "wishlist"    && <ProductsTab products={wishlist} emptyMessage="찜 목록 정보가 없습니다." />}
         {!tabLoading && hideFooter && currentTab === "settlements" && <SettlementTab settlements={settlements} />}
@@ -1379,7 +1474,14 @@ function UserProfilePage({ memberId, hideFooter = false, onNavigate, pathname = 
         {!tabLoading && hideFooter && currentTab === "withdraw"    && <WithdrawTab onWithdraw={handleWithdraw} />}
 
         {currentTab === "reviews" && (
-          <ReviewsTab reviews={reviews} totalPages={totalPages} page={page} setPage={setPage} rvLoading={rvLoading} />
+          <ReviewsTab
+            reviews={reviews}
+            totalPages={totalPages}
+            page={page}
+            setPage={setPage}
+            rvLoading={rvLoading}
+            totalElements={totalElements}
+          />
         )}
 
         {!hideFooter && currentTab !== "products" && currentTab !== "reviews" && currentTab !== "settlements" && (
@@ -1391,6 +1493,23 @@ function UserProfilePage({ memberId, hideFooter = false, onNavigate, pathname = 
 
       {profileEditOpen && (
         <ProfileSettingsModal seller={seller} onClose={() => setProfileEditOpen(false)} onSave={handleSaveProfile} />
+      )}
+
+      {/* ✅ 리뷰 작성 모달 */}
+      {reviewModalOrder && (
+        <ReviewWriteModal
+          order={reviewModalOrder}
+          onClose={() => setReviewModalOrder(null)}
+          onSaved={() => {
+            setOrders((prev) =>
+              prev.map((o) =>
+                o.orderId === reviewModalOrder.orderId ? { ...o, hasReview: true } : o
+              )
+            );
+            setPage(0);
+            setReviews([]);
+          }}
+        />
       )}
 
       {toast && <div className="pd-toast">{toast}</div>}

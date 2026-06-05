@@ -49,33 +49,6 @@ const adminRoutes = {
   "/admin/inquiries": "inquiries",
 };
 
-const adminPageMeta = {
-  dashboard: {
-    title: "관리자 대시보드",
-    subtitle: "전체 운영 현황과 주요 상태 비율을 실제 DB 통계 기준으로 확인합니다.",
-  },
-  members: {
-    title: "회원 관리",
-    subtitle: "회원 정보를 조회하고 권한과 상태 기준으로 확인합니다.",
-  },
-  products: {
-    title: "상품 관리",
-    subtitle: "등록된 상품을 조회하고 판매 상태 기준으로 확인합니다.",
-  },
-  orders: {
-    title: "주문 관리",
-    subtitle: "주문 정보를 조회하고 주문 상태와 기간 기준으로 확인합니다.",
-  },
-  reports: {
-    title: "신고 관리",
-    subtitle: "회원 신고 내역을 조회하고 사유와 처리 상태 기준으로 확인합니다.",
-  },
-  inquiries: {
-    title: "1:1 문의 관리",
-    subtitle: "고객 1:1 문의를 확인하고 답변을 등록합니다.",
-  },
-};
-
 const authRoutes = {
   "/login": "login",
   "/signup": "signup",
@@ -199,10 +172,12 @@ function App() {
   // 1. 관리자 전용 라우트 우선 처리
   if (activePage) {
     if (!hasAccessToken()) return <ErrorPage statusCode={401} />;
-    if (getCurrentRole() !== "ADMIN") return <ErrorPage statusCode={403} />;
+    const role = getCurrentRole();
+    if (!role) return null; // 토큰 재발급 중 잠깐 role이 없을 수 있으므로 대기
+    if (role !== "ADMIN") return <ErrorPage statusCode={403} />;
 
     return (
-      <AdminLayout activePage={activePage} pageMeta={adminPageMeta[activePage]} onNavigate={handleAdminNavigate}>
+      <AdminLayout activePage={activePage} onNavigate={handleAdminNavigate}>
         {renderAdminPage(activePage)}
       </AdminLayout>
     );

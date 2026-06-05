@@ -2,6 +2,39 @@ import { useMemo, useState } from "react";
 import { checkNickname, checkUserId, findPassword, login, signUp } from "../api/authApi";
 
 const userIdPattern = /^[a-zA-Z0-9_]{4,20}$/;
+
+// 관리자 예약 키워드 차단
+const ADMIN_KEYWORDS = [
+  // 관리자 관련
+  "관리자", "관리원", "관리팀", "관리부",
+  "admin", "administrator", "superadmin", "sysadmin",
+  "어드민", "어드미니스트레이터",
+  "member_000",
+  // 운영자 관련
+  "운영자", "운영팀", "운영진", "운영부", "운영원",
+  "operator", "manager", "moderator",
+  "오퍼레이터", "매니저", "모더레이터",
+  // Nailed 브랜드 사칭
+  "nailed", "네일드", "네일",
+  "nailedadmin", "nailedofficial",
+  // 공식/시스템 사칭
+  "공식", "official", "공식계정", "공식운영",
+  "시스템", "system",
+  "고객센터", "고객지원", "support",
+  "staff", "스태프",
+  "master", "마스터",
+  "root", "루트",
+  // 사칭 가능성
+  "총괄", "총관리", "책임자",
+  "대표", "대표자",
+  "임원", "직원",
+  "bot", "봇",
+];
+function containsAdminKeyword(value) {
+  if (!value) return false;
+  const normalized = value.toLowerCase().replace(/\s/g, "");
+  return ADMIN_KEYWORDS.some((keyword) => normalized.includes(keyword.toLowerCase().replace(/\s/g, "")));
+}
 const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,16}$/;
 
 function AuthLayout({ children, onNavigate }) {
@@ -163,6 +196,10 @@ export function SignupPage({ onNavigate }) {
       setMessage({ type: "error", text: "닉네임을 입력해주세요." });
       return;
     }
+    if (containsAdminKeyword(form.nickname)) {
+      setMessage({ type: "error", text: "사용할 수 없는 닉네임입니다." });
+      return;
+    }
 
     try {
       const result = await checkNickname(form.nickname);
@@ -182,6 +219,10 @@ export function SignupPage({ onNavigate }) {
   async function handleUserIdCheck() {
     if (!userIdPattern.test(form.userId.trim())) {
       setMessage({ type: "error", text: "아이디는 영문, 숫자, 밑줄 조합 4~20자로 입력해주세요." });
+      return;
+    }
+    if (containsAdminKeyword(form.userId)) {
+      setMessage({ type: "error", text: "사용할 수 없는 아이디입니다." });
       return;
     }
 
@@ -206,6 +247,10 @@ export function SignupPage({ onNavigate }) {
     const validationMessage = validateSignup(form, agreements, checks);
     if (validationMessage) {
       setMessage({ type: "error", text: validationMessage });
+      return;
+    }
+    if (containsAdminKeyword(form.name)) {
+      setMessage({ type: "error", text: "사용할 수 없는 이름입니다." });
       return;
     }
 
