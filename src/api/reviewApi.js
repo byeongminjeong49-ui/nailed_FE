@@ -1,21 +1,30 @@
+import axios from "axios";
 import { authRequest } from "./authApi";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
-async function request(path) {
-  const res = await fetch(`${API_BASE_URL}${path}`);
-  const contentType = res.headers.get("content-type") || "";
-  const data = contentType.includes("application/json") ? await res.json() : await res.text();
-  if (!res.ok) {
-    const message = typeof data === "string" ? data : data?.error?.message || data?.message || "요청 처리에 실패했습니다.";
-    throw new Error(message);
+const instance = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true,
+});
+
+async function request(path, params) {
+  try {
+    const response = await instance.get(path, { params });
+    const data = response.data;
+    return data?.data ?? data;
+  } catch (error) {
+    const message =
+      error.response?.data?.error?.message ||
+      error.response?.data?.message ||
+      error.response?.data ||
+      "요청 처리에 실패했습니다.";
+    throw new Error(typeof message === "string" ? message : "요청 처리에 실패했습니다.");
   }
-  return data?.data ?? data;
 }
 
 export async function getSellerReviews(memberId, page = 0, size = 10) {
-  const params = new URLSearchParams({ page, size });
-  return request(`/api/users/${encodeURIComponent(memberId)}/reviews?${params.toString()}`);
+  return request(`/api/users/${encodeURIComponent(memberId)}/reviews`, { page, size });
 }
 
 export async function writeReview({ orderId, rating, content }) {
