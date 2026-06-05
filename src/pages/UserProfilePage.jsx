@@ -516,11 +516,10 @@ function OrdersTab({ orders, onCancelOrder, onWriteReview }) {
             {/* 상품 정보 */}
             <div className="up-order-card-info">
               <p className="up-order-card-title">{order.productTitle}</p>
-              <p className="up-order-card-meta">주문번호: {order.orderId || "-"}</p>
-              {/* 상태 + 리뷰 버튼 인라인 */}
+              {/* 주문번호 + 리뷰 버튼 인라인 */}
               <div className="up-order-card-status-row">
                 <span className="up-order-card-meta" style={{ margin: 0 }}>
-                  상태: {STATUS_LABEL[order.orderStatus] || order.orderStatus || "-"}
+                  주문번호: {order.orderId || "-"}
                 </span>
                 {canReview && (
                   <button className="up-order-card-review-inline-btn"
@@ -532,6 +531,7 @@ function OrdersTab({ orders, onCancelOrder, onWriteReview }) {
                   <span className="up-order-card-reviewed-inline">리뷰 완료</span>
                 )}
               </div>
+              <p className="up-order-card-meta">상태: {STATUS_LABEL[order.orderStatus] || order.orderStatus || "-"}</p>
               <p className="up-order-card-price">{formatWon(order.finalPrice)}</p>
               <div className="up-order-card-btns">
                 <button className="up-order-card-detail-btn"
@@ -610,11 +610,21 @@ function SettlementTab({ settlements }) {
   const [withdrawLoading, setWithdrawLoading] = useState(false);
   const [withdrawDone, setWithdrawDone] = useState(false);
 
+  const [withdrawn, setWithdrawn] = useState(() => {
+    try {
+      const session = JSON.parse(sessionStorage.getItem("nailed_session") || "null");
+      const memberId = session?.member_id ?? session?.memberId ?? "unknown";
+      return localStorage.getItem(`nailed_withdrawn_${memberId}`) === "true";
+    } catch {
+      return false;
+    }
+  });
+
   const normalizedSettlements = settlements
     .map(normalizeSettlement)
     .filter((s) => ["SHIPPING", "DELIVERED"].includes(s.orderStatus));
 
-  const withdrawableAmount = normalizedSettlements
+  const withdrawableAmount = withdrawn ? 0 : normalizedSettlements
     .filter((s) => s.orderStatus === "DELIVERED")
     .reduce((sum, s) => sum + s.sellerSettlementAmount, 0);
 
@@ -624,7 +634,11 @@ function SettlementTab({ settlements }) {
     setWithdrawLoading(true);
     try {
       await new Promise((r) => setTimeout(r, 800));
+      const session = JSON.parse(sessionStorage.getItem("nailed_session") || "null");
+      const memberId = session?.member_id ?? session?.memberId ?? "unknown";
+      localStorage.setItem(`nailed_withdrawn_${memberId}`, "true");
       setWithdrawDone(true);
+      setWithdrawn(true);
       setTimeout(() => setWithdrawDone(false), 3000);
     } catch {
       alert("출금 신청에 실패했습니다. 다시 시도해주세요.");
@@ -639,59 +653,109 @@ function SettlementTab({ settlements }) {
       const date = s.createdAt ? new Date(s.createdAt) : null;
       const key = date && !isNaN(date)
         ? `${date.getFullYear()}년 ${String(date.getMonth() + 1).padStart(2, "0")}월`
-        : "";
+        : "날짜 없음";
       if (!groups[key]) groups[key] = [];
       groups[key].push(s);
     });
     return groups;
   }
 
-  const grouped = groupByMonth(normalizedSettlements);
-  const getStatusText = (s) => s.orderStatus === "DELIVERED" ? "입금완료" : s.orderStatus === "SHIPPING" ? "입금예정" : "-";
-  const getStatusColor = (s) => s.orderStatus === "DELIVERED" ? "#168f88" : "#1565c0";
+  // 최신순 정렬 + 최대 5개
+  const sorted = [...normalizedSettlements]
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, 5);
+
+  const grouped = groupByMonth(sorted);
+
+  const getStatusText = (s) => {
+    if (s.orderStatus === "DELIVERED") return "입금완료";
+    if (s.orderStatus === "SHIPPING")  return "입금예정";
+    return "-";
+  };
+
+  const getStatusColor = (s) => {
+    if (s.orderStatus === "DELIVERED") return "#168f88";
+    return "#1565c0";
+  };
+
   const BANK_LABELS = { KB: "국민은행", SHINHAN: "신한은행", WOORI: "우리은행", HANA: "하나은행", IBK: "기업은행", NH: "농협은행" };
 
   return (
     <div style={{ maxWidth: "720px" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#f4faf9", border: "1px solid #c8e6e4", borderRadius: "10px", padding: "10px 16px", marginBottom: "24px" }}>
+      {/* 출금 신청 박스 */}
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        background: "#f4faf9", border: "1px solid #c8e6e4", borderRadius: "10px",
+        padding: "10px 16px", marginBottom: "24px",
+      }}>
         <div>
           <p style={{ fontSize: "12px", color: "#888", marginBottom: "4px" }}>출금 가능 금액</p>
           <p style={{ fontSize: "15px", fontWeight: 700, color: "#168f88" }}>{formatWon(withdrawableAmount)}</p>
         </div>
-        <button onClick={handleWithdraw} disabled={withdrawLoading || withdrawableAmount <= 0}
-          style={{ padding: "7px 16px", background: withdrawableAmount > 0 ? "#168f88" : "#ccc", color: "#fff", border: "none", borderRadius: "8px", fontSize: "13px", fontWeight: 700, cursor: withdrawableAmount > 0 ? "pointer" : "not-allowed" }}>
+        <button
+          onClick={handleWithdraw}
+          disabled={withdrawLoading || withdrawableAmount <= 0}
+          style={{
+            padding: "7px 16px",
+            background: withdrawableAmount > 0 ? "#168f88" : "#ccc",
+            color: "#fff", border: "none", borderRadius: "8px",
+            fontSize: "13px", fontWeight: 700,
+            cursor: withdrawableAmount > 0 ? "pointer" : "not-allowed",
+          }}
+        >
           {withdrawDone ? "신청 완료 ✓" : withdrawLoading ? "처리 중..." : "출금 신청"}
         </button>
       </div>
+
       {normalizedSettlements.length === 0 ? (
         <p className="up-empty">정산 내역 정보가 없습니다.</p>
       ) : (
         Object.entries(grouped).map(([month, items]) => (
           <div key={month} style={{ marginBottom: "28px" }}>
-            <p style={{ fontSize: "14px", fontWeight: 700, color: "#222", marginBottom: "12px" }}>{month}</p>
+            <p style={{ fontSize: "14px", fontWeight: 700, color: "#222", marginBottom: "12px" }}>
+              {month}
+            </p>
             <div style={{ display: "flex", flexDirection: "column" }}>
               {items.map((s) => {
                 const imageUrl = getProductImageUrl(s);
                 const date = s.createdAt ? new Date(s.createdAt) : null;
-                const dateStr = date && !isNaN(date) ? `${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}` : "";
+                const dateStr = date && !isNaN(date)
+                  ? `${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`
+                  : "";
                 const bankLabel = BANK_LABELS[s.bankCode] || s.bankCode || "";
                 const accountLine = s.accountNumber
                   ? `${s.accountNumber}${bankLabel ? " " + bankLabel : ""}`
                   : `수수료 ${s.commission ?? 0}% · 결제금액 ${formatWon(s.finalPrice)}`;
+
                 return (
-                  <div key={s.orderId || s.productId}
-                    style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 0", borderBottom: "1px solid #f0f0f0", cursor: s.productId ? "pointer" : "default" }}
-                    onClick={() => s.productId && navigate(`/product/${s.productId}`)}>
+                  <div
+                    key={s.orderId || s.productId}
+                    style={{
+                      display: "flex", alignItems: "center", gap: "12px",
+                      padding: "12px 0", borderBottom: "1px solid #f0f0f0",
+                      cursor: s.productId ? "pointer" : "default",
+                    }}
+                    onClick={() => s.productId && navigate(`/product/${s.productId}`)}
+                  >
                     <div style={{ width: "48px", height: "48px", borderRadius: "6px", overflow: "hidden", flexShrink: 0, background: "#eee" }}>
-                      {imageUrl ? <img src={imageUrl} alt={s.productTitle} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", color: "#aaa" }}>NO IMG</div>}
+                      {imageUrl
+                        ? <img src={imageUrl} alt={s.productTitle} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", color: "#aaa" }}>NO IMG</div>
+                      }
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: "14px", fontWeight: 600, color: "#222", marginBottom: "2px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.productTitle}</p>
+                      <p style={{ fontSize: "14px", fontWeight: 600, color: "#222", marginBottom: "2px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {s.productTitle}
+                      </p>
                       <p style={{ fontSize: "12px", color: "#999" }}>{accountLine}</p>
                     </div>
                     <div style={{ textAlign: "right", flexShrink: 0 }}>
-                      <p style={{ fontSize: "14px", fontWeight: 700, color: "#222", marginBottom: "2px" }}>{formatWon(s.sellerSettlementAmount)}</p>
-                      <p style={{ fontSize: "12px", color: getStatusColor(s) }}>{dateStr && `${dateStr} `}{getStatusText(s)}</p>
+                      <p style={{ fontSize: "14px", fontWeight: 700, color: "#222", marginBottom: "2px" }}>
+                        {formatWon(s.sellerSettlementAmount)}
+                      </p>
+                      <p style={{ fontSize: "12px", color: getStatusColor(s) }}>
+                        {dateStr && `${dateStr} `}{getStatusText(s)}
+                      </p>
                     </div>
                   </div>
                 );
@@ -954,13 +1018,19 @@ function InquiriesTab({ inquiries, selectedInquiry, detailLoading, onSelectInqui
 
 /* ── 신고 내역 탭 ── */
 function ReportsTab({ reports }) {
-  const REASON_LABELS = { FRAUD: "사기", MISLEADING_INFO: "상품 정보 허위/불일치", PROHIBITED_ITEM: "금지상품", ETC: "기타" };
-  const STATUS_LABELS = {
-    PENDING:  { text: "처리 중",   color: "#1565c0", bg: "#e3f2fd" },
-    APPROVED: { text: "승인",      color: "#2e7d32", bg: "#e8f5e9" },
-    REJECTED: { text: "반려",      color: "#c62828", bg: "#fdecea" },
-    DONE:     { text: "처리 완료", color: "#555",    bg: "#f5f5f5" },
+  const REASON_LABELS = {
+    FRAUD: "사기",
+    MISLEADING_INFO: "상품 정보 허위/불일치",
+    PROHIBITED_ITEM: "금지상품",
+    ETC: "기타",
   };
+  const STATUS_LABELS = {
+    PENDING:  { text: "처리 중",  color: "#1565c0", bg: "#e3f2fd" },
+    APPROVED: { text: "승인",     color: "#2e7d32", bg: "#e8f5e9" },
+    REJECTED: { text: "반려",     color: "#c62828", bg: "#fdecea" },
+    DONE:     { text: "처리 완료", color: "#555",   bg: "#f5f5f5" },
+  };
+
   const [openId, setOpenId] = useState(null);
 
   if (reports.length === 0) return <p className="up-empty">신고 내역이 없습니다.</p>;
@@ -971,24 +1041,36 @@ function ReportsTab({ reports }) {
         const badge = STATUS_LABELS[r.reportStatus] || { text: r.reportStatus, color: "#555", bg: "#f5f5f5" };
         const isOpen = openId === r.reportId;
         return (
-          <div key={r.reportId} className="up-inquiry-item" style={{ cursor: "pointer" }} onClick={() => setOpenId(isOpen ? null : r.reportId)}>
-            <span className="up-inquiry-category">{REASON_LABELS[r.reasonCode] || r.reasonCode}</span>
+          <div key={r.reportId} className="up-inquiry-item" style={{ cursor: "pointer" }}
+            onClick={() => setOpenId(isOpen ? null : r.reportId)}
+          >
             <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-              <strong>
-                {r.targetNickname && <span>@{r.targetNickname} </span>}
-                <span style={{ fontWeight: 400, color: "#888", fontSize: "12px" }}>({r.targetMemberId})</span>
-              </strong>
-              <span style={{ display: "inline-block", padding: "2px 8px", borderRadius: "12px", fontSize: "11px", fontWeight: 600, background: badge.bg, color: badge.color }}>{badge.text}</span>
+              <strong>@{r.targetNickname || r.targetMemberId}</strong>
+              <span style={{
+                display: "inline-block",
+                padding: "2px 8px",
+                borderRadius: "12px",
+                fontSize: "11px",
+                fontWeight: 600,
+                background: badge.bg,
+                color: badge.color,
+              }}>
+                {badge.text}
+              </span>
               <span style={{ marginLeft: "auto", fontSize: "12px", color: "#aaa" }}>{isOpen ? "▲" : "▼"}</span>
             </div>
-            <span className="up-inquiry-date">신고일 {formatDateTime(r.createdAt)}</span>
+            <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+              <span className="up-inquiry-category">{REASON_LABELS[r.reasonCode] || r.reasonCode}</span>
+              <span className="up-inquiry-date">신고일 {formatDateTime(r.createdAt)}</span>
+            </div>
+
             {isOpen && (
-              <div style={{ marginTop: "12px", padding: "12px", background: "#f8f9fa", borderRadius: "8px", display: "flex", flexDirection: "column", gap: "8px" }}>
-                <div><span style={{ color: "#888", fontSize: "12px" }}>신고번호</span> <span style={{ fontSize: "13px" }}>{r.reportId}</span></div>
+              <div style={{ marginTop: "12px", padding: "12px", background: "#f8f9fa", borderRadius: "8px", display: "flex", flexDirection: "column", gap: "8px", alignItems: "flex-start" }}>
                 <div><span style={{ color: "#888", fontSize: "12px" }}>신고 사유</span> <span style={{ fontSize: "13px" }}>{REASON_LABELS[r.reasonCode] || r.reasonCode}</span></div>
                 <div><span style={{ color: "#888", fontSize: "12px" }}>신고 내용</span> <span style={{ fontSize: "13px" }}>{r.detail || "-"}</span></div>
-                {r.processedReason && <div><span style={{ color: "#888", fontSize: "12px" }}>처리 사유</span> <span style={{ fontSize: "13px" }}>{r.processedReason}</span></div>}
-                <div><span style={{ color: "#888", fontSize: "12px" }}>처리 결과</span> <span style={{ fontSize: "13px", color: badge.color, fontWeight: 600 }}>{badge.text}</span></div>
+                {r.processedReason && (
+                  <div><span style={{ color: "#888", fontSize: "12px" }}>처리 사유</span> <span style={{ fontSize: "13px" }}>{r.processedReason}</span></div>
+                )}
               </div>
             )}
           </div>
@@ -1405,7 +1487,6 @@ function UserProfilePage({ memberId, hideFooter = false, onNavigate, pathname = 
                 <button type="button" className="up-profile-edit-btn" onClick={() => setProfileEditOpen(true)}>프로필 수정</button>
               )}
             </div>
-            <p className="up-handle">@{seller.memberId}</p>
             {seller.shopInfo && <p className="up-shop-info">{seller.shopInfo}</p>}
             <div className="up-stats"></div>
           </div>

@@ -389,6 +389,7 @@
   grid-template-columns: repeat(4, minmax(150px, 1fr));
   gap: 16px;
   max-width: 960px;
+  align-items: start;
 }
 
 .up-order-card-col {
@@ -402,6 +403,7 @@
   overflow: hidden;
   background: #f0f0f0;
   margin-bottom: 10px;
+  width: 100%;
 }
 .up-order-card-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
 .up-order-card-img-empty {
