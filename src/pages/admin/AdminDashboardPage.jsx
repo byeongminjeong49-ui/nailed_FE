@@ -25,7 +25,6 @@ const ORDER_STATUS_LABELS = {
 };
 
 const REPORT_STATUS_LABELS = {
-  PENDING: "대기",
   APPROVED: "승인",
   REJECTED: "반려",
   DONE: "완료",
@@ -160,7 +159,6 @@ function AdminDashboardPage() {
   const totalProducts = numberValue(products.totalProducts);
   const totalOrders = numberValue(orders.totalOrders);
   const reportStatusTotal =
-    numberValue(reports.pendingReports) +
     numberValue(reports.approvedReports) +
     numberValue(reports.rejectedReports) +
     numberValue(reports.doneReports);
@@ -194,7 +192,7 @@ function AdminDashboardPage() {
       {
         label: "전체 신고",
         value: formatNumber(totalReports),
-        caption: `대기 ${formatNumber(reports.pendingReports)} / 완료 ${formatNumber(reports.doneReports)}`,
+        caption: `승인 ${formatNumber(reports.approvedReports)} / 반려 ${formatNumber(reports.rejectedReports)} / 완료 ${formatNumber(reports.doneReports)}`,
         icon: "alert",
       },
       {
@@ -269,17 +267,16 @@ function AdminDashboardPage() {
     },
     {
       title: "신고 상태 비율",
-      total: totalReports,
+      total: reportStatusTotal,
       rows: buildRows(
-        ["PENDING", "APPROVED", "REJECTED", "DONE"],
+        ["APPROVED", "REJECTED", "DONE"],
         REPORT_STATUS_LABELS,
         {
-          PENDING: reports.pendingReports,
           APPROVED: reports.approvedReports,
           REJECTED: reports.rejectedReports,
           DONE: reports.doneReports,
         },
-        totalReports,
+        reportStatusTotal,
       ),
     },
     {

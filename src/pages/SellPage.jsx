@@ -1,9 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { registerProduct, uploadImage, getBrands, getProductDetail, updateProduct, deleteProduct, changeProductStatus } from "../api/productApi";
+import { registerProduct, uploadImage, getBrands, getProductCategories, getProductDetail, updateProduct, deleteProduct, changeProductStatus } from "../api/productApi";
 import { toBrandNameEn } from "../utils/brandName";
 import "../styles/sell.css";
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 // ── CategoryCode enum 기준 카테고리 트리 ─────────────────────────────
 const CATEGORY_TREE = [
@@ -226,10 +224,9 @@ export default function SellPage({ editProductId }) {
   const dragOver     = useRef(null);
 
   useEffect(() => {
-    const catPromise = fetch(`${API_BASE}/api/products/categories`)
-      .then((r) => r.json())
-      .then((res) => {
-        const cats = Array.isArray(res.data) ? res.data : [];
+    const catPromise = getProductCategories()
+      .then((data) => {
+        const cats = Array.isArray(data) ? data : [];
         const map = {};
         cats.forEach((c) => { map[c.code] = c.groupId; });
         setCodeToGroupId(map);

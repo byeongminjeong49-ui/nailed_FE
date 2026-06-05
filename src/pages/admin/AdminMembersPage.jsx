@@ -329,7 +329,7 @@ function AdminMembersPage() {
                 <input
                   id="admin-member-search"
                   type="search"
-                  placeholder="아이디 또는 닉네임 검색"
+                  placeholder="회원ID, 로그인ID, 닉네임, 이름 검색"
                   value={keyword}
                   onChange={(event) => setKeyword(event.target.value)}
                 />

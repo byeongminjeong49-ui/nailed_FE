@@ -1,24 +1,32 @@
+import axios from "axios";
 import { authRequest, getAuthorizationHeader, getValidAccessToken } from "./authApi";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 async function request(path, options = {}) {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    headers: {
-      ...(options.body ? { "Content-Type": "application/json" } : {}),
-      ...options.headers,
-    },
-    ...options,
-  });
-  const contentType = res.headers.get("content-type") || "";
-  const data = contentType.includes("application/json") ? await res.json() : await res.text();
-  if (!res.ok) {
+  const { body, headers, method = "GET", ...restOptions } = options;
+
+  try {
+    const response = await axios({
+      url: `${API_BASE_URL}${path}`,
+      method,
+      data: body,
+      headers: {
+        ...(body && !(body instanceof FormData) ? { "Content-Type": "application/json" } : {}),
+        ...headers,
+      },
+      ...restOptions,
+    });
+
+    const data = response.data;
+    return data?.data ?? data;
+  } catch (axiosError) {
+    const data = axiosError.response?.data;
     const message = typeof data === "string" ? data : data?.error?.message || data?.message || "요청 처리에 실패했습니다.";
     const error = new Error(message);
-    error.status = res.status;
+    error.status = axiosError.response?.status;
     throw error;
   }
-  return data?.data ?? data;
 }
 
 async function requestWithAuth(path, options = {}) {
@@ -45,6 +53,10 @@ export async function getProductList(categoryId, page = 0, size = 15, filters = 
 
 export async function getBrands() {
   return request("/api/products/brands");
+}
+
+export async function getProductCategories() {
+  return request("/api/products/categories");
 }
 
 export async function getProductListByCode(categoryCode, page = 0, size = 20, filters = {}) {
