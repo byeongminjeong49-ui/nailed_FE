@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import kakaoIcon from '../assets/kakaopay.png';
 import naverIcon from '../assets/naverpay.png';
 import tossIcon  from '../assets/tosspay.png';
+import { mockPay } from '../api/orderApi';
 
 const s = {
   page: { minHeight: '100vh', background: '#f5f6f7', padding: '40px 20px 80px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' },
@@ -125,13 +126,7 @@ const sellerBadge   = pendingOrder?.sellerBadge    || 'Bronze';
     setError('');
     try {
       await new Promise((res) => setTimeout(res, 1500));
-      const mockImpUid = `mock_imp_${Date.now()}`;
-      const res = await fetch(`/api/orders/${orderId}/pay`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ impUid: mockImpUid, amount: finalPrice }),
-      });
-      if (!res.ok) throw new Error('결제 처리 실패');
+      await mockPay(orderId);
       sessionStorage.removeItem('orderForm');
       sessionStorage.removeItem('pendingOrder');
       sessionStorage.removeItem('pendingPayment');
@@ -290,7 +285,7 @@ const sellerBadge   = pendingOrder?.sellerBadge    || 'Bronze';
   padding: '14px 16px',
   marginTop: '12px'
 }}>
-  <strong>취소 정책</strong>
+  <strong>취소/환불 정책</strong>
   <ul style={{ marginTop: '8px', paddingLeft: '16px', lineHeight: '1.9' }}>
     <li>결제 완료 상태에서만 취소 가능합니다.</li>
     <li>주문 접수 이후에는 취소가 불가합니다.</li>
