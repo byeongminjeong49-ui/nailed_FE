@@ -1,4 +1,4 @@
-import { useState} from 'react';
+import { useState, useEffect} from 'react';
 import { createOrder } from '../api/orderApi';
 
 const s = {
@@ -37,12 +37,12 @@ function getCurrentMemberId() {
 
 export default function OrderForm() {
 
-  const [pendingOrder] = useState(() => {
-    try {
-      const saved = sessionStorage.getItem('pendingOrder');
-      return saved ? JSON.parse(saved) : { productId: 1, title: '기본 상품', productAmount: 0, finalPrice: 0, shippingFee: 0 };
-    } catch { return { productId: 1, title: '기본 상품', productAmount: 0, finalPrice: 0, shippingFee: 0 }; }
-  });
+ const [pendingOrder, setPendingOrder] = useState(null);
+
+useEffect(() => {
+  const saved = sessionStorage.getItem('pendingOrder');
+  setPendingOrder(saved ? JSON.parse(saved) : { productId: 1, title: '기본 상품', productAmount: 0, finalPrice: 0, shippingFee: 0 });
+}, []);
   const [form, setForm] = useState(() => {
     try {
       const saved = sessionStorage.getItem('orderForm');
@@ -59,8 +59,8 @@ export default function OrderForm() {
   const [addressTouched, setAddressTouched] = useState(false);
   const [paying, setPaying] = useState(false); 
 
-const productAmount    = pendingOrder.productAmount || 0;
-const shippingFee      = pendingOrder.shippingFee || 0;
+const productAmount    = pendingOrder?.productAmount || 0;
+const shippingFee      = pendingOrder?.shippingFee || 0;
 const commission = Math.floor((productAmount + shippingFee) * 2 / 100);
 const finalPrice       = productAmount + shippingFee + commission;
 
@@ -77,20 +77,23 @@ const finalPrice       = productAmount + shippingFee + commission;
     if (key === 'receiverName') {
       val = val.replace(/[^가-힣ㄱ-ㅎㅏ-ㅣ\s]/g, '');
     }
-    const updated = { ...form, [key]: val };
+    const updated = { ...form, [key]: val, _buyerId: getCurrentMemberId() };
     setForm(updated);
     sessionStorage.setItem('orderForm', JSON.stringify(updated));
   };
 
   const handlePayment = async () => {
     if (!canPay || paying) return; 
+    setPaying(true);
     const existingPayment = sessionStorage.getItem('pendingPayment');
-if (existingPayment) {
-  window.history.pushState({}, '', '/order/payment');
-  window.dispatchEvent(new PopStateEvent('popstate'));
-  return;
-}
-    setPaying(true); 
+  if (existingPayment) {
+    try {
+      const existing = JSON.parse(existingPayment);
+      const buyerId = getCurrentMemberId() || pendingOrder?.buyerId;
+      await fetch(`/api/orders/${existing.orderId}/cancel?buyerId=${buyerId}`, { method: 'POST' });
+    } catch {}
+  }
+    sessionStorage.removeItem('pendingPayment'); 
     try {
       const orderData = {
         productId:             pendingOrder.productId,
@@ -134,6 +137,7 @@ window.dispatchEvent(new PopStateEvent('popstate'));
   { key: 'deliveryRequest', label: '배송 요청사항',             placeholder: '문 앞에 놓아주세요' },
 ];
 
+if (!pendingOrder) return <div style={s.page}><div style={{ textAlign: 'center', padding: '80px', color: '#888' }}>로딩 중...</div></div>
   return (
     <div style={s.page}>
       <div style={s.inner}>
@@ -182,9 +186,10 @@ window.dispatchEvent(new PopStateEvent('popstate'));
                   new window.daum.Postcode({
                     oncomplete: (data) => {
                       const updated = {
-                        ...form,
-                        address: data.roadAddress || data.jibunAddress,
-                        zipcode: data.zonecode,
+                       ...form,
+                       address: data.roadAddress || data.jibunAddress,
+                       zipcode: data.zonecode,
+                       _buyerId: getCurrentMemberId(),
                       };
                       setForm(updated);
                       sessionStorage.setItem('orderForm', JSON.stringify(updated));

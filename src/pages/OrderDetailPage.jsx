@@ -238,7 +238,7 @@ const handleConfirmOrder = async () => {
         {/* 결제 정보 */}
         <div style={s.card}>
           <div style={s.cardTitle}>결제 정보</div>
-          <div style={s.row}><span style={s.rowLabel}>상품 금액</span><span style={s.rowValue}>{won(order.productAmount)}</span></div>
+          <div style={s.row}><span style={s.rowLabel}>상품 금액</span><span style={s.rowValue}>{won(order.productPrice)}</span></div>
           <div style={s.row}><span style={s.rowLabel}>배송비</span><span style={s.rowValue}>{order.shippingFee === 0 ? '무료' : won(order.shippingFee)}</span></div>
           <div style={s.row}><span style={s.rowLabel}>수수료율</span><span style={s.rowValue}>{order.commission}%</span></div>
           <div style={{ ...s.row, color: '#168f88', fontWeight: '700' }}><span style={{ ...s.rowLabel, color: '#168f88' }}>최종 결제 금액</span><span style={{ ...s.rowValue, fontSize: '16px' }}>{won(order.finalPrice)}</span></div>

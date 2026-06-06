@@ -458,21 +458,33 @@ function ProductDetailPage({ productId }) {
               ) : (
                 <button
                   className="pd-buy-btn"
-                  onClick={() => {
-                    if (!currentMemberId) { navigate('/login'); return; }
-                    sessionStorage.setItem('pendingOrder', JSON.stringify({
-                      productId:      product.productId,
-                      sellerId:       product.seller.memberId,
-                      buyerId:        currentMemberId,
-                      productAmount:  product.price,
-                      shippingFee:    product.shippingFee || 0,
-                      title:          product.title,
-                      imageUrl:       productImageUrls[0] ?? '',
-                      sellerNickname: product.seller.nickname,
-                      sellerBadge:    product.seller.sellerGrade,
-                    }));
-                    navigate('/order/form');
-                  }}
+                 onClick={() => {
+  if (!currentMemberId) { navigate('/login'); return; }
+
+  // 다른 구매자면 배송지 초기화
+  const savedForm = sessionStorage.getItem('orderForm');
+  if (savedForm) {
+    try {
+      const parsed = JSON.parse(savedForm);
+      if (!parsed._buyerId || parsed._buyerId !== currentMemberId) {
+        sessionStorage.removeItem('orderForm');
+      }
+    } catch {}
+  }
+
+  sessionStorage.setItem('pendingOrder', JSON.stringify({
+    productId:      product.productId,
+    sellerId:       product.seller.memberId,
+    buyerId:        currentMemberId,
+    productAmount:  product.price,
+    shippingFee:    product.shippingFee || 0,
+    title:          product.title,
+    imageUrl:       productImageUrls[0] ?? '',
+    sellerNickname: product.seller.nickname,
+    sellerBadge:    product.seller.sellerGrade,
+  }));
+  navigate('/order/form');
+}}
                   disabled={isSold}
                 >
                   <img src={shieldIcon} width="15" height="15" alt="shield" style={{filter: 'invert(1)'}} />

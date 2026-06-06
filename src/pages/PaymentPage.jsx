@@ -233,7 +233,17 @@ const sellerBadge   = pendingOrder?.sellerBadge    || 'Bronze';
               {paying ? '처리 중...' : `${(finalPrice || 0).toLocaleString()}원 결제하기`}
             </button>
             <button style={{ display: 'block', width: '100%', padding: '14px', background: '#fff', color: '#555', border: '1px solid #ddd', borderRadius: '10px', fontSize: '14px', cursor: 'pointer', marginTop: '8px' }}
-              onClick={() => window.history.back()}>돌아가기</button>
+                onClick={async () => {
+                  try {
+                    const session = JSON.parse(sessionStorage.getItem('nailed_session') || 'null');
+                    const buyerId = session?.member_id ?? session?.memberId ?? null;
+                    if (pendingPayment?.orderId && buyerId) {
+                      await fetch(`/api/orders/${pendingPayment.orderId}/cancel?buyerId=${buyerId}`, { method: 'POST' });
+                    }
+                  } catch {}
+                  sessionStorage.removeItem('pendingPayment');
+                  window.history.back();
+                }}>돌아가기</button>
           </div>
 
           {/* 결제 취소 안내 */}
