@@ -3,7 +3,7 @@ import kakaoIcon from '../assets/kakaopay.png';
 import naverIcon from '../assets/naverpay.png';
 import tossIcon  from '../assets/tosspay.png';
 import { mockPay } from '../api/orderApi';
-
+import axios from 'axios';
 const s = {
   page: { minHeight: '100vh', background: '#f5f6f7', padding: '40px 20px 80px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' },
   inner: { maxWidth: '560px', margin: '0 auto' },
@@ -90,6 +90,8 @@ export default function PaymentPage() {
   const [done,   setDone]   = useState(false);
   const [error,  setError]  = useState('');
 
+  // 이전 단계(주문서 작성 페이지)에서 sessionStorage에 저장해둔 정보를 불러옴
+  // pendingPayment(결제 대기 정보)가 없으면 이 페이지에 직접 접근한 것으로 간주하고 에러 처리
   useEffect(() => {
     const pay  = sessionStorage.getItem('pendingPayment');
     const ord  = sessionStorage.getItem('pendingOrder');
@@ -232,13 +234,14 @@ const sellerBadge   = pendingOrder?.sellerBadge    || 'Bronze';
             <button style={s.payBtn} onClick={onPay} disabled={paying}>
               {paying ? '처리 중...' : `${(finalPrice || 0).toLocaleString()}원 결제하기`}
             </button>
+            {/* 돌아가기: 결제를 진행하지 않고 나가는 경우, 생성해 둔 주문을 자동으로 취소하고 이전 화면으로 이동 */}
             <button style={{ display: 'block', width: '100%', padding: '14px', background: '#fff', color: '#555', border: '1px solid #ddd', borderRadius: '10px', fontSize: '14px', cursor: 'pointer', marginTop: '8px' }}
                 onClick={async () => {
                   try {
                     const session = JSON.parse(sessionStorage.getItem('nailed_session') || 'null');
                     const buyerId = session?.member_id ?? session?.memberId ?? null;
                     if (pendingPayment?.orderId && buyerId) {
-                      await fetch(`/api/orders/${pendingPayment.orderId}/cancel?buyerId=${buyerId}`, { method: 'POST' });
+                      await axios.post(`/api/orders/${pendingPayment.orderId}/cancel?buyerId=${buyerId}`);
                     }
                   } catch {}
                   sessionStorage.removeItem('pendingPayment');
@@ -295,7 +298,7 @@ const sellerBadge   = pendingOrder?.sellerBadge    || 'Bronze';
   padding: '14px 16px',
   marginTop: '12px'
 }}>
-  <strong>취소/환불 정책</strong>
+  <strong>취소 정책</strong>
   <ul style={{ marginTop: '8px', paddingLeft: '16px', lineHeight: '1.9' }}>
     <li>결제 완료 상태에서만 취소 가능합니다.</li>
     <li>주문 접수 이후에는 취소가 불가합니다.</li>

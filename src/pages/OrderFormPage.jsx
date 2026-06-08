@@ -1,5 +1,6 @@
 import { useState, useEffect} from 'react';
 import { createOrder } from '../api/orderApi';
+import axios from 'axios';
 
 const s = {
   page: { minHeight: '100vh', background: '#f5f6f7', padding: '40px 20px 80px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' },
@@ -35,13 +36,30 @@ function getCurrentMemberId() {
   }
 }
 
+// ─────────────────────────────────────────────
+// 주문 진행 흐름 (sessionStorage 기반 다단계 플로우)
+//   1) pendingOrder   : 상품 상세에서 "구매하기" 클릭 시 저장되는 주문 대상 정보
+//   2) orderForm      : 이 페이지(주문서 작성)에서 입력한 배송지 정보
+//   3) pendingPayment : 주문 생성(createOrder) 성공 후 결제 페이지로 넘기는 결제 대기 정보
+//   4) completedOrder : 결제 완료 후 주문 상세/완료 화면에서 사용하는 최종 정보
+// 각 단계는 sessionStorage를 매개로 페이지 간 이동(navigate)하며 데이터를 전달함
+// ─────────────────────────────────────────────
 export default function OrderForm() {
 
  const [pendingOrder, setPendingOrder] = useState(null);
 
 useEffect(() => {
   const saved = sessionStorage.getItem('pendingOrder');
-  setPendingOrder(saved ? JSON.parse(saved) : { productId: 1, title: '기본 상품', productAmount: 0, finalPrice: 0, shippingFee: 0 });
+  const fallback = { productId: 1, title: '기본 상품', productAmount: 0, finalPrice: 0, shippingFee: 0 };
+  if (!saved) {
+    setPendingOrder(fallback);
+    return;
+  }
+  try {
+    setPendingOrder(JSON.parse(saved));
+  } catch {
+    setPendingOrder(fallback);
+  }
 }, []);
   const [form, setForm] = useState(() => {
     try {
@@ -59,6 +77,10 @@ useEffect(() => {
   const [addressTouched, setAddressTouched] = useState(false);
   const [paying, setPaying] = useState(false); 
 
+// 결제 금액 미리보기 계산 (백엔드 OrderService.createOrder의 계산식과 동일하게 맞춰야 함)
+// - commission(수수료) = (상품가 + 배송비) × 2%
+// - finalPrice(최종 결제금액) = 상품가 + 배송비 + 수수료
+// ※ 실제 저장되는 금액은 주문 생성 시 백엔드에서 다시 계산되며, 여기서는 화면 표시용으로만 사용됨
 const productAmount    = pendingOrder?.productAmount || 0;
 const shippingFee      = pendingOrder?.shippingFee || 0;
 const commission = Math.floor((productAmount + shippingFee) * 2 / 100);
@@ -85,12 +107,15 @@ const finalPrice       = productAmount + shippingFee + commission;
   const handlePayment = async () => {
     if (!canPay || paying) return; 
     setPaying(true);
+    // 이전에 결제 진행 중이던 주문(pendingPayment)이 남아있다면,
+    // 새 주문을 생성하기 전에 그 이전 주문을 자동으로 취소 처리함
+    // (구매자가 결제를 끝내지 않고 주문서를 다시 작성하러 돌아온 경우, 미결제 주문이 중복으로 쌓이는 것을 방지)
     const existingPayment = sessionStorage.getItem('pendingPayment');
   if (existingPayment) {
     try {
       const existing = JSON.parse(existingPayment);
       const buyerId = getCurrentMemberId() || pendingOrder?.buyerId;
-      await fetch(`/api/orders/${existing.orderId}/cancel?buyerId=${buyerId}`, { method: 'POST' });
+     await axios.post(`/api/orders/${existing.orderId}/cancel?buyerId=${buyerId}`);
     } catch {}
   }
     sessionStorage.removeItem('pendingPayment'); 

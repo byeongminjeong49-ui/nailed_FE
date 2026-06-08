@@ -107,6 +107,7 @@ useEffect(() => {
     .finally(() => setLoading(false));
 }, [orderId]);
 
+  // [판매자 전용] REQUESTED(주문접수) 상태에서만 호출 가능 — 운송장 등록 → 주문 상태가 SHIPPING으로 전환됨
   const handleShip = async () => {
     if (!carrierCode || !trackingNumber) return;
     setSubmitting(true);
@@ -131,6 +132,7 @@ useEffect(() => {
     }
   };
 
+  // [구매자 전용] SHIPPING(배송중) 상태에서만 호출 가능
   // ← 추가: 배송완료 확인 → DELIVERED 처리 → 정산 확정
   const handleConfirmDelivery = async () => {
     if (confirming) return;
@@ -145,6 +147,7 @@ useEffect(() => {
       setConfirming(false);
     }
   };
+  // [구매자 전용] PAID(결제완료) 상태에서만 호출 가능 — 그 이후 단계(주문접수~)에서는 취소 불가
   const handleCancel = async () => {
   if (!window.confirm('정말 취소하시겠습니까?')) return;
   try {
@@ -156,6 +159,7 @@ useEffect(() => {
   }
 };
 
+// [판매자 전용] PAID(결제완료) 상태에서만 호출 가능 — 주문 확인 처리 → 주문 상태가 REQUESTED로 전환됨
 const handleConfirmOrder = async () => {
   try {
     await axios.patch(`/api/orders/${orderId}/confirm?sellerId=${currentMemberId}`);
