@@ -955,7 +955,11 @@ function ReviewsTab({ reviews, totalPages, page, setPage, rvLoading }) {
               <div className="rv-avatar">{r.buyerNickname.charAt(0)}</div>
               <div>
                 <span className="rv-buyer">{r.buyerNickname}</span>
-                <span className="rv-stars">{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</span>
+                <span className="rv-stars">
+                  {[1,2,3,4,5].map((i) => (
+                    <span key={i} className={`rv-star${i <= r.rating ? " filled" : ""}`}>★</span>
+                  ))}
+                </span>
               </div>
               <span className="rv-date">{new Date(r.createdAt).toLocaleDateString("ko-KR")}</span>
             </div>

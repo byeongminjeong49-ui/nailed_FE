@@ -131,16 +131,24 @@ const RECENTLY_VIEWED_KEY = "nailed_recently_viewed";
 function saveRecentlyViewed(id) {
   try {
     const ids = JSON.parse(localStorage.getItem(RECENTLY_VIEWED_KEY) || "[]");
-    const updated = [String(id), ...ids.filter((x) => String(x) !== String(id))].slice(0, 10);
+    const updated = [String(id), ...ids.filter((x) => String(x) !== String(id))].slice(0, 6);
     localStorage.setItem(RECENTLY_VIEWED_KEY, JSON.stringify(updated));
+  } catch {}
+}
+
+function removeRecentlyViewed(id) {
+  try {
+    const ids = JSON.parse(localStorage.getItem(RECENTLY_VIEWED_KEY) || "[]");
+    localStorage.setItem(RECENTLY_VIEWED_KEY, JSON.stringify(
+      ids.filter((x) => String(x) !== String(id))
+    ));
   } catch {}
 }
 
 function getRecentlyViewedIds(excludeId) {
   try {
     return JSON.parse(localStorage.getItem(RECENTLY_VIEWED_KEY) || "[]")
-      .filter((id) => String(id) !== String(excludeId))
-      .slice(0, 5);
+      .filter((id) => String(id) !== String(excludeId));
   } catch {
     return [];
   }
@@ -215,6 +223,7 @@ function ProductDetailPage({ productId }) {
   const [recentProducts, setRecentProducts] = useState([]);
   const [randomProducts, setRandomProducts] = useState([]);
   const [relatedProducts, setRelatedProducts] = useState([]);
+  const [capturedRecentIds, setCapturedRecentIds] = useState([]);
 
   const session = (() => { try { return JSON.parse(sessionStorage.getItem("nailed_session") ?? "null"); } catch { return null; } })();
   const currentMemberId = session?.member_id ?? session?.memberId ?? null;
@@ -224,6 +233,11 @@ function ProductDetailPage({ productId }) {
     clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => setToast(""), 2400);
   }
+
+  // fetch 완료 및 saveRecentlyViewed 호출 전에 IDs 캡처
+  useEffect(() => {
+    setCapturedRecentIds(getRecentlyViewedIds(productId));
+  }, [productId]);
 
   useEffect(() => {
     setLoading(true);
@@ -252,13 +266,18 @@ function ProductDetailPage({ productId }) {
   }, [product?.seller?.memberId, productId]);
 
   useEffect(() => {
-    if (!product) return;
-    const ids = getRecentlyViewedIds(productId);
-    if (ids.length === 0) return;
-    Promise.all(ids.map((id) => getProductDetail(id).catch(() => null)))
-      .then((results) => setRecentProducts(results.filter(Boolean)))
+    if (!product || capturedRecentIds.length === 0) return;
+    Promise.all(
+      capturedRecentIds.map((id) =>
+        getProductDetail(id).catch(() => {
+          removeRecentlyViewed(id);
+          return null;
+        })
+      )
+    )
+      .then((results) => setRecentProducts(results.filter(Boolean).slice(0, 5)))
       .catch(() => {});
-  }, [product, productId]);
+  }, [product, capturedRecentIds]);
 
   useEffect(() => {
     getRandomProducts(15)

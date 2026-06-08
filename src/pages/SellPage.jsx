@@ -101,6 +101,7 @@ export default function SellPage({ editProductId }) {
           setTitle(product.title);
           setDescription(product.description);
           setPrice(String(product.price));
+          setShippingFee(String(product.shippingFee));
           setCondition(product.conditionCode);
           setSelectedSize(product.size || "");
           setHashtags(product.hashtags || "");
@@ -200,6 +201,7 @@ export default function SellPage({ editProductId }) {
     if (!description.trim())                  errs.description = "설명을 입력해주세요.";
     if (!itemCode)                            errs.category    = "서브 카테고리를 선택해주세요.";
     if (!condition)                           errs.condition   = "상태를 선택해주세요.";
+    if (sizeOptions.length > 0 && !selectedSize) errs.size    = "사이즈를 선택해주세요.";
     if (!price || Number(price) < 1000)       errs.price       = "최소 1,000원 이상 입력해주세요.";
 
     if (Object.keys(errs).length) { setErrors(errs); return; }
@@ -342,9 +344,9 @@ export default function SellPage({ editProductId }) {
             <div className="sell-input-wrap">
               <textarea className={`sell-textarea${errors.description ? " error" : ""}`}
                 placeholder={"상품 설명은 자세히 적을수록 빠르게 판매할 수 있어요.\n구매 시기, 사용 기간, 하자 여부, 소재, 선물 사이즈 등"}
-                value={description} maxLength={2500}
+                value={description} maxLength={300}
                 onChange={(e) => setDescription(e.target.value)} />
-              <span className="sell-count">{description.length}/2500</span>
+              <span className="sell-count">{description.length}/300</span>
             </div>
             {errors.description && <p className="sell-error">{errors.description}</p>}
           </div>
@@ -417,6 +419,7 @@ export default function SellPage({ editProductId }) {
                   </button>
                 ))}
               </div>
+              {errors.size && <p className="sell-error">{errors.size}</p>}
             </div>
           )}
 
