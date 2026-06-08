@@ -9,6 +9,16 @@ function navigate(path) {
   window.dispatchEvent(new PopStateEvent("popstate"));
 }
 
+const REVIEWED_ORDERS_KEY = "nailed_reviewed_orders";
+function markOrderReviewed(orderId) {
+  try {
+    const list = JSON.parse(localStorage.getItem(REVIEWED_ORDERS_KEY) || "[]");
+    if (!list.includes(orderId)) {
+      localStorage.setItem(REVIEWED_ORDERS_KEY, JSON.stringify([...list, orderId]));
+    }
+  } catch {}
+}
+
 function StarInput({ value, onChange }) {
   const [hover, setHover] = useState(0);
   const display = hover || value;
@@ -45,6 +55,7 @@ function ReviewWritePage({ orderId, sellerId }) {
     setError("");
     try {
       await writeReview({ orderId, sellerId, rating, content: content.trim() || undefined });
+      markOrderReviewed(orderId);
       setDone(true);
     } catch (err) { setError(err.message); }
     finally { setLoading(false); }
@@ -59,7 +70,7 @@ function ReviewWritePage({ orderId, sellerId }) {
             <div className="rw-done-icon">✓</div>
             <h2 className="rw-done-title">후기가 등록되었습니다.</h2>
             <p className="rw-done-desc">소중한 후기 감사합니다.</p>
-            <button className="rw-done-btn" onClick={() => navigate("/")}>홈으로 이동</button>
+            <button className="rw-done-btn" onClick={() => navigate("/mypage/orders")}>구매 내역으로</button>
           </div>
         ) : (
           <>

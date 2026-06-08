@@ -582,4 +582,40 @@
 .up-withdraw-btn:hover {
   background: #c94f4f;
 }
+.up-avatar-wrap {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
 
+.up-profile-img-delete-btn {
+  padding: 3px 12px;
+  background: #e57373;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.up-profile-img-delete-btn:hover {
+  background: #c62828;
+}
+.up-modal-img-delete-btn {
+  margin-top: 6px;
+  padding: 5px 18px;
+  background: #fff;
+  color: #e57373;
+  border: 1.5px solid #e57373;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.up-modal-img-delete-btn:hover {
+  background: #fdecea;
+}

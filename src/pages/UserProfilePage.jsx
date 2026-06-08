@@ -13,6 +13,7 @@ import {
   fetchWishlist,
   updateMyProfile,
   uploadMyProfileImage,
+  deleteProfileImage,       // ↓ 추가
   withdrawMe,
   fetchAccountInfo,
   updateAccountInfo,
@@ -29,8 +30,8 @@ const PROFILE_IMAGE_MAX_SIZE = 5 * 1024 * 1024;
 const PROFILE_IMAGE_TYPES = ["image/jpeg", "image/png"];
 const NICKNAME_CHANGE_INTERVAL_DAYS = 30;
 const NICKNAME_CHANGED_KEY = "nailed_nickname_changed_at";
-// ✅ 기본 프로필 이미지 URL 제거 → 텍스트 아바타로 fallback
 const DEFAULT_PROFILE_IMAGE_URL = "";
+const SERVER_DEFAULT_PROFILE = "/images/profileImg/default-profile.png";
 
 const GRADE = { BRONZE: "브론즈", SILVER: "실버", GOLD: "골드", DIAMOND: "다이아" };
 
@@ -400,7 +401,7 @@ function ProductsTab({ products, emptyMessage = "조건에 맞는 상품이 없�
   const [visible, setVisible] = useState(12);
 
   const filtered = products.map(normalizeProduct)
-    .filter((p) => !filters.excludeSold || !p.isSold)
+  .filter((p) => !p.isSold)
     .filter((p) => filters.gender === "all" || matchesGender(p, filters.gender))
     .filter((p) => filters.priceMin === 0 || p.price >= filters.priceMin)
     .filter((p) => filters.priceMax === 0 || p.price <= filters.priceMax);
@@ -505,18 +506,14 @@ function OrdersTab({ orders, onCancelOrder, onWriteReview }) {
 
         return (
           <div key={order.orderId || order.productId} className="up-order-card-col">
-            {/* 상품 이미지 */}
             <div className="up-order-card-img-wrap">
               {imageUrl
                 ? <img src={imageUrl} alt={order.productTitle} />
                 : <div className="up-order-card-img-empty">상품<br/>이미지</div>
               }
             </div>
-
-            {/* 상품 정보 */}
             <div className="up-order-card-info">
               <p className="up-order-card-title">{order.productTitle}</p>
-              {/* 주문번호 + 리뷰 버튼 인라인 */}
               <div className="up-order-card-status-row">
                 <span className="up-order-card-meta" style={{ margin: 0 }}>
                   주문번호: {order.orderId || "-"}
@@ -660,7 +657,6 @@ function SettlementTab({ settlements }) {
     return groups;
   }
 
-  // 최신순 정렬 + 최대 5개
   const sorted = [...normalizedSettlements]
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 5);
@@ -682,7 +678,6 @@ function SettlementTab({ settlements }) {
 
   return (
     <div style={{ maxWidth: "720px" }}>
-      {/* 출금 신청 박스 */}
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
         background: "#f4faf9", border: "1px solid #c8e6e4", borderRadius: "10px",
@@ -769,7 +764,7 @@ function SettlementTab({ settlements }) {
 }
 
 /* ── 프로필 수정 모달 ── */
-function ProfileSettingsModal({ seller, onClose, onSave }) {
+function ProfileSettingsModal({ seller, onClose, onSave, onDeleteImage }) {
   const fileInputRef = useRef(null);
   const [shopInfo, setShopInfo] = useState(seller.shopInfo || "");
   const [profilePreview, setProfilePreview] = useState(seller.profileImageUrl || "");
@@ -803,7 +798,14 @@ function ProfileSettingsModal({ seller, onClose, onSave }) {
       <form className="up-profile-modal" onSubmit={handleSubmit} onMouseDown={(event) => event.stopPropagation()}>
         <div className="up-modal-head">
           <h2>프로필 수정</h2>
-          <button type="button" className="up-modal-close" onClick={onClose} aria-label="닫기">×</button>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            {seller.profileImageUrl && seller.profileImageUrl !== toAssetUrl(SERVER_DEFAULT_PROFILE) && (
+              <button type="button" className="up-profile-edit-btn" onClick={async () => { await onDeleteImage(); onClose(); }}>
+                사진 삭제
+              </button>
+            )}
+            <button type="button" className="up-modal-close" onClick={onClose} aria-label="닫기">×</button>
+          </div>
         </div>
         <button type="button" className="up-edit-avatar" onClick={() => fileInputRef.current?.click()} aria-label="프로필 이미지 선택">
           {profilePreview && !profilePreviewFailed
@@ -814,9 +816,9 @@ function ProfileSettingsModal({ seller, onClose, onSave }) {
         <input ref={fileInputRef} type="file" className="up-hidden-file" accept="image/jpeg,image/png" onChange={handleImageChange} />
         <label className="up-edit-field">
           <span>상점 정보</span>
-          <textarea value={shopInfo} onChange={(event) => setShopInfo(event.target.value.slice(0, 500))} rows={5} maxLength={500} placeholder="상점 소개를 입력하세요." />
+          <textarea value={shopInfo} onChange={(event) => setShopInfo(event.target.value.slice(0, 80))} rows={5} maxLength={80} placeholder="상점 소개를 입력하세요." />
         </label>
-        <p className="up-edit-help">{shopInfo.length}/500</p>
+        <p className="up-edit-help">{shopInfo.length}/80</p>
         <button type="submit" className="up-save-profile" disabled={saving}>{saving ? "저장 중..." : "저장"}</button>
       </form>
     </div>
@@ -837,7 +839,6 @@ function ReviewWriteModal({ order, onClose, onSaved }) {
       await writeReview({ orderId: order.orderId, rating, content: content.trim() || null });
       alert("리뷰가 등록되었습니다.");
       onSaved();
-      onClose();
     } catch (error) {
       alert(error.message || "리뷰 등록에 실패했습니다.");
     } finally {
@@ -851,13 +852,10 @@ function ReviewWriteModal({ order, onClose, onSaved }) {
   return (
     <div className="up-modal-backdrop" role="presentation" onMouseDown={onClose}>
       <div className="up-review-modal" onMouseDown={(e) => e.stopPropagation()}>
-        {/* 헤더 */}
         <div className="up-modal-head">
           <h2>리뷰 작성</h2>
           <button type="button" className="up-modal-close" onClick={onClose} aria-label="닫기">×</button>
         </div>
-
-        {/* 구매 상품 */}
         <div className="up-review-product-row">
           <div className="up-review-product-img">
             {imageUrl
@@ -871,8 +869,6 @@ function ReviewWriteModal({ order, onClose, onSaved }) {
             <p className="up-review-product-price">{formatWon(order.finalPrice)}</p>
           </div>
         </div>
-
-        {/* 별점 */}
         <div className="up-review-rating-section">
           <p className="up-review-section-label">상품 만족도</p>
           <p className="up-review-rating-question">상품은 어떠셨나요?</p>
@@ -895,8 +891,6 @@ function ReviewWriteModal({ order, onClose, onSaved }) {
               : "별점을 선택해 주세요"}
           </p>
         </div>
-
-        {/* 후기 작성 */}
         <div className="up-review-content-section">
           <p className="up-review-section-label">후기 작성</p>
           <textarea
@@ -908,8 +902,6 @@ function ReviewWriteModal({ order, onClose, onSaved }) {
           />
           <p className="up-review-char-count">{content.length} / 500</p>
         </div>
-
-        {/* 등록 버튼 */}
         <button
           type="button"
           className={`up-review-submit ${rating > 0 ? "active" : ""}`}
@@ -924,30 +916,46 @@ function ReviewWriteModal({ order, onClose, onSaved }) {
 }
 
 /* ── 리뷰 탭 ── */
-function ReviewsTab({ reviews, totalPages, page, setPage, rvLoading, totalElements }) {
+function ReviewsTab({ reviews, totalPages, page, setPage, rvLoading }) {
   return (
     <div className="up-reviews-wrap">
-      {/* 헤더 */}
-      <div className="up-reviews-header">
-        <span className="up-reviews-count">리뷰 {totalElements}건</span>
-      </div>
-
       {reviews.length === 0 && !rvLoading && (
         <p className="up-empty">아직 받은 리뷰가 없습니다.</p>
       )}
-
       <ul className="rv-list">
         {reviews.map((r) => (
           <li key={r.reviewId} className="rv-item">
-            <div className="rv-item-header">
-              <div className="rv-avatar">{(r.buyerNickname || r.buyerId || "?").charAt(0)}</div>
-              <div className="rv-header-info">
-                <span className="rv-buyer">{r.buyerNickname || r.buyerId || "구매자"}</span>
-                <div className="rv-stars">
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <span key={s} className={s <= r.rating ? "rv-star filled" : "rv-star"}>★</span>
-                  ))}
+            {r.productTitle && (
+              <div
+                style={{
+                  display: 'flex', gap: '10px', alignItems: 'center',
+                  padding: '8px', background: '#f8f9fa', borderRadius: '8px',
+                  marginBottom: '10px', cursor: 'pointer'
+                }}
+                onClick={() => r.productId && navigate(`/product/${r.productId}`)}
+              >
+                {r.productImageUrl && (
+                  <img
+                    src={toAssetUrl(r.productImageUrl)}
+                    alt={r.productTitle}
+                    style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '6px', flexShrink: 0 }}
+                  />
+                )}
+                <div>
+                  <p style={{ fontSize: '13px', fontWeight: 600, margin: '0 0 2px' }}>{r.productTitle}</p>
+                  {r.price && (
+                    <p style={{ fontSize: '12px', color: '#168f88', margin: 0 }}>
+                      {Number(r.price).toLocaleString()}원
+                    </p>
+                  )}
                 </div>
+              </div>
+            )}
+            <div className="rv-item-header">
+              <div className="rv-avatar">{r.buyerNickname.charAt(0)}</div>
+              <div>
+                <span className="rv-buyer">{r.buyerNickname}</span>
+                <span className="rv-stars">{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</span>
               </div>
               <span className="rv-date">{new Date(r.createdAt).toLocaleDateString("ko-KR")}</span>
             </div>
@@ -955,7 +963,6 @@ function ReviewsTab({ reviews, totalPages, page, setPage, rvLoading, totalElemen
           </li>
         ))}
       </ul>
-
       {page < totalPages - 1 && (
         <button className="rv-load-more" onClick={() => setPage((p) => p + 1)} disabled={rvLoading}>
           {rvLoading ? "불러오는 중..." : "리뷰 더보기"}
@@ -1063,7 +1070,6 @@ function ReportsTab({ reports }) {
               <span className="up-inquiry-category">{REASON_LABELS[r.reasonCode] || r.reasonCode}</span>
               <span className="up-inquiry-date">신고일 {formatDateTime(r.createdAt)}</span>
             </div>
-
             {isOpen && (
               <div style={{ marginTop: "12px", padding: "12px", background: "#f8f9fa", borderRadius: "8px", display: "flex", flexDirection: "column", gap: "8px", alignItems: "flex-start" }}>
                 <div><span style={{ color: "#888", fontSize: "12px" }}>신고 사유</span> <span style={{ fontSize: "13px" }}>{REASON_LABELS[r.reasonCode] || r.reasonCode}</span></div>
@@ -1175,16 +1181,20 @@ function AccountTab() {
                   <td style={{ color: "#555", fontSize: "13px", fontWeight: 600, paddingRight: "12px" }}>계좌번호</td>
                   <td>
                     <input type="text" placeholder="계좌번호 입력"
-                      style={{ height: "36px", padding: "0 10px", border: "1px solid #cfd8e3", borderRadius: "6px", fontSize: "13px", width: "100%" }}
+                      style={{ height: "36px", padding: "0 10px", border: "1px solid #f7f9fa", borderRadius: "6px", fontSize: "13px", width: "100%" }}
                       value={accountForm.accountNumber} onChange={(e) => setAccountForm({ ...accountForm, accountNumber: e.target.value })} />
                   </td>
                 </tr>
                 <tr>
                   <td style={{ color: "#555", fontSize: "13px", fontWeight: 600, paddingRight: "12px" }}>예금주</td>
                   <td>
-                    <input type="text" placeholder="예금주명 입력"
-                      style={{ height: "36px", padding: "0 10px", border: "1px solid #cfd8e3", borderRadius: "6px", fontSize: "13px", width: "100%" }}
-                      value={accountForm.depositorName} onChange={(e) => setAccountForm({ ...accountForm, depositorName: e.target.value })} />
+                    <input
+                      type="text"
+                      placeholder="예금주명 입력"
+                      value={accountForm.depositorName}
+                      readOnly
+                      style={{ height: "36px", padding: "0 10px", border: "1px solid #cfd8e3", borderRadius: "6px", fontSize: "13px", width: "100%", background: "#fff", color: "#151515", cursor: "not-allowed" }}
+                    />
                   </td>
                 </tr>
                 <tr>
@@ -1252,7 +1262,7 @@ function UserProfilePage({ memberId, hideFooter = false, onNavigate, pathname = 
   const [activeTab, setActiveTab] = useState("products");
   const [toast, setToast] = useState("");
   const [profileEditOpen, setProfileEditOpen] = useState(false);
-  const [reviewModalOrder, setReviewModalOrder] = useState(null); // ✅ 리뷰 작성 모달 대상 주문
+  const [reviewModalOrder, setReviewModalOrder] = useState(null);
   const timerRef = useRef(null);
   const currentTab = hideFooter ? getTabFromPath(pathname) : activeTab;
   const profileTabs = hideFooter ? PROFILE_TABS : PROFILE_TABS.filter((tab) => tab.key !== "inquiries");
@@ -1261,6 +1271,16 @@ function UserProfilePage({ memberId, hideFooter = false, onNavigate, pathname = 
     setToast(msg);
     clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => setToast(""), 2400);
+  }
+
+  async function handleDeleteProfileImage() {
+    if (!window.confirm("프로필 사진을 삭제할까요?")) return;
+    try {
+      await deleteProfileImage();
+      setSeller((prev) => prev ? { ...prev, profileImageUrl: toAssetUrl(SERVER_DEFAULT_PROFILE) } : prev);
+    } catch {
+      showToast("프로필 사진 삭제에 실패했습니다.");
+    }
   }
 
   useEffect(() => {
@@ -1465,6 +1485,7 @@ function UserProfilePage({ memberId, hideFooter = false, onNavigate, pathname = 
   );
 
   const gradeClass = seller.sellerGrade.toLowerCase();
+  const isDefaultImage = !seller.profileImageUrl || seller.profileImageUrl === toAssetUrl(SERVER_DEFAULT_PROFILE);
 
   return (
     <div className="up-page">
@@ -1473,11 +1494,13 @@ function UserProfilePage({ memberId, hideFooter = false, onNavigate, pathname = 
       {/* 프로필 헤더 */}
       <div className="up-profile-section">
         <div className="up-profile-inner">
-          <div className="up-avatar">
-            {seller.profileImageUrl ? (
-              <img src={seller.profileImageUrl} alt={`${seller.nickname} 프로필`}
-                onError={() => setSeller((prev) => prev ? { ...prev, profileImageUrl: "" } : prev)} />
-            ) : seller.nickname.charAt(0)}
+          <div className="up-avatar-wrap">
+            <div className="up-avatar">
+              {seller.profileImageUrl ? (
+                <img src={seller.profileImageUrl} alt={`${seller.nickname} 프로필`}
+                  onError={() => setSeller((prev) => prev ? { ...prev, profileImageUrl: "" } : prev)} />
+              ) : seller.nickname.charAt(0)}
+            </div>
           </div>
           <div className="up-profile-info">
             <div className="up-name-row">
@@ -1573,22 +1596,21 @@ function UserProfilePage({ memberId, hideFooter = false, onNavigate, pathname = 
       {!hideFooter && <Footer />}
 
       {profileEditOpen && (
-        <ProfileSettingsModal seller={seller} onClose={() => setProfileEditOpen(false)} onSave={handleSaveProfile} />
+        <ProfileSettingsModal seller={seller} onClose={() => setProfileEditOpen(false)} onSave={handleSaveProfile} onDeleteImage={handleDeleteProfileImage} />
       )}
 
-      {/* ✅ 리뷰 작성 모달 */}
       {reviewModalOrder && (
         <ReviewWriteModal
           order={reviewModalOrder}
           onClose={() => setReviewModalOrder(null)}
           onSaved={() => {
+            const savedOrderId = reviewModalOrder.orderId;
             setOrders((prev) =>
               prev.map((o) =>
-                o.orderId === reviewModalOrder.orderId ? { ...o, hasReview: true } : o
+                o.orderId === savedOrderId ? { ...o, hasReview: true } : o
               )
             );
-            setPage(0);
-            setReviews([]);
+            setReviewModalOrder(null);
           }}
         />
       )}

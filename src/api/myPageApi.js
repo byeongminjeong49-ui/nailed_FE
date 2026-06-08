@@ -45,6 +45,14 @@ export async function uploadMyProfileImage(file) {
   });
 }
 
+// ↓↓↓ 추가된 함수 ↓↓↓
+export async function deleteProfileImage() {
+  return request("/api/members/mypage/profile/image", {
+    method: "DELETE",
+  });
+}
+// ↑↑↑ 추가된 함수 ↑↑↑
+
 export async function fetchMyProducts(page = 0, size = 15) {
   return request(`/api/members/mypage/products?page=${page}&size=${size}`);
 }
