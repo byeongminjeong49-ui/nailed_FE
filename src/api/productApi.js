@@ -64,6 +64,14 @@ export async function getProductCategories() {
   return request("/api/products/categories");
 }
 
+export async function getConditions() {
+  return request("/api/products/conditions");
+}
+
+export async function getSizes() {
+  return request("/api/products/sizes");
+}
+
 export async function getProductListByCode(categoryCode, page = 0, size = 20, filters = {}) {
   const params = new URLSearchParams({ categoryCode, page, size });
   appendProductFilters(params, filters);

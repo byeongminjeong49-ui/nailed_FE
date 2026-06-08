@@ -1,181 +1,24 @@
 import { useState, useEffect, useRef } from "react";
-import { registerProduct, uploadImage, getBrands, getProductCategories, getProductDetail, updateProduct, deleteProduct, changeProductStatus } from "../api/productApi";
+import { registerProduct, uploadImage, getBrands, getProductCategories, getConditions, getSizes, getProductDetail, updateProduct, deleteProduct, changeProductStatus } from "../api/productApi";
 import { toBrandNameEn } from "../utils/brandName";
 import "../styles/sell.css";
 
-// ── CategoryCode enum 기준 카테고리 트리 ─────────────────────────────
-const CATEGORY_TREE = [
-  {
-    code: "MENS", label: "맨즈웨어",
-    groups: [
-      { code: "MENS_TOP", label: "상의", items: [
-        { code: "MENS_TOP_TSHIRT",      label: "티셔츠" },
-        { code: "MENS_TOP_HOODIE",      label: "후드티" },
-        { code: "MENS_TOP_KNIT",        label: "니트" },
-        { code: "MENS_TOP_SWEATSHIRT",  label: "맨투맨" },
-        { code: "MENS_TOP_SHIRT",       label: "셔츠" },
-        { code: "MENS_TOP_CARDIGAN",    label: "가디건" },
-      ]},
-      { code: "MENS_OUTER", label: "아우터", items: [
-        { code: "MENS_OUTER_JERSEY",      label: "저지" },
-        { code: "MENS_OUTER_WINDBREAKER", label: "바람막이" },
-        { code: "MENS_OUTER_JACKET",      label: "자켓" },
-        { code: "MENS_OUTER_HOODIE_ZIP",  label: "후드집업" },
-        { code: "MENS_OUTER_BLOUSON",     label: "볼버/블루종" },
-        { code: "MENS_OUTER_COAT",        label: "코트" },
-        { code: "MENS_OUTER_PADDING",     label: "패딩" },
-      ]},
-      { code: "MENS_BOTTOM", label: "하의", items: [
-        { code: "MENS_BOTTOM_SHORTS", label: "반바지" },
-        { code: "MENS_BOTTOM_DENIM",  label: "데님팬츠" },
-        { code: "MENS_BOTTOM_CARGO",  label: "카고팬츠" },
-        { code: "MENS_BOTTOM_SWEAT",  label: "스웨트팬츠" },
-        { code: "MENS_BOTTOM_SLACKS", label: "슬랙스" },
-      ]},
-      { code: "MENS_SHOES", label: "신발", items: [
-        { code: "MENS_SHOES_SNEAKERS", label: "스니커즈" },
-        { code: "MENS_SHOES_BOOTS",    label: "부츠" },
-        { code: "MENS_SHOES_LOAFER",   label: "구두/로퍼" },
-        { code: "MENS_SHOES_SANDAL",   label: "샌들/슬리퍼" },
-      ]},
-      { code: "MENS_BAG", label: "가방", items: [
-        { code: "MENS_BAG_BACKPACK",  label: "백팩" },
-        { code: "MENS_BAG_CROSSBODY", label: "크로스백" },
-        { code: "MENS_BAG_SHOULDER",  label: "숄더백" },
-        { code: "MENS_BAG_TOTE",      label: "토트백" },
-      ]},
-      { code: "MENS_CAP", label: "모자", items: [
-        { code: "MENS_CAP_CAP",    label: "캡" },
-        { code: "MENS_CAP_BEANIE", label: "비니" },
-      ]},
-    ],
-  },
-  {
-    code: "WOMENS", label: "우먼즈웨어",
-    groups: [
-      { code: "WOMENS_TOP", label: "상의", items: [
-        { code: "WOMENS_TOP_TSHIRT",     label: "티셔츠" },
-        { code: "WOMENS_TOP_HOODIE",     label: "후드티" },
-        { code: "WOMENS_TOP_KNIT",       label: "니트" },
-        { code: "WOMENS_TOP_SWEATSHIRT", label: "맨투맨" },
-        { code: "WOMENS_TOP_SHIRT",      label: "셔츠" },
-        { code: "WOMENS_TOP_CARDIGAN",   label: "가디건" },
-      ]},
-      { code: "WOMENS_OUTER", label: "아우터", items: [
-        { code: "WOMENS_OUTER_JERSEY",      label: "저지" },
-        { code: "WOMENS_OUTER_WINDBREAKER", label: "바람막이" },
-        { code: "WOMENS_OUTER_JACKET",      label: "자켓" },
-        { code: "WOMENS_OUTER_HOODIE_ZIP",  label: "후드집업" },
-        { code: "WOMENS_OUTER_COAT",        label: "코트" },
-        { code: "WOMENS_OUTER_PADDING",     label: "패딩" },
-      ]},
-      { code: "WOMENS_BOTTOM", label: "하의", items: [
-        { code: "WOMENS_BOTTOM_SHORTS", label: "반바지" },
-        { code: "WOMENS_BOTTOM_DENIM",  label: "데님팬츠" },
-        { code: "WOMENS_BOTTOM_CARGO",  label: "카고팬츠" },
-        { code: "WOMENS_BOTTOM_SWEAT",  label: "스웨트팬츠" },
-        { code: "WOMENS_BOTTOM_SLACKS", label: "슬랙스" },
-      ]},
-      { code: "WOMENS_SHOES", label: "신발", items: [
-        { code: "WOMENS_SHOES_SNEAKERS", label: "스니커즈" },
-        { code: "WOMENS_SHOES_BOOTS",    label: "부츠" },
-        { code: "WOMENS_SHOES_LOAFER",   label: "구두/로퍼" },
-        { code: "WOMENS_SHOES_SANDAL",   label: "샌들/슬리퍼" },
-      ]},
-      { code: "WOMENS_BAG", label: "가방", items: [
-        { code: "WOMENS_BAG_BACKPACK",  label: "백팩" },
-        { code: "WOMENS_BAG_CROSSBODY", label: "크로스백" },
-        { code: "WOMENS_BAG_SHOULDER",  label: "숄더백" },
-        { code: "WOMENS_BAG_TOTE",      label: "토트백" },
-      ]},
-      { code: "WOMENS_CAP", label: "모자", items: [
-        { code: "WOMENS_CAP_CAP",    label: "캡" },
-        { code: "WOMENS_CAP_BEANIE", label: "비니" },
-      ]},
-      { code: "WOMENS_SKIRT", label: "치마", items: [
-        { code: "WOMENS_SKIRT_LONG", label: "롱 스커트" },
-        { code: "WOMENS_SKIRT_MINI", label: "미니 스커트" },
-      ]},
-      { code: "WOMENS_DRESS", label: "원피스", items: [
-        { code: "WOMENS_DRESS_LONG", label: "롱 원피스" },
-        { code: "WOMENS_DRESS_MINI", label: "미니 원피스" },
-      ]},
-    ],
-  },
-  {
-    code: "LUXURY", label: "럭셔리",
-    groups: [
-      { code: "LUXURY_BRAND", label: "브랜드", items: [
-        { code: "LUXURY_GOYARD",        label: "고야드" },
-        { code: "LUXURY_GUCCI",         label: "구찌" },
-        { code: "LUXURY_HERMES",        label: "에르메스" },
-        { code: "LUXURY_BOTTEGA",       label: "보테가베네타" },
-        { code: "LUXURY_PRADA",         label: "프라다" },
-        { code: "LUXURY_BURBERRY",      label: "버버리" },
-        { code: "LUXURY_DIOR",          label: "크리스찬디올" },
-        { code: "LUXURY_FERRAGAMO",     label: "페라가모" },
-        { code: "LUXURY_CHANEL",        label: "샤넬" },
-        { code: "LUXURY_LV",            label: "루이비통" },
-        { code: "LUXURY_MONTBLANC",     label: "몽블랑" },
-        { code: "LUXURY_CHROME_HEARTS", label: "크롬하츠" },
-      ]},
-    ],
-  },
-  {
-    code: "ACC", label: "액세서리",
-    groups: [
-      { code: "ACC_FASHION", label: "패션잡화", items: [
-        { code: "ACC_SUNGLASS", label: "선글라스" },
-        { code: "ACC_WALLET",   label: "지갑" },
-        { code: "ACC_BELT",     label: "벨트" },
-        { code: "ACC_KEYRING",  label: "키링" },
-      ]},
-      { code: "ACC_JEWELRY", label: "주얼리", items: [
-        { code: "ACC_JEWELRY_NECKLACE",  label: "목걸이" },
-        { code: "ACC_JEWELRY_RING",      label: "반지" },
-        { code: "ACC_JEWELRY_WATCH",     label: "시계" },
-        { code: "ACC_JEWELRY_BRACELET",  label: "팔찌" },
-      ]},
-    ],
-  },
-  {
-    code: "IT", label: "IT/테크",
-    groups: [
-      { code: "IT_DEVICE", label: "디바이스", items: [
-        { code: "IT_CAMERA", label: "카메라" },
-        { code: "IT_PHONE",  label: "핸드폰" },
-        { code: "IT_LAPTOP", label: "노트북" },
-        { code: "IT_TABLET", label: "태블릿" },
-      ]},
-    ],
-  },
-];
-
-// ── ProductCondition enum 기준 상태 ───────────────────────────────────
-const CONDITIONS = [
-  { code: "S", label: "새제품" },
-  { code: "A", label: "거의 새것" },
-  { code: "B", label: "상태 좋음" },
-  { code: "C", label: "상태 보통" },
-  { code: "D", label: "사용감 많음" },
-];
-
-// ── SizeCode enum 기준 사이즈 ─────────────────────────────────────────
-const CLOTHING_SIZES = [
-  "OS","XXS","XS","S","M","L","XL","2XL","3XL",
-  "24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","기타",
-];
-const SHOE_SIZES = [
-  "210","215","220","225","230","235","240","245","250",
-  "255","260","265","270","275","280","285","290","295","300",
-];
-
-function getSizeType(itemCode) {
-  if (!itemCode) return null;
-  if (itemCode.startsWith("LUXURY_")) return "all";
-  if (itemCode.includes("_SHOES_")) return "shoes";
-  if (/_(?:TOP|OUTER|BOTTOM|SKIRT|DRESS)_/.test(itemCode)) return "clothing";
-  return null;
+function buildCategoryTree(cats) {
+  const topList = cats.filter((c) => !c.parentCode);
+  return topList.map((top) => ({
+    code: top.code,
+    label: top.name,
+    groups: cats
+      .filter((g) => g.parentCode === top.code)
+      .map((group) => ({
+        code: group.code,
+        label: group.name,
+        sizeType: group.sizeType,
+        items: cats
+          .filter((i) => i.parentCode === group.code)
+          .map((item) => ({ code: item.code, label: item.name, sizeType: item.sizeType })),
+      })),
+  }));
 }
 
 function navigate(path) {
@@ -183,9 +26,9 @@ function navigate(path) {
   window.dispatchEvent(new PopStateEvent("popstate"));
 }
 
-function findCategoryByPath(path) {
+function findCategoryByPath(path, tree) {
   const parts = (path || "").split(" > ").map((s) => s.trim());
-  for (const top of CATEGORY_TREE) {
+  for (const top of tree) {
     if (top.label !== parts[0]) continue;
     for (const group of top.groups) {
       if (group.label !== parts[1]) continue;
@@ -196,14 +39,14 @@ function findCategoryByPath(path) {
     }
     return { topCode: top.code, groupCode: "", itemCode: "" };
   }
-  return { topCode: "MENS", groupCode: "", itemCode: "" };
+  return { topCode: tree[0]?.code ?? "", groupCode: "", itemCode: "" };
 }
 
 export default function SellPage({ editProductId }) {
   const [images, setImages]               = useState([]);
   const [title, setTitle]                 = useState("");
   const [description, setDescription]     = useState("");
-  const [topCode, setTopCode]             = useState("MENS");
+  const [topCode, setTopCode]             = useState("");
   const [groupCode, setGroupCode]         = useState("");
   const [itemCode, setItemCode]           = useState("");
   const [selectedSize, setSelectedSize]   = useState("");
@@ -215,6 +58,9 @@ export default function SellPage({ editProductId }) {
   const [productStatus, setProductStatus] = useState("ON_SALE");
   const [brands, setBrands]               = useState([]);
   const [codeToGroupId, setCodeToGroupId] = useState({});
+  const [categoryTree, setCategoryTree]   = useState([]);
+  const [conditions, setConditions]       = useState([]);
+  const [sizeMap, setSizeMap]             = useState({ CLOTHING: [], SHOES: [] });
   const [submitting, setSubmitting]       = useState(false);
   const [errors, setErrors]               = useState({});
   const isEditMode                        = Boolean(editProductId);
@@ -230,15 +76,28 @@ export default function SellPage({ editProductId }) {
         const map = {};
         cats.forEach((c) => { map[c.code] = c.groupId; });
         setCodeToGroupId(map);
-        return cats;
+        const tree = buildCategoryTree(cats);
+        setCategoryTree(tree);
+        if (!isEditMode && tree.length > 0) setTopCode(tree[0].code);
+        return tree;
       })
       .catch(() => []);
 
     const brandPromise = getBrands().then((list) => { setBrands(list); return list; }).catch(() => []);
 
+    getConditions().then((list) => setConditions(Array.isArray(list) ? list : [])).catch(() => {});
+
+    getSizes().then((list) => {
+      const arr = Array.isArray(list) ? list : [];
+      setSizeMap({
+        CLOTHING: arr.filter((s) => s.sizeType === "CLOTHING").map((s) => s.value),
+        SHOES:    arr.filter((s) => s.sizeType === "SHOES").map((s) => s.value),
+      });
+    }).catch(() => {});
+
     if (isEditMode) {
       Promise.all([catPromise, brandPromise, getProductDetail(editProductId)])
-        .then(([, brandList, product]) => {
+        .then(([tree, brandList, product]) => {
           setTitle(product.title);
           setDescription(product.description);
           setPrice(String(product.price));
@@ -247,7 +106,7 @@ export default function SellPage({ editProductId }) {
           setHashtags(product.hashtags || "");
           setProductStatus(product.productStatus || "ON_SALE");
 
-          const { topCode: tc, groupCode: gc, itemCode: ic } = findCategoryByPath(product.categoryPath);
+          const { topCode: tc, groupCode: gc, itemCode: ic } = findCategoryByPath(product.categoryPath, tree);
           setTopCode(tc);
           setGroupCode(gc);
           setItemCode(ic);
@@ -270,15 +129,16 @@ export default function SellPage({ editProductId }) {
     }
   }, [editProductId]);
 
-  const topCategory  = CATEGORY_TREE.find((c) => c.code === topCode);
-  const groups       = topCategory?.groups ?? [];
+  const topCategory   = categoryTree.find((c) => c.code === topCode);
+  const groups        = topCategory?.groups ?? [];
   const selectedGroup = groups.find((g) => g.code === groupCode);
-  const items        = selectedGroup?.items ?? [];
-  const sizeType     = getSizeType(itemCode);
-  const sizeOptions  =
-    sizeType === "all"      ? [...CLOTHING_SIZES, ...SHOE_SIZES] :
-    sizeType === "shoes"    ? SHOE_SIZES :
-    sizeType === "clothing" ? CLOTHING_SIZES : [];
+  const items         = selectedGroup?.items ?? [];
+  const selectedItem  = items.find((i) => i.code === itemCode);
+  const sizeType      = selectedItem?.sizeType ?? null;
+  const sizeOptions   =
+    sizeType === "ALL"      ? [...(sizeMap.CLOTHING ?? []), ...(sizeMap.SHOES ?? [])] :
+    sizeType === "SHOES"    ? (sizeMap.SHOES ?? []) :
+    sizeType === "CLOTHING" ? (sizeMap.CLOTHING ?? []) : [];
 
   const handleTopChange = (code) => {
     setTopCode(code);
@@ -286,8 +146,7 @@ export default function SellPage({ editProductId }) {
     setItemCode("");
     setSelectedSize("");
     setBrandId("");
-    // 그룹이 하나뿐인 카테고리는 자동 선택
-    const cat = CATEGORY_TREE.find((c) => c.code === code);
+    const cat = categoryTree.find((c) => c.code === code);
     if (cat?.groups.length === 1) setGroupCode(cat.groups[0].code);
   };
 
@@ -494,7 +353,7 @@ export default function SellPage({ editProductId }) {
           <div className="sell-field">
             <div className="sell-field-label">카테고리</div>
             <div className="sell-chips">
-              {CATEGORY_TREE.map((cat) => (
+              {categoryTree.map((cat) => (
                 <button key={cat.code} type="button"
                   className={`sell-chip${topCode === cat.code ? " active" : ""}`}
                   onClick={() => handleTopChange(cat.code)}>
@@ -545,7 +404,7 @@ export default function SellPage({ editProductId }) {
             </div>
           )}
 
-          {/* 사이즈 — SizeCode 기준 (의류 / 신발) */}
+          {/* 사이즈 */}
           {sizeOptions.length > 0 && (
             <div className="sell-field">
               <div className="sell-field-label">사이즈</div>
@@ -561,11 +420,11 @@ export default function SellPage({ editProductId }) {
             </div>
           )}
 
-          {/* 상태 — ProductCondition enum 기준 */}
+          {/* 상태 */}
           <div className="sell-field">
             <div className="sell-field-label">상태</div>
             <div className="sell-chips">
-              {CONDITIONS.map((c) => (
+              {conditions.map((c) => (
                 <button key={c.code} type="button"
                   className={`sell-chip${condition === c.code ? " active" : ""}`}
                   onClick={() => setCondition(c.code)}>
