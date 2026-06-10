@@ -62,7 +62,9 @@ function Footer() {
         </div>
         <div className="footer-company-info">
           <p>
-            (주)네일드컴퍼니 · 대표이사 정병민 / 소재지: 경기도 용인시 수지구 탄천상로 29 201동 501호 / 대표 전화번호: 010-8005-7387 / 고객센터: 070-8654-1835 / 이메일 문의는 Nailed@support.com
+            (주)네일드컴퍼니 · 대표: 정병민 / 소재지: 경기도 성남시 분당구 분당로 111/
+            <p> </p>
+                   고객센터: 02-1234-5678 / 이메일 문의 Nailed@support.com
           </p>
         </div>
         <div className="footer-contact">
