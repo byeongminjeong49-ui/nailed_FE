@@ -161,7 +161,7 @@ const finalPrice       = productAmount + shippingFee + commission;
       if (errorStr.includes('판매 완료') || errorStr.includes('결제')) {
         
         // 백엔드가 보내준 "판매 완료된 상품입니다." 대신 우리가 원하는 동시성 안내 멘트 출력
-        alert('현재 다른 고객님이 결제를 진행 중인 상품입니다. 잠시 후 다시 시도해주세요!');
+        alert('현재 다른 고객님이 결제를 진행 중인 상품입니다.');
         
       } else {
         // 그 외의 알 수 없는 에러일 때 (예: 500 서버 다운, 400 잘못된 입력 등)
