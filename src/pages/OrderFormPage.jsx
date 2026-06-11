@@ -107,18 +107,20 @@ const finalPrice       = productAmount + shippingFee + commission;
   const handlePayment = async () => {
     if (!canPay || paying) return; 
     setPaying(true);
-    // 이전에 결제 진행 중이던 주문(pendingPayment)이 남아있다면,
-    // 새 주문을 생성하기 전에 그 이전 주문을 자동으로 취소 처리함
-    // (구매자가 결제를 끝내지 않고 주문서를 다시 작성하러 돌아온 경우, 미결제 주문이 중복으로 쌓이는 것을 방지)
+
+    // 이전에 결제 진행 중이던 주문(pendingPayment)이 남아있다면 취소 처리
     const existingPayment = sessionStorage.getItem('pendingPayment');
-  if (existingPayment) {
-    try {
-      const existing = JSON.parse(existingPayment);
-      const buyerId = getCurrentMemberId() || pendingOrder?.buyerId;
-     await axios.post(`/api/orders/${existing.orderId}/cancel?buyerId=${buyerId}`);
-    } catch {}
-  }
+    if (existingPayment) {
+      try {
+        const existing = JSON.parse(existingPayment);
+        const buyerId = getCurrentMemberId() || pendingOrder?.buyerId;
+        await axios.post(`/api/orders/${existing.orderId}/cancel?buyerId=${buyerId}`);
+      } catch (err) {
+        console.error('이전 주문 자동 취소 실패:', err);
+      }
+    }
     sessionStorage.removeItem('pendingPayment'); 
+
     try {
       const orderData = {
         productId:             pendingOrder.productId,
@@ -131,23 +133,40 @@ const finalPrice       = productAmount + shippingFee + commission;
       };
       const buyerId = getCurrentMemberId() || pendingOrder.buyerId;
       const response = await createOrder(buyerId, pendingOrder.sellerId, orderData);
+      
       if (response?.orderId) {
-      sessionStorage.setItem('pendingPayment', JSON.stringify({
-  orderId:                response.orderId,
-  finalPrice:             response.finalPrice,
-  productPrice:           response.productPrice,
-  shippingFee:            response.shippingFee,
-  commission: response.finalPrice - response.sellerSettlementAmount,
-  sellerSettlementAmount: response.sellerSettlementAmount,
-  title:                  pendingOrder.title,
-  productId:              pendingOrder.productId,
-}));
-window.history.pushState({}, '', '/order/payment');
-window.dispatchEvent(new PopStateEvent('popstate'));
+        sessionStorage.setItem('pendingPayment', JSON.stringify({
+          orderId:                response.orderId,
+          finalPrice:             response.finalPrice,
+          productPrice:           response.productPrice,
+          shippingFee:            response.shippingFee,
+          commission:             response.finalPrice - response.sellerSettlementAmount,
+          sellerSettlementAmount: response.sellerSettlementAmount,
+          title:                  pendingOrder.title,
+          productId:              pendingOrder.productId,
+        }));
+        window.history.pushState({}, '', '/order/payment');
+        window.dispatchEvent(new PopStateEvent('popstate'));
       }
-    } catch (error) {
+} catch (error) {
       console.error('주문 처리 중 에러 발생:', error);
-      alert('주문 요청에 실패했습니다.');
+
+      // 1. 어떤 형태로든 들어온 에러 메시지 텍스트를 추출합니다.
+      const errorMessage = error?.response?.data?.message || error?.message || '';
+
+      // 2. String()으로 한 번 더 감싸서 혹시 모를 자바스크립트 includes 에러를 완벽히 방지합니다.
+      const errorStr = String(errorMessage);
+
+      // 3. 메시지 내용에 "판매 완료" 또는 "결제" 등의 단어가 들어있는지 확인합니다.
+      if (errorStr.includes('판매 완료') || errorStr.includes('결제')) {
+        
+        // 백엔드가 보내준 "판매 완료된 상품입니다." 대신 우리가 원하는 동시성 안내 멘트 출력
+        alert('현재 다른 고객님이 결제를 진행 중인 상품입니다. 잠시 후 다시 시도해주세요!');
+        
+      } else {
+        // 그 외의 알 수 없는 에러일 때 (예: 500 서버 다운, 400 잘못된 입력 등)
+        alert('주문 요청에 실패했습니다.');
+      }
     } finally {
       setPaying(false);
     }
