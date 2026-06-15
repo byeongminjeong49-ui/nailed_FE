@@ -41,10 +41,10 @@ const ORDER_STATUS_LABELS = {
 };
 
 const MEMBER_STATUS_LABELS = {
-  ACTIVE: "정상",
+  ACTIVE: "활동중",
   LOCKED: "잠금",
   WITHDRAWN: "탈퇴",
-  SUSPEND: "기간정지",
+  SUSPEND: "정지",
   BANNED: "영구정지",
 };
 
@@ -57,7 +57,7 @@ const SELLER_GRADE_LABELS = {
 
 const PENALTY_TYPE_LABELS = {
   WARNING: "경고",
-  SUSPEND: "기간정지",
+  SUSPEND: "정지",
   BAN: "영구정지",
 };
 

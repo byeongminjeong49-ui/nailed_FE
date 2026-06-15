@@ -11,10 +11,10 @@ const ROLE_LABELS = {
 };
 
 const STATUS_LABELS = {
-  ACTIVE: "정상",
+  ACTIVE: "활동중",
   LOCKED: "잠금",
   WITHDRAWN: "탈퇴",
-  SUSPEND: "기간정지",
+  SUSPEND: "정지",
   BANNED: "영구정지",
 };
 
@@ -35,7 +35,7 @@ const SELLER_GRADE_LABELS = {
 
 const PENALTY_TYPE_LABELS = {
   WARNING: "경고",
-  SUSPEND: "기간정지",
+  SUSPEND: "정지",
   BAN: "영구정지",
 };
 
@@ -340,10 +340,10 @@ function AdminMembersPage() {
               <label htmlFor="admin-member-status">상태</label>
               <select id="admin-member-status" value={status} onChange={handleStatusChange}>
                 <option value="">전체</option>
-                <option value="ACTIVE">정상</option>
+                <option value="ACTIVE">활동중</option>
                 <option value="LOCKED">잠금</option>
                 <option value="WITHDRAWN">탈퇴</option>
-                <option value="SUSPEND">기간정지</option>
+                <option value="SUSPEND">정지</option>
                 <option value="BANNED">영구정지</option>
               </select>
             </div>
@@ -571,7 +571,7 @@ function AdminMembersPage() {
                   }}
                 >
                   <option value="WARNING">경고</option>
-                  <option value="SUSPEND">기간정지</option>
+                  <option value="SUSPEND">정지</option>
                   <option value="BAN">영구정지</option>
                 </select>
               </label>

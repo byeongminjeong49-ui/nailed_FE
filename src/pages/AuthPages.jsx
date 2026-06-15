@@ -219,7 +219,7 @@ export function SignupPage({ onNavigate }) {
 
   async function handleUserIdCheck() {
     if (!userIdPattern.test(form.userId.trim())) {
-      setMessage({ type: "error", text: "아이디는 영문, 숫자를 포함해 4~20자로 입력해주세요." });
+      setMessage({ type: "error", text: "아이디는 영문, 숫자, 밑줄 조합 4~20자로 입력해주세요." });
       return;
     }
     if (containsAdminKeyword(form.userId)) {
@@ -322,7 +322,7 @@ export function SignupPage({ onNavigate }) {
               </div>
             </Field>
 
-            <Field label="아이디" hint="영문, 숫자를 포함해 4~20자로 입력해주세요." error={fieldErrors.userId}>
+            <Field label="아이디" hint="영문, 숫자, 밑줄 조합 4~20자로 입력해주세요." error={fieldErrors.userId}>
               <div className="inline-field">
                 <input
                   type="text"
@@ -340,7 +340,7 @@ export function SignupPage({ onNavigate }) {
                     if (form.userId.trim() && !userIdPattern.test(form.userId.trim())) {
                       setFieldErrors((prev) => ({
                         ...prev,
-                        userId: "아이디 형식에 맞춰 입력해주세요. (영문, 숫자 4~20자)",
+                        userId: "아이디 형식에 맞춰 입력해주세요. (영문, 숫자, 밑줄 4~20자)",
                       }));
                     }
                   }}
@@ -542,7 +542,7 @@ function validateSignup(form, agreements, checks) {
   if (!form.nickname.trim()) return "닉네임을 입력해주세요.";
   if (!checks.nickname) return "닉네임 중복 확인을 완료해주세요.";
   if (!userIdPattern.test(form.userId.trim())) {
-    return "아이디는 영문, 숫자를 포함해 4~20자로 입력해주세요.";
+    return "아이디는 영문, 숫자, 밑줄 조합 4~20자로 입력해주세요.";
   }
   if (!checks.userId) return "아이디 중복 확인을 완료해주세요.";
   if (!passwordPattern.test(form.password)) {
