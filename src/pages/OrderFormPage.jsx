@@ -1,13 +1,13 @@
 import { useState, useEffect} from 'react';
 import { createOrder } from '../api/orderApi';
 import axios from 'axios';
+import { navigate, getCurrentMemberId, safeParse } from '../utils/orderHelpers';
+import { page, inner, card, cardTitle } from '../styles/orderShared';
 
 const s = {
-  page: { minHeight: '100vh', background: '#f5f6f7', padding: '40px 20px 80px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' },
-  inner: { maxWidth: '560px', margin: '0 auto' },
+  page, inner,
   title: { fontSize: '22px', fontWeight: '700', color: '#111', marginBottom: '24px', paddingBottom: '16px', borderBottom: '2px solid #168f88' },
-  card: { background: '#fff', borderRadius: '12px', padding: '24px', marginBottom: '16px', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' },
-  cardTitle: { fontSize: '12px', fontWeight: '700', color: '#168f88', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '16px', paddingBottom: '10px', borderBottom: '1px solid #e8f5f4' },
+  card, cardTitle,
   productRow: { display: 'flex', gap: '14px', alignItems: 'center' },
   productImg: { width: '64px', height: '64px', borderRadius: '8px', background: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', flexShrink: 0 },
   productName: { fontSize: '15px', fontWeight: '600', color: '#111', marginBottom: '4px' },
@@ -25,65 +25,27 @@ const s = {
   btnDisabled: { display: 'block', width: '100%', padding: '16px', background: '#ccc', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '16px', fontWeight: '700', cursor: 'not-allowed' },
 };
 
-const SESSION_KEY = 'nailed_session';
-
-function getCurrentMemberId() {
-  try {
-    const session = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
-    return session?.member_id || session?.memberId || session?.id || null;
-  } catch {
-    return null;
-  }
-}
-
-// ─────────────────────────────────────────────
-// 주문 진행 흐름 (sessionStorage 기반 다단계 플로우)
-//   1) pendingOrder   : 상품 상세에서 "구매하기" 클릭 시 저장되는 주문 대상 정보
-//   2) orderForm      : 이 페이지(주문서 작성)에서 입력한 배송지 정보
-//   3) pendingPayment : 주문 생성(createOrder) 성공 후 결제 페이지로 넘기는 결제 대기 정보
-//   4) completedOrder : 결제 완료 후 주문 상세/완료 화면에서 사용하는 최종 정보
-// 각 단계는 sessionStorage를 매개로 페이지 간 이동(navigate)하며 데이터를 전달함
-// ─────────────────────────────────────────────
+// 주문 진행 흐름: pendingOrder → orderForm → pendingPayment → completedOrder (sessionStorage 경유)
 export default function OrderForm() {
 
  const [pendingOrder, setPendingOrder] = useState(null);
 
 useEffect(() => {
-  const saved = sessionStorage.getItem('pendingOrder');
-  const fallback = { productId: 1, title: '기본 상품', productAmount: 0, finalPrice: 0, shippingFee: 0 };
-  if (!saved) {
-    setPendingOrder(fallback);
-    return;
-  }
-  try {
-    setPendingOrder(JSON.parse(saved));
-  } catch {
-    setPendingOrder(fallback);
-  }
+  setPendingOrder(safeParse('pendingOrder', { productId: 1, title: '기본 상품', productAmount: 0, finalPrice: 0, shippingFee: 0 }));
 }, []);
-  const [form, setForm] = useState(() => {
-    try {
-      const saved = sessionStorage.getItem('orderForm');
-      return saved ? JSON.parse(saved) : {
-        receiverName: '', receiverPhone: '', zipcode: '',
-        address: '', addressDetail: '', deliveryRequest: '',
-      };
-    } catch {
-      return { receiverName: '', receiverPhone: '', zipcode: '',
-        address: '', addressDetail: '', deliveryRequest: '' };
-    }
-  });
+  const [form, setForm] = useState(() => safeParse('orderForm', {
+    receiverName: '', receiverPhone: '', zipcode: '',
+    address: '', addressDetail: '', deliveryRequest: '',
+  }));
   const [agree1, setAgree1] = useState(false);
   const [addressTouched, setAddressTouched] = useState(false);
   const [paying, setPaying] = useState(false); 
 
-// 결제 금액 미리보기 계산 (백엔드 OrderService.createOrder의 계산식과 동일하게 맞춰야 함)
-// - commission(수수료) = (상품가 + 배송비) × 2%
-// - finalPrice(최종 결제금액) = 상품가 + 배송비 + 수수료
-// ※ 실제 저장되는 금액은 주문 생성 시 백엔드에서 다시 계산되며, 여기서는 화면 표시용으로만 사용됨
+// 결제 금액 미리보기 (백엔드 OrderService.DEFAULT_COMMISSION_RATE와 동일하게 맞춰야 함, 실제 금액은 주문 생성 시 백엔드에서 재계산됨)
+const COMMISSION_RATE = 2;
 const productAmount    = pendingOrder?.productAmount || 0;
 const shippingFee      = pendingOrder?.shippingFee || 0;
-const commission = Math.floor((productAmount + shippingFee) * 2 / 100);
+const commission = Math.floor((productAmount + shippingFee) * COMMISSION_RATE / 100);
 const finalPrice       = productAmount + shippingFee + commission;
 
   const isValidPhone   = /^\d{10,11}$/.test(form.receiverPhone);
@@ -99,6 +61,7 @@ const finalPrice       = productAmount + shippingFee + commission;
     if (key === 'receiverName') {
       val = val.replace(/[^가-힣ㄱ-ㅎㅏ-ㅣ\s]/g, '');
     }
+    // _buyerId: 다른 사용자가 로그인했을 때 ProductDetailPage에서 이 배송지가 본인 것인지 판별하는 용도
     const updated = { ...form, [key]: val, _buyerId: getCurrentMemberId() };
     setForm(updated);
     sessionStorage.setItem('orderForm', JSON.stringify(updated));
@@ -145,26 +108,17 @@ const finalPrice       = productAmount + shippingFee + commission;
           title:                  pendingOrder.title,
           productId:              pendingOrder.productId,
         }));
-        window.history.pushState({}, '', '/order/payment');
-        window.dispatchEvent(new PopStateEvent('popstate'));
+        navigate('/order/payment');
       }
 } catch (error) {
       console.error('주문 처리 중 에러 발생:', error);
 
-      // 1. 어떤 형태로든 들어온 에러 메시지 텍스트를 추출합니다.
-      const errorMessage = error?.response?.data?.message || error?.message || '';
+      const errorStr = String(error?.response?.data?.message || error?.message || '');
 
-      // 2. String()으로 한 번 더 감싸서 혹시 모를 자바스크립트 includes 에러를 완벽히 방지합니다.
-      const errorStr = String(errorMessage);
-
-      // 3. 메시지 내용에 "판매 완료" 또는 "결제" 등의 단어가 들어있는지 확인합니다.
       if (errorStr.includes('판매 완료') || errorStr.includes('결제')) {
-        
-        // 백엔드가 보내준 "판매 완료된 상품입니다." 대신 우리가 원하는 동시성 안내 멘트 출력
+        // 백엔드의 "판매 완료된 상품입니다." 대신 동시성 안내 멘트로 대체
         alert('현재 다른 고객님이 결제를 진행 중인 상품입니다.');
-        
       } else {
-        // 그 외의 알 수 없는 에러일 때 (예: 500 서버 다운, 400 잘못된 입력 등)
         alert('주문 요청에 실패했습니다.');
       }
     } finally {
@@ -188,7 +142,7 @@ if (!pendingOrder) return <div style={s.page}><div style={{ textAlign: 'center',
         <div style={{ display: 'flex', padding: '20px 0 24px' }}>
   {['주문서', '결제', '완료'].map((label, i) => (
     <div key={label} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', position: 'relative' }}>
-      {i < 2 && <div style={{ position: 'absolute', top: '13px', left: '50%', width: '100%', height: '2px', background: i < 0 ? '#168f88' : '#e0e0e0' }} />}
+      {i < 2 && <div style={{ position: 'absolute', top: '13px', left: '50%', width: '100%', height: '2px', background: '#e0e0e0' }} />}
       <div style={{ width: '28px', height: '28px', borderRadius: '50%', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', background: i === 0 ? '#168f88' : '#fff', border: `2px solid ${i === 0 ? '#168f88' : '#ddd'}`, color: i === 0 ? '#fff' : '#ccc', fontWeight: '600' }}>
         {i === 0 ? '✓' : i + 1}
       </div>

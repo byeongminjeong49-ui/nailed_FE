@@ -1,5 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { navigate, getCurrentMemberId, safeParse, METHOD_LABELS } from '../utils/orderHelpers';
+import { page, inner, card, cardTitle } from '../styles/orderShared';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 const STATUS_LABEL = {
   REQUESTED: '주문접수',
@@ -16,12 +20,6 @@ const STATUS_STEPS = [
   { key: 'DELIVERED', label: '배송완료' },
 ];
 
-const METHOD_LABEL = {
-  card: '신용/체크카드', kakao: '카카오페이',
-  naver: '네이버페이',  toss: '토스페이',
-  phone: '휴대폰 결제', bank: '무통장 입금',
-};
-
 const CARRIERS = [
   { value: 'CJ',         label: 'CJ대한통운' },
   { value: 'LOGEN',      label: '로젠택배' },
@@ -31,12 +29,10 @@ const CARRIERS = [
 ];
 
 const s = {
-  page: { minHeight: '100vh', background: '#f5f6f7', padding: '40px 20px 80px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' },
-  inner: { maxWidth: '560px', margin: '0 auto' },
+  page, inner,
   title: { fontSize: '22px', fontWeight: '700', color: '#111', marginBottom: '8px' },
   orderId: { fontSize: '13px', color: '#888', fontFamily: 'monospace', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' },
-  card: { background: '#fff', borderRadius: '12px', padding: '24px', marginBottom: '16px', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' },
-  cardTitle: { fontSize: '12px', fontWeight: '700', color: '#168f88', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '16px', paddingBottom: '10px', borderBottom: '1px solid #e8f5f4' },
+  card, cardTitle,
   row: { display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #f5f5f5', fontSize: '14px', gap: '12px' },
   rowLabel: { color: '#888', minWidth: '90px' },
   rowValue: { textAlign: 'right', wordBreak: 'break-all' },
@@ -61,16 +57,10 @@ const s = {
 const fmt = (v) => v ? new Date(v).toLocaleString('ko-KR') : '-';
 const won = (v) => v != null ? `${Number(v).toLocaleString()}원` : '-';
 
-function navigate(path) {
-  window.history.pushState({}, '', path);
-  window.dispatchEvent(new PopStateEvent('popstate'));
-}
-
 function getProductImageUrl(product) {
-  const base = 'http://localhost:8080';
-  if (product?.imageUrl) return `${base}${product.imageUrl}`;
+  if (product?.imageUrl) return `${API_BASE_URL}${product.imageUrl}`;
   if (Array.isArray(product?.imageUrls) && product.imageUrls.length > 0) {
-    return `${base}${product.imageUrls[0]}`;
+    return `${API_BASE_URL}${product.imageUrls[0]}`;
   }
   return '';
 }
@@ -83,14 +73,11 @@ export default function OrderDetail({ orderId }) {
   const [carrierCode,    setCarrierCode]    = useState('CJ');
   const [trackingNumber, setTrackingNumber] = useState('');
   const [submitting,     setSubmitting]     = useState(false);
-  const [showShipForm,   setShowShipForm]   = useState(false);
-  const [confirming,     setConfirming]     = useState(false); // ← 추가: 배송완료 처리 중 상태
+  const [confirming,     setConfirming]     = useState(false);
 
-  const session = (() => { try { return JSON.parse(sessionStorage.getItem('nailed_session') ?? 'null'); } catch { return null; } })();
-  const currentMemberId = session?.member_id ?? session?.memberId ?? null;
-
- const completed = (() => { try { return JSON.parse(sessionStorage.getItem('completedOrder') || 'null'); } catch { return null; } })();
-const productId = completed?.productId;
+  const currentMemberId = getCurrentMemberId();
+  // 결제 직후 PaymentPage에서 저장해 둔 정보 (결제 수단, 상품명 등 주문 API 응답에 없는 값의 보조용)
+  const completed = safeParse('completedOrder');
 
 useEffect(() => {
   if (!orderId) { setError('주문 번호가 없습니다.'); setLoading(false); return; }
@@ -132,8 +119,7 @@ useEffect(() => {
     }
   };
 
-  // [구매자 전용] SHIPPING(배송중) 상태에서만 호출 가능
-  // ← 추가: 배송완료 확인 → DELIVERED 처리 → 정산 확정
+  // [구매자 전용] SHIPPING(배송중) 상태에서만 호출 가능 — 배송완료 확인 → DELIVERED 처리 → 정산 확정
   const handleConfirmDelivery = async () => {
     if (confirming) return;
     setConfirming(true);
@@ -149,26 +135,26 @@ useEffect(() => {
   };
   // [구매자 전용] PAID(결제완료) 상태에서만 호출 가능 — 그 이후 단계(주문접수~)에서는 취소 불가
   const handleCancel = async () => {
-  if (!window.confirm('정말 취소하시겠습니까?')) return;
-  try {
-    await axios.post(`/api/orders/${orderId}/cancel?buyerId=${currentMemberId}`);
-    alert('주문이 취소되었습니다.');
-    window.location.reload();
-  } catch (e) {
-    alert('주문 취소에 실패했습니다.');
-  }
-};
+    if (!window.confirm('정말 취소하시겠습니까?')) return;
+    try {
+      await axios.post(`/api/orders/${orderId}/cancel?buyerId=${currentMemberId}`);
+      alert('주문이 취소되었습니다.');
+      window.location.reload();
+    } catch (e) {
+      alert('주문 취소에 실패했습니다.');
+    }
+  };
 
-// [판매자 전용] PAID(결제완료) 상태에서만 호출 가능 — 주문 확인 처리 → 주문 상태가 REQUESTED로 전환됨
-const handleConfirmOrder = async () => {
-  try {
-    await axios.patch(`/api/orders/${orderId}/confirm?sellerId=${currentMemberId}`);
-    alert('주문이 확인되었습니다.');
-    window.location.reload();
-  } catch (e) {
-    alert('주문 확인에 실패했습니다.');
-  }
-};
+  // [판매자 전용] PAID(결제완료) 상태에서만 호출 가능 — 주문 확인 처리 → 주문 상태가 REQUESTED로 전환됨
+  const handleConfirmOrder = async () => {
+    try {
+      await axios.patch(`/api/orders/${orderId}/confirm?sellerId=${currentMemberId}`);
+      alert('주문이 확인되었습니다.');
+      window.location.reload();
+    } catch (e) {
+      alert('주문 확인에 실패했습니다.');
+    }
+  };
 
   if (loading) return <div style={s.page}><div style={{ textAlign: 'center', padding: '80px', color: '#888' }}>로딩 중...</div></div>;
 
@@ -246,7 +232,7 @@ const handleConfirmOrder = async () => {
           <div style={s.row}><span style={s.rowLabel}>배송비</span><span style={s.rowValue}>{order.shippingFee === 0 ? '무료' : won(order.shippingFee)}</span></div>
           <div style={s.row}><span style={s.rowLabel}>수수료율</span><span style={s.rowValue}>{order.commission}%</span></div>
           <div style={{ ...s.row, color: '#168f88', fontWeight: '700' }}><span style={{ ...s.rowLabel, color: '#168f88' }}>최종 결제 금액</span><span style={{ ...s.rowValue, fontSize: '16px' }}>{won(order.finalPrice)}</span></div>
-          {completed?.method && <div style={{ ...s.row, borderBottom: 'none' }}><span style={s.rowLabel}>결제 수단</span><span style={s.rowValue}>{METHOD_LABEL[completed.method] || completed.method}</span></div>}
+          {completed?.method && <div style={{ ...s.row, borderBottom: 'none' }}><span style={s.rowLabel}>결제 수단</span><span style={s.rowValue}>{METHOD_LABELS[completed.method] || completed.method}</span></div>}
         </div>
 
         {/* 배송지 */}
@@ -259,17 +245,17 @@ const handleConfirmOrder = async () => {
         </div>
 
         {/* 주문 확인 - 판매자 + 결제완료 상태일 때만 */}
-{canConfirmOrder && (
-    <div style={{ ...s.card, border: '1.5px solid #168f88' }}>
-        <div style={s.cardTitle}>주문 확인</div>
-        <p style={{ fontSize: '13px', color: '#888', margin: '0 0 14px' }}>
-            주문을 확인하고 배송을 준비해주세요.
-        </p>
-        <button style={s.shipBtn} onClick={handleConfirmOrder}>
-            주문 확인
-        </button>
-    </div>
-)}
+        {canConfirmOrder && (
+          <div style={{ ...s.card, border: '1.5px solid #168f88' }}>
+            <div style={s.cardTitle}>주문 확인</div>
+            <p style={{ fontSize: '13px', color: '#888', margin: '0 0 14px' }}>
+              주문을 확인하고 배송을 준비해주세요.
+            </p>
+            <button style={s.shipBtn} onClick={handleConfirmOrder}>
+              주문 확인
+            </button>
+          </div>
+        )}
 
         {/* 운송장 입력 - 판매자 + 주문접수 상태일 때만 */}
         {canShip && (

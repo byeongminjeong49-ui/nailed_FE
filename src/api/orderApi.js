@@ -11,9 +11,6 @@ export const createOrder       = (buyerId, sellerId, body) =>
 
 export const getOrder          = (orderId) => req(`${BASE}/${orderId}`);
 
-export const countSellerOrders = (sellerId, status) =>
-  req(`${BASE}/seller/${sellerId}/count?status=${status}`);
-
 export const registerTracking  = (orderId, body) =>
   req(`${BASE}/${orderId}/shipping`, { method: 'PATCH', body: JSON.stringify(body) });
 

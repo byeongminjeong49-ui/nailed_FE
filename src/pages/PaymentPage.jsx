@@ -1,17 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import kakaoIcon from '../assets/kakaopay.png';
 import naverIcon from '../assets/naverpay.png';
 import tossIcon  from '../assets/tosspay.png';
 import { mockPay } from '../api/orderApi';
 import axios from 'axios';
+import { navigate, getCurrentMemberId, safeParse, METHOD_LABELS } from '../utils/orderHelpers';
+import { page, inner, card, cardTitle } from '../styles/orderShared';
 const s = {
-  page: { minHeight: '100vh', background: '#f5f6f7', padding: '40px 20px 80px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' },
-  inner: { maxWidth: '560px', margin: '0 auto' },
+  page, inner,
   title: { fontSize: '22px', fontWeight: '700', color: '#111', marginBottom: '24px', paddingBottom: '16px', borderBottom: '2px solid #168f88' },
-  card: { background: '#fff', borderRadius: '12px', padding: '24px', marginBottom: '16px', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' },
-  cardTitle: { fontSize: '12px', fontWeight: '700', color: '#168f88', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '16px', paddingBottom: '10px', borderBottom: '1px solid #e8f5f4' },
+  card, cardTitle,
   row: { display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #f5f5f5', fontSize: '14px' },
-  rowLast: { display: 'flex', justifyContent: 'space-between', padding: '10px 0 0', fontSize: '14px' },
   rowLabel: { color: '#888' },
   rowTotal: { display: 'flex', justifyContent: 'space-between', padding: '12px 0 0', fontSize: '16px', fontWeight: '700', color: '#168f88' },
   steps: { display: 'flex', alignItems: 'flex-start', padding: '0 0 24px' },
@@ -43,12 +42,7 @@ const s = {
     fontSize: '11px', fontWeight: '700', color: '#fff',
     background: color, borderRadius: '4px', padding: '2px 7px',
   }),
-  divider: { borderBottom: '1px solid #f5f5f5', margin: '10px 0' },
   infoRow: { display: 'flex', justifyContent: 'space-between', padding: '7px 0', fontSize: '14px' },
-  refundBox: {
-    background: '#f9f9f9', borderRadius: '8px', padding: '14px 16px',
-    fontSize: '13px', color: '#666', lineHeight: '1.7', marginTop: '12px',
-  },
 };
 
 const STEPS = ['주문서', '결제', '완료'];
@@ -62,23 +56,12 @@ const METHODS = [
   { id: 'bank',  icon: '🏧',      label: '무통장 입금' },
 ];
 
-const METHOD_LABELS = {
-  card: '신용/체크카드', kakao: '카카오페이',
-  naver: '네이버페이', toss: '토스페이',
-  phone: '휴대폰 결제', bank: '무통장 입금',
-};
-
 const BADGE_COLOR = { BRONZE: '#cd7f32', SILVER: '#9e9e9e', GOLD: '#f5a623', DIAMOND: '#5c9bd6' };
 
 function getExpectedDelivery() {
   const d = new Date();
   d.setDate(d.getDate() + 3);
   return `${d.getMonth() + 1}월 ${d.getDate()}일`;
-}
-
-function navigate(path) {
-  window.history.pushState({}, '', path);
-  window.dispatchEvent(new PopStateEvent('popstate'));
 }
 
 export default function PaymentPage() {
@@ -93,13 +76,11 @@ export default function PaymentPage() {
   // 이전 단계(주문서 작성 페이지)에서 sessionStorage에 저장해둔 정보를 불러옴
   // pendingPayment(결제 대기 정보)가 없으면 이 페이지에 직접 접근한 것으로 간주하고 에러 처리
   useEffect(() => {
-    const pay  = sessionStorage.getItem('pendingPayment');
-    const ord  = sessionStorage.getItem('pendingOrder');
-    const form = sessionStorage.getItem('orderForm');
-    if (pay)  setPendingPayment(JSON.parse(pay));
+    const pay = safeParse('pendingPayment');
+    if (pay) setPendingPayment(pay);
     else setError('잘못된 접근이거나 결제 정보가 존재하지 않습니다.');
-    if (ord)  setPendingOrder(JSON.parse(ord));
-    if (form) setOrderForm(JSON.parse(form));
+    setPendingOrder(safeParse('pendingOrder'));
+    setOrderForm(safeParse('orderForm'));
   }, []);
 
   if (error && !pendingPayment) return (
@@ -117,6 +98,7 @@ export default function PaymentPage() {
 const { orderId, finalPrice, title,
         productPrice, shippingFee: payShippingFee,
         commission } = pendingPayment;
+// pendingPayment(주문 생성 응답)에 값이 있으면 그걸 쓰고, 없으면 이전 단계의 pendingOrder 값으로 보완
 const productAmount = productPrice   || pendingOrder?.productAmount || 0;
 const shippingFee   = payShippingFee || pendingOrder?.shippingFee   || 0;
 const sellerNick    = pendingOrder?.sellerNickname || '판매자';
@@ -152,6 +134,7 @@ const sellerBadge   = pendingOrder?.sellerBadge    || 'Bronze';
         {/* 스텝바 */}
         <div style={s.steps}>
           {STEPS.map((label, i) => {
+            // done_: 위 done 상태(결제 완료 여부)와 이름이 겹쳐 접미사를 붙임 — 스텝바에서 i번째 단계가 완료로 표시될지 여부
             const done_ = done ? i <= 2 : i <= 1;
             const active = done ? i === 2 : i === 1;
             return (
@@ -238,8 +221,7 @@ const sellerBadge   = pendingOrder?.sellerBadge    || 'Bronze';
             <button style={{ display: 'block', width: '100%', padding: '14px', background: '#fff', color: '#555', border: '1px solid #ddd', borderRadius: '10px', fontSize: '14px', cursor: 'pointer', marginTop: '8px' }}
                 onClick={async () => {
                   try {
-                    const session = JSON.parse(sessionStorage.getItem('nailed_session') || 'null');
-                    const buyerId = session?.member_id ?? session?.memberId ?? null;
+                    const buyerId = getCurrentMemberId();
                     if (pendingPayment?.orderId && buyerId) {
                       await axios.post(`/api/orders/${pendingPayment.orderId}/cancel?buyerId=${buyerId}`);
                     }
@@ -291,20 +273,20 @@ const sellerBadge   = pendingOrder?.sellerBadge    || 'Bronze';
                 <div style={{ fontSize: '12px', color: '#888', marginTop: '3px' }}>판매자 발송 후 택배사 사정에 따라 달라질 수 있습니다</div>
               </div>
             </div>
-<div style={{
-  backgroundColor: '#F0FAFA',
-  borderLeft: '3px solid #2A9D8F',
-  borderRadius: '6px',
-  padding: '14px 16px',
-  marginTop: '12px'
-}}>
-  <strong>취소 정책</strong>
-  <ul style={{ marginTop: '8px', paddingLeft: '16px', lineHeight: '1.9' }}>
-    <li>결제 완료 상태에서만 취소 가능합니다.</li>
-    <li>주문 접수 이후에는 취소가 불가합니다.</li>
-    <li>취소 시 상품은 자동으로 판매 상태로 전환됩니다.</li>
-  </ul>
-</div>
+            <div style={{
+              backgroundColor: '#F0FAFA',
+              borderLeft: '3px solid #2A9D8F',
+              borderRadius: '6px',
+              padding: '14px 16px',
+              marginTop: '12px'
+            }}>
+              <strong>취소 정책</strong>
+              <ul style={{ marginTop: '8px', paddingLeft: '16px', lineHeight: '1.9' }}>
+                <li>결제 완료 상태에서만 취소 가능합니다.</li>
+                <li>주문 접수 이후에는 취소가 불가합니다.</li>
+                <li>취소 시 상품은 자동으로 판매 상태로 전환됩니다.</li>
+              </ul>
+            </div>
           </div>
 
           <button style={s.payBtn} onClick={() => navigate(`/order/detail/${orderId}`)}>주문 상세 보기</button>
