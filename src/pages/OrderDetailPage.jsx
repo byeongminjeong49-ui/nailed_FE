@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { navigate, getCurrentMemberId, safeParse, METHOD_LABELS } from '../utils/orderHelpers';
 import { page, inner, card, cardTitle } from '../styles/orderShared';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+import { API_BASE_URL } from '../api/config';
 
 const STATUS_LABEL = {
   REQUESTED: '주문접수',

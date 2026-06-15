@@ -1,7 +1,7 @@
 import { useState, useEffect} from 'react';
 import { createOrder } from '../api/orderApi';
 import axios from 'axios';
-import { navigate, getCurrentMemberId, safeParse } from '../utils/orderHelpers';
+import { navigate, getCurrentMemberId, safeParse, COMMISSION_RATE } from '../utils/orderHelpers';
 import { page, inner, card, cardTitle } from '../styles/orderShared';
 
 const s = {
@@ -41,8 +41,7 @@ useEffect(() => {
   const [addressTouched, setAddressTouched] = useState(false);
   const [paying, setPaying] = useState(false); 
 
-// 결제 금액 미리보기 (백엔드 OrderService.DEFAULT_COMMISSION_RATE와 동일하게 맞춰야 함, 실제 금액은 주문 생성 시 백엔드에서 재계산됨)
-const COMMISSION_RATE = 2;
+// 결제 금액 미리보기 — 실제 금액은 주문 생성 시 백엔드에서 재계산됨
 const productAmount    = pendingOrder?.productAmount || 0;
 const shippingFee      = pendingOrder?.shippingFee || 0;
 const commission = Math.floor((productAmount + shippingFee) * COMMISSION_RATE / 100);

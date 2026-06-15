@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { cancelAdminOrder, getAdminOrders } from "../../api/adminApi";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+import { API_BASE_URL } from "../../api/config";
 
 const ORDER_STATUS_LABELS = {
   REQUESTED: "주문접수",

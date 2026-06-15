@@ -8,11 +8,11 @@ import ReportModal from "../components/ReportModal";
 import { toBrandNameEn } from "../utils/brandName";
 import { addWishlist, getProductDetail, getRandomProducts, getRelatedProducts, getSellerProducts, incrementViewCount, removeWishlist } from "../api/productApi";
 import { categoryCodeToUrl } from "../data/categories";
+import { useCategories } from "../hooks/useCategories";
 import "../styles/product-detail.css";
 
 const GRADE = { BRONZE: "브론즈", SILVER: "실버", GOLD: "골드", DIAMOND: "다이아" };
 const STATUS = { ON_SALE: "판매중", SOLD: "판매완료" };
-const CONDITION_SHORT = { S: "새제품", A: "거의 새것", B: "상태 좋음", C: "상태 보통", D: "사용감 많음" };
 
 function navigate(path) {
   window.history.pushState({}, "", path);
@@ -210,6 +210,7 @@ function ProductRowSection({ title, products }) {
 }
 
 function ProductDetailPage({ productId }) {
+  const categories = useCategories();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -380,7 +381,7 @@ function ProductDetailPage({ productId }) {
                   ))}
                   <button
                     className="pd-related-more-card"
-                    onClick={() => navigate(categoryCodeToUrl(product.categoryCode))}
+                    onClick={() => navigate(categoryCodeToUrl(categories, product.categoryCode))}
                   >
                     더보기
                   </button>
@@ -457,7 +458,7 @@ function ProductDetailPage({ productId }) {
                 {product.size && <span className="pd-strip-pill pd-strip-pill--size">{product.size}</span>}
                 {product.conditionCode && (
                   <span className="pd-strip-pill pd-strip-pill--cond">
-                    {CONDITION_SHORT[product.conditionCode] || product.conditionDescription}
+                    {product.conditionLabel}
                   </span>
                 )}
               </div>
@@ -521,9 +522,9 @@ function ProductDetailPage({ productId }) {
             <div className="pd-cat-breadcrumb-block">
               <span className="pd-cat-label">카테고리</span>
               <a
-                href={categoryCodeToUrl(product.categoryCode)}
+                href={categoryCodeToUrl(categories, product.categoryCode)}
                 className="pd-cat-breadcrumb"
-                onClick={(e) => { e.preventDefault(); navigate(categoryCodeToUrl(product.categoryCode)); }}
+                onClick={(e) => { e.preventDefault(); navigate(categoryCodeToUrl(categories, product.categoryCode)); }}
               >
                 {(product.categoryPath || product.categoryName)?.split(">").map((seg, i, arr) => (
                   <span key={i}>

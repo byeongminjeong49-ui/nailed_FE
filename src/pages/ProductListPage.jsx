@@ -5,6 +5,7 @@ import ProductCard from "../components/home/ProductCard";
 import ProductFilterPanel from "../components/ProductFilterPanel";
 import { findCategory, findSubcategory, resolveDbCode } from "../data/categories";
 import { getProductListByCode } from "../api/productApi";
+import { useCategories } from "../hooks/useCategories";
 import "../styles/search-result.css";
 
 const PAGE_SIZE = 20;
@@ -30,10 +31,11 @@ function toCardShape(p) {
 }
 
 function ProductListPage({ path, search }) {
+  const categories = useCategories();
   const params = new URLSearchParams(search);
   const categoryValue = decodeURIComponent(path.replace("/category/", "")) || "";
   const subcategoryValue = params.get("subcategory") || "";
-  const category = findCategory(categoryValue);
+  const category = findCategory(categories, categoryValue);
   const subcategory = findSubcategory(category, subcategoryValue);
   const title = getPageTitle(category, subcategory);
 
@@ -71,7 +73,7 @@ function ProductListPage({ path, search }) {
       })
       .catch(() => setError("상품을 불러오는 데 실패했습니다."))
       .finally(() => setLoading(false));
-  }, [categoryValue, subcategoryValue, appliedFilters, currentPage]);
+  }, [categoryValue, subcategoryValue, appliedFilters, currentPage, category]);
 
   const handleApplyFilters = (nextFilters) => {
     setDraftFilters(nextFilters);

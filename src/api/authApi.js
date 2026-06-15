@@ -1,4 +1,5 @@
 import axios from "axios";
+import { API_BASE_URL } from "./config";
 
 /**
  * authApi.js — 로그인·회원가입·토큰 관리
@@ -7,8 +8,6 @@ import axios from "axios";
  *   Access Token  → sessionStorage (탭 닫으면 삭제, JS 접근 가능)
  *   Refresh Token → HttpOnly 쿠키  (JS 접근 불가 → XSS 방어, BE가 직접 심어줌)
  */
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 // 스토리지 키 상수
 const ACCESS_TOKEN_KEY     = "accessToken";

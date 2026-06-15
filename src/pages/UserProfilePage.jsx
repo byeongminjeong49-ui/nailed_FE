@@ -23,8 +23,7 @@ import { getSellerProducts, getUserHome } from "../api/productApi";
 import { getSellerReviews, writeReview } from "../api/reviewApi";
 import "../styles/review.css";
 import "../styles/product-detail.css";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+import { API_BASE_URL } from "../api/config";
 const DEFAULT_COMMISSION_RATE = 0.02;
 const PROFILE_IMAGE_MAX_SIZE = 5 * 1024 * 1024;
 const PROFILE_IMAGE_TYPES = ["image/jpeg", "image/png"];
@@ -674,7 +673,7 @@ function SettlementTab({ settlements }) {
     return "#1565c0";
   };
 
-  const BANK_LABELS = { KB: "국민은행", SHINHAN: "신한은행", WOORI: "우리은행", HANA: "하나은행", IBK: "기업은행", NH: "농협은행" };
+  const BANK_LABELS = { KB: "국민은행", SHINHAN: "신한은행", WOORI: "우리은행"};
 
   return (
     <div style={{ maxWidth: "720px" }}>

@@ -1,6 +1,5 @@
 import { toBrandNameEn } from "../../utils/brandName";
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+import { API_BASE_URL } from "../../api/config";
 
 function navigate(path) {
   window.history.pushState({}, "", path);
@@ -12,7 +11,7 @@ function ProductCard({ product }) {
   const title = product.name || product.title || "";
   const price = product.price;
   const rawUrl = product.imageUrl || product.thumbnailUrl || null;
-  const imageUrl = rawUrl && !rawUrl.startsWith("http") ? `${API_BASE}${rawUrl}` : rawUrl;
+  const imageUrl = rawUrl && !rawUrl.startsWith("http") ? `${API_BASE_URL}${rawUrl}` : rawUrl;
   const brandName = product.brandName || null;
   const size = product.size || null;
   const wishlistCount = product.wishlistCount ?? 0;

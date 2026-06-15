@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { logout } from "../../api/authApi";
-import { categories } from "../../data/categories";
+import { useCategories } from "../../hooks/useCategories";
 
 const ACCESS_TOKEN_KEY = "accessToken";
 const SESSION_KEY = "nailed_session";
@@ -72,6 +72,7 @@ function hasAuthSession() {
 }
 
 function Header() {
+  const categories = useCategories();
   const [isLoggedIn, setIsLoggedIn] = useState(hasAuthSession);
   const [searchKeyword, setSearchKeyword] = useState(() => {
     if (window.location.pathname !== "/search") {

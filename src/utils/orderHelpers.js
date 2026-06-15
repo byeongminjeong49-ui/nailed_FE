@@ -20,6 +20,9 @@ export function getCurrentMemberId() {
   return session?.memberId ?? null;
 }
 
+// 수수료율 (%) — 백엔드 OrderService.DEFAULT_COMMISSION_RATE 와 동일값 유지
+export const COMMISSION_RATE = 2;
+
 // 결제 수단 코드 → 화면에 표시할 한글 라벨
 export const METHOD_LABELS = {
   card: '신용/체크카드', kakao: '카카오페이',
