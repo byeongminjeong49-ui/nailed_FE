@@ -164,6 +164,7 @@ export function SignupPage({ onNavigate }) {
   });
   const [message, setMessage] = useState({ type: "", text: "" });
   const [submitting, setSubmitting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({ name: "", userId: "", passwordConfirm: "" });
 
   const canSubmit = useMemo(() => {
     return (
@@ -218,7 +219,7 @@ export function SignupPage({ onNavigate }) {
 
   async function handleUserIdCheck() {
     if (!userIdPattern.test(form.userId.trim())) {
-      setMessage({ type: "error", text: "아이디는 영문, 숫자, 밑줄 조합 4~20자로 입력해주세요." });
+      setMessage({ type: "error", text: "아이디는 영문, 숫자를 포함해 4~20자로 입력해주세요." });
       return;
     }
     if (containsAdminKeyword(form.userId)) {
@@ -285,13 +286,24 @@ export function SignupPage({ onNavigate }) {
           </div>
 
           <form className="auth-form signup-form" onSubmit={handleSubmit}>
-            <Field label="이름">
+            <Field label="이름" error={fieldErrors.name}>
               <input
                 type="text"
                 placeholder="이름을 입력해주세요"
                 autoComplete="name"
+                maxLength={30}
                 value={form.name}
-                onChange={(event) => update("name", event.target.value)}
+                onChange={(event) => {
+                  update("name", event.target.value);
+                  if (event.target.value.trim()) {
+                    setFieldErrors((prev) => ({ ...prev, name: "" }));
+                  }
+                }}
+                onBlur={() => {
+                  if (!form.name.trim()) {
+                    setFieldErrors((prev) => ({ ...prev, name: "이름을 입력해주세요." }));
+                  }
+                }}
               />
             </Field>
 
@@ -300,6 +312,7 @@ export function SignupPage({ onNavigate }) {
                 <input
                   type="text"
                   placeholder="닉네임을 입력해주세요"
+                  maxLength={30}
                   value={form.nickname}
                   onChange={(event) => update("nickname", event.target.value)}
                 />
@@ -309,7 +322,7 @@ export function SignupPage({ onNavigate }) {
               </div>
             </Field>
 
-            <Field label="아이디" hint="영문, 숫자, 밑줄 조합 4~20자로 입력해주세요.">
+            <Field label="아이디" hint="영문, 숫자를 포함해 4~20자로 입력해주세요." error={fieldErrors.userId}>
               <div className="inline-field">
                 <input
                   type="text"
@@ -317,7 +330,20 @@ export function SignupPage({ onNavigate }) {
                   autoComplete="username"
                   maxLength={20}
                   value={form.userId}
-                  onChange={(event) => update("userId", event.target.value)}
+                  onChange={(event) => {
+                    update("userId", event.target.value);
+                    if (!event.target.value || userIdPattern.test(event.target.value.trim())) {
+                      setFieldErrors((prev) => ({ ...prev, userId: "" }));
+                    }
+                  }}
+                  onBlur={() => {
+                    if (form.userId.trim() && !userIdPattern.test(form.userId.trim())) {
+                      setFieldErrors((prev) => ({
+                        ...prev,
+                        userId: "아이디 형식에 맞춰 입력해주세요. (영문, 숫자 4~20자)",
+                      }));
+                    }
+                  }}
                 />
                 <button className="outline-button" type="button" onClick={handleUserIdCheck}>
                   중복 확인
@@ -332,18 +358,44 @@ export function SignupPage({ onNavigate }) {
                 autoComplete="new-password"
                 maxLength={16}
                 value={form.password}
-                onChange={(event) => update("password", event.target.value)}
+                onChange={(event) => {
+                  update("password", event.target.value);
+                  if (!event.target.value || passwordPattern.test(event.target.value)) {
+                    setMessage({ type: "", text: "" });
+                  }
+                }}
+                onBlur={() => {
+                  if (form.password && !passwordPattern.test(form.password)) {
+                    setMessage({
+                      type: "error",
+                      text: "비밀번호 형식에 맞춰 입력해주세요. (영문, 숫자, 특수문자 포함 8~16자)",
+                    });
+                  }
+                }}
               />
             </Field>
 
-            <Field label="비밀번호 확인">
+            <Field label="비밀번호 확인" error={fieldErrors.passwordConfirm}>
               <input
                 type="password"
                 placeholder="비밀번호를 다시 입력해주세요"
                 autoComplete="new-password"
                 maxLength={16}
                 value={form.passwordConfirm}
-                onChange={(event) => update("passwordConfirm", event.target.value)}
+                onChange={(event) => {
+                  update("passwordConfirm", event.target.value);
+                  if (form.password === event.target.value) {
+                    setFieldErrors((prev) => ({ ...prev, passwordConfirm: "" }));
+                  }
+                }}
+                onBlur={() => {
+                  if (form.passwordConfirm && form.password !== form.passwordConfirm) {
+                    setFieldErrors((prev) => ({
+                      ...prev,
+                      passwordConfirm: "비밀번호가 일치하지 않습니다.",
+                    }));
+                  }
+                }}
               />
             </Field>
 
@@ -457,13 +509,14 @@ setMessage({ type: "success", text: `비밀번호: ${result.temporaryPassword} `
   );
 }
 
-function Field({ children, hint, label }) {
+function Field({ children, hint, label, error }) {
   return (
     <label className="form-row">
       <span>{label}</span>
-      <div className="field-control">
+      <div className={`field-control${error ? " has-error" : ""}`}>
         {children}
-        {hint && <small>{hint}</small>}
+        {error && <small className="field-error">{error}</small>}
+        {!error && hint && <small>{hint}</small>}
       </div>
     </label>
   );
@@ -489,13 +542,13 @@ function validateSignup(form, agreements, checks) {
   if (!form.nickname.trim()) return "닉네임을 입력해주세요.";
   if (!checks.nickname) return "닉네임 중복 확인을 완료해주세요.";
   if (!userIdPattern.test(form.userId.trim())) {
-    return "아이디는 영문, 숫자, 밑줄 조합 4~20자로 입력해주세요.";
+    return "아이디는 영문, 숫자를 포함해 4~20자로 입력해주세요.";
   }
   if (!checks.userId) return "아이디 중복 확인을 완료해주세요.";
   if (!passwordPattern.test(form.password)) {
     return "비밀번호는 영문, 숫자, 특수문자를 포함해 8~16자로 입력해주세요.";
   }
-  if (form.password !== form.passwordConfirm) return "비밀번호 확인이 일치하지 않습니다.";
+  if (form.password !== form.passwordConfirm) return "비밀번호가 일치하지 않습니다.";
   if (!agreements.age || !agreements.terms || !agreements.privacy) {
     return "필수 약관에 모두 동의해주세요.";
   }

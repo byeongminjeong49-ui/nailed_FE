@@ -160,6 +160,20 @@
   line-height: 1.45;
 }
 
+.field-control small.field-error {
+  color: #e53e3e;
+}
+
+.field-control.has-error input {
+  border-color: #e53e3e;
+  background: #fff8f8;
+}
+
+.field-control.has-error input:focus {
+  border-color: #e53e3e;
+  box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.12);
+}
+
 .field-control input {
   width: 100%;
   min-height: 48px;
