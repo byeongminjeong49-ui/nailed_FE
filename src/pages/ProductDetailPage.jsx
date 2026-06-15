@@ -11,6 +11,8 @@ import { categoryCodeToUrl } from "../data/categories";
 import { useCategories } from "../hooks/useCategories";
 import "../styles/product-detail.css";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+const DEFAULT_PROFILE = `${API_BASE_URL}/images/profileImg/default-profile.png`;
 const GRADE = { BRONZE: "브론즈", SILVER: "실버", GOLD: "골드", DIAMOND: "다이아" };
 const STATUS = { ON_SALE: "판매중", SOLD: "판매완료" };
 
@@ -235,7 +237,6 @@ function ProductDetailPage({ productId }) {
     timerRef.current = setTimeout(() => setToast(""), 2400);
   }
 
-  // fetch 완료 및 saveRecentlyViewed 호출 전에 IDs 캡처
   useEffect(() => {
     setCapturedRecentIds(getRecentlyViewedIds(productId));
   }, [productId]);
@@ -354,7 +355,6 @@ function ProductDetailPage({ productId }) {
       <Header />
       <div className="pd-inner">
 
-
         {/* ── 메인 2단 ── */}
         <div className="pd-body">
 
@@ -389,17 +389,16 @@ function ProductDetailPage({ productId }) {
               </div>
             )}
 
+            {/* ↓↓↓ 수정된 판매자 카드 아바타 ↓↓↓ */}
             <div className="pd-seller-card">
               <div className="pd-seller-avatar">
-                {product.seller.profileImageUrl ? (
-                  <img
-                    src={product.seller.profileImageUrl}
-                    alt={`${product.seller.nickname} 프로필`}
-                  />
-                ) : (
-                  product.seller.nickname.charAt(0)
-                )}
+                <img
+                  src={product.seller.profileImageUrl || DEFAULT_PROFILE}
+                  alt={`${product.seller.nickname} 프로필`}
+                  onError={(e) => { e.target.src = DEFAULT_PROFILE; }}
+                />
               </div>
+              {/* ↑↑↑ 수정된 판매자 카드 아바타 ↑↑↑ */}
               <div className="pd-seller-info">
                 <span className="pd-seller-nickname">{product.seller.nickname}</span>
                 <div className="pd-seller-sub">
@@ -478,33 +477,30 @@ function ProductDetailPage({ productId }) {
               ) : (
                 <button
                   className="pd-buy-btn"
-                 onClick={() => {
-  if (!currentMemberId) { navigate('/login'); return; }
-
-  // 다른 구매자면 배송지 초기화
-  const savedForm = sessionStorage.getItem('orderForm');
-  if (savedForm) {
-    try {
-      const parsed = JSON.parse(savedForm);
-      if (!parsed._buyerId || parsed._buyerId !== currentMemberId) {
-        sessionStorage.removeItem('orderForm');
-      }
-    } catch {}
-  }
-
-  sessionStorage.setItem('pendingOrder', JSON.stringify({
-    productId:      product.productId,
-    sellerId:       product.seller.memberId,
-    buyerId:        currentMemberId,
-    productAmount:  product.price,
-    shippingFee:    product.shippingFee || 0,
-    title:          product.title,
-    imageUrl:       productImageUrls[0] ?? '',
-    sellerNickname: product.seller.nickname,
-    sellerBadge:    product.seller.sellerGrade,
-  }));
-  navigate('/order/form');
-}}
+                  onClick={() => {
+                    if (!currentMemberId) { navigate('/login'); return; }
+                    const savedForm = sessionStorage.getItem('orderForm');
+                    if (savedForm) {
+                      try {
+                        const parsed = JSON.parse(savedForm);
+                        if (!parsed._buyerId || parsed._buyerId !== currentMemberId) {
+                          sessionStorage.removeItem('orderForm');
+                        }
+                      } catch {}
+                    }
+                    sessionStorage.setItem('pendingOrder', JSON.stringify({
+                      productId:      product.productId,
+                      sellerId:       product.seller.memberId,
+                      buyerId:        currentMemberId,
+                      productAmount:  product.price,
+                      shippingFee:    product.shippingFee || 0,
+                      title:          product.title,
+                      imageUrl:       productImageUrls[0] ?? '',
+                      sellerNickname: product.seller.nickname,
+                      sellerBadge:    product.seller.sellerGrade,
+                    }));
+                    navigate('/order/form');
+                  }}
                   disabled={isSold}
                 >
                   <img src={shieldIcon} width="15" height="15" alt="shield" style={{filter: 'invert(1)'}} />
