@@ -44,7 +44,9 @@ useEffect(() => {
 // 결제 금액 미리보기 — 실제 금액은 주문 생성 시 백엔드에서 재계산됨
 const productAmount    = pendingOrder?.productAmount || 0;
 const shippingFee      = pendingOrder?.shippingFee || 0;
-const commission = Math.floor((productAmount + shippingFee) * COMMISSION_RATE / 100);
+// 수수료는 10원 단위로 반올림 (백엔드 OrderService와 동일한 계산)
+const rawCommission = (productAmount + shippingFee) * COMMISSION_RATE / 100;
+const commission = Math.round(rawCommission / 10) * 10;
 const finalPrice       = productAmount + shippingFee + commission;
 
   const isValidPhone   = /^\d{10,11}$/.test(form.receiverPhone);
