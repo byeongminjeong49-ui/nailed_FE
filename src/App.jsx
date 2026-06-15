@@ -14,7 +14,6 @@ import { FindPasswordPage, LoginPage, SignupPage } from "./pages/AuthPages.jsx";
 import MyPage from "./pages/MyPage.jsx";
 import ProductDetailPage from "./pages/ProductDetailPage.jsx";
 import ProductListPage from "./pages/ProductListPage.jsx";
-import ReadyPage from "./pages/ReadyPage.jsx";
 import SellPage from "./pages/SellPage.jsx";
 import ReviewWritePage from "./pages/ReviewWritePage.jsx";
 import SearchResultPage from "./pages/SearchResultPage.jsx";
@@ -55,10 +54,6 @@ const authRoutes = {
   "/find-password": "find-password",
   "/password/reset": "find-password",
   "/mypage": "mypage",
-};
-
-const readyRoutes = {
-  "/sell": "판매",
 };
 
 const guideRoutes = {
@@ -139,7 +134,6 @@ function App() {
   const path = location.pathname;
   const activePage = adminRoutes[path];
   const activeAuthPage = authRoutes[path];
-  const activeReadyPage = readyRoutes[path];
   const activeGuidePage = guideRoutes[path];
   const activeOrderPage = orderRoutes[path]; 
   const isMyPageRoute = path === "/mypage" || path.startsWith("/mypage/");
@@ -197,11 +191,6 @@ function App() {
     const editProductId = new URLSearchParams(location.search).get("edit");
     return <SellPage editProductId={editProductId} />;
   }
-  if (activeReadyPage) {
-    if (!hasAccessToken()) return <ErrorPage statusCode={401} />;
-    return <ReadyPage title={activeReadyPage} />;
-  }
-
   // 3. 상품 코어 도메인 상세 정보 분기
   if (productId) {
     return <ProductDetailPage productId={productId} />;
