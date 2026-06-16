@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   createAdminMemberPenalty,
   fetchAdminMembers,
+  getAdminMember,
   getAdminMemberPenalties,
   unsuspendAdminMember,
 } from "../../api/adminApi";
@@ -99,6 +100,7 @@ function AdminMembersPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [openActionMemberId, setOpenActionMemberId] = useState(null);
   const [selectedMember, setSelectedMember] = useState(null);
+  const [memberDetailLoading, setMemberDetailLoading] = useState(false);
   const [selectedPenaltyMember, setSelectedPenaltyMember] = useState(null);
   const [penaltyType, setPenaltyType] = useState("WARNING");
   const [penaltyReason, setPenaltyReason] = useState("");
@@ -207,10 +209,10 @@ function AdminMembersPage() {
     setPage(0);
   }
 
-  function handleActionMenuClick(action, member) {
+  async function handleActionMenuClick(action, member) {
     setOpenActionMemberId(null);
     if (action === "상세보기") {
-      setSelectedMember(member);
+      await openMemberDetailModal(member);
       return;
     }
 
@@ -244,6 +246,26 @@ function AdminMembersPage() {
     }
 
     console.log("[admin members action]", action, member?.memberId);
+  }
+
+  async function openMemberDetailModal(member) {
+    if (!member?.memberId) return;
+
+    setMemberDetailLoading(true);
+    setErrorMessage("");
+
+    try {
+      const detail = await getAdminMember(member.memberId);
+      setSelectedMember({
+        ...member,
+        ...detail,
+        status: detail?.memberStatus || detail?.status || member.status,
+      });
+    } catch (error) {
+      setErrorMessage(error.message || "회원 상세 조회에 실패했습니다.");
+    } finally {
+      setMemberDetailLoading(false);
+    }
   }
 
   function closePenaltyModal() {
@@ -292,10 +314,8 @@ function AdminMembersPage() {
       setPenaltyType("WARNING");
       setPenaltyReason("");
       setPenaltyDays(7);
-      setSuccessMessage("회원 제재가 등록되었습니다.");
       setReloadKey((current) => current + 1);
     } catch (error) {
-      setPenaltyMessage(error.message || "회원 제재 등록에 실패했습니다.");
     } finally {
       setPenaltySubmitting(false);
     }
@@ -338,10 +358,10 @@ function AdminMembersPage() {
     try {
       await unsuspendAdminMember(selectedUnsuspendMember.memberId);
       setSelectedUnsuspendMember(null);
-      setSuccessMessage("회원이 활동중 상태로 복구되었습니다.");
+      
       setReloadKey((current) => current + 1);
     } catch (error) {
-      setErrorMessage(error.message || "회원 복구에 실패했습니다.");
+    
       setSelectedUnsuspendMember(null);
     } finally {
       setUnsuspendSubmitting(false);
@@ -555,12 +575,12 @@ function AdminMembersPage() {
               <DetailItem label="권한" value={ROLE_LABELS[selectedMember.role] || selectedMember.role} />
               <DetailItem
                 label="회원 상태"
-                value={STATUS_LABELS[selectedMember.status] || selectedMember.status}
+                value={STATUS_LABELS[selectedMember.memberStatus || selectedMember.status] || selectedMember.memberStatus || selectedMember.status}
               />
               <DetailItem label="판매등급" value={selectedMember.sellerGrade} />
               <DetailItem label="가입일" value={formatDate(selectedMember.createdAt)} />
               <DetailItem label="최근 수정일" value={formatDate(selectedMember.updatedAt)} />
-              <DetailItem label="최근 로그인일" value={formatDate(selectedMember.lastLoginAt)} />
+              <DetailItem label="마지막 로그인일" value={formatDate(selectedMember.lastLoginAt)} />
               <DetailItem label="로그인 횟수" value={selectedMember.loginCount} />
               <DetailItem label="로그인 실패 횟수" value={selectedMember.loginFailCount} />
             </dl>

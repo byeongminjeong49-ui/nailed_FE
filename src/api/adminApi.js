@@ -23,6 +23,10 @@ export async function fetchAdminMembers({
   return authRequest(`/api/admin/members?${params.toString()}`);
 }
 
+export async function getAdminMember(memberId) {
+  return authRequest(`/api/admin/members/${encodeURIComponent(memberId)}`);
+}
+
 export async function createAdminMemberPenalty(memberId, payload) {
   return authRequest(`/api/admin/members/${encodeURIComponent(memberId)}/penalties`, {
     method: "POST",

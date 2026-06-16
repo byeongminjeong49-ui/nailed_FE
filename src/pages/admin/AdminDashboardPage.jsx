@@ -358,6 +358,7 @@ function AdminDashboardPage() {
   const products = dashboard?.products || {};
   const orders = dashboard?.orders || {};
   const reports = dashboard?.reports || {};
+  const inquiries = dashboard?.inquiries || {};
   const sales = dashboard?.sales || {};
 
   const totalMembers = numberValue(members.totalMembers);
@@ -366,6 +367,7 @@ function AdminDashboardPage() {
   const transactionAmount = numberValue(sales.transactionAmount);
   const commissionRevenue = numberValue(sales.commissionRevenue);
   const pendingReports = numberValue(reports.approvedReports);
+  const totalInquiries = numberValue(inquiries.totalInquiries);
 
   const statCards = [
     {
@@ -383,6 +385,13 @@ function AdminDashboardPage() {
       onClick: () => navigateAdmin("/admin/products"),
     },
     {
+      label: "미처리 신고",
+      value: formatNumber(pendingReports),
+      caption: `반려 ${formatNumber(reports.rejectedReports)} / 완료 ${formatNumber(reports.doneReports)}`,
+      icon: "alert",
+      onClick: () => navigateAdmin("/admin/reports"),
+    },
+    {
       label: "유효 거래 건수",
       value: formatNumber(validOrderCount),
       caption: "결제 이후 진행·완료 주문",
@@ -390,18 +399,11 @@ function AdminDashboardPage() {
       onClick: () => navigateAdmin("/admin/orders"),
     },
     {
-      label: "전체 거래액",
-      value: `${formatMoneyShort(transactionAmount)}원`,
-      caption: `사이트 매출(수수료) ${formatWon(commissionRevenue)}`,
-      icon: "card",
-      onClick: () => navigateAdmin("/admin/orders"),
-    },
-    {
-      label: "미처리 신고",
-      value: formatNumber(pendingReports),
-      caption: `반려 ${formatNumber(reports.rejectedReports)} / 완료 ${formatNumber(reports.doneReports)}`,
-      icon: "alert",
-      onClick: () => navigateAdmin("/admin/reports"),
+      label: "문의 건수",
+      value: formatNumber(totalInquiries),
+      caption: `미답변 ${formatNumber(inquiries.pendingInquiries)} / 답변 ${formatNumber(inquiries.answeredInquiries)}`,
+      icon: "document",
+      onClick: () => navigateAdmin("/admin/inquiries"),
     },
   ];
 

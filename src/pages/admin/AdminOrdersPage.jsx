@@ -344,10 +344,8 @@ function AdminOrdersPage() {
       updateCancelledOrder(updatedOrder, selectedCancelOrder.orderId);
       setSelectedCancelOrder(null);
       setCancelReason("");
-      showSuccessMessage("주문 강제 취소가 완료되었습니다.");
       setReloadKey((current) => current + 1);
     } catch (error) {
-      setCancelMessage(error.message || "주문 강제 취소에 실패했습니다.");
     } finally {
       setCancelSubmitting(false);
     }
