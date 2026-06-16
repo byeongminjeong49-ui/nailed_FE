@@ -26,7 +26,6 @@ const STATUS_FILTERS = [
 ];
 
 const PAGE_SIZE = 10;
-const INQUIRY_SORT = "inquiryId,asc";
 
 function toList(data) {
   if (Array.isArray(data?.content)) return data.content;
@@ -64,9 +63,6 @@ function getPageInfo(data, fallbackPage) {
   };
 }
 
-function sortByIdAsc(items, field) {
-  return [...items].sort((a, b) => Number(a?.[field] ?? 0) - Number(b?.[field] ?? 0));
-}
 
 function normalizeInquiry(inquiry) {
   return {
@@ -138,9 +134,8 @@ function AdminInquiriesPage() {
         status: nextStatus,
         page: nextPage,
         size: PAGE_SIZE,
-        sort: INQUIRY_SORT,
       });
-      setInquiries(sortByIdAsc(toList(data).map(normalizeInquiry), "inquiryId"));
+      setInquiries(toList(data).map(normalizeInquiry));
       setPageInfo(getPageInfo(data, nextPage));
     } catch (error) {
       setMessage(error.message || "문의 목록을 불러올 수 없습니다.");
@@ -204,14 +199,9 @@ function AdminInquiriesPage() {
 
       setSelectedInquiry(updatedInquiry);
       setAnswerContent("");
-      setInquiries((prev) =>
-        prev.map((item) =>
-          item.inquiryId === updatedInquiry.inquiryId
-            ? { ...item, ...updatedInquiry, inquiryStatus: "ANSWERED" }
-            : item,
-        ),
-      );
-      await loadInquiries(statusFilter, page);
+      setStatusFilter("ANSWERED");
+      setPage(0);
+      await loadInquiries("ANSWERED", 0);
       setMessage("답변이 등록되었습니다.");
     } catch (error) {
       setMessage(error.message || "답변 등록에 실패했습니다.");

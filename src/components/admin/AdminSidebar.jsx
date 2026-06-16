@@ -12,7 +12,7 @@ const adminNavItems = [
 function AdminSidebar({ activePage, onNavigate }) {
   return (
     <aside className="admin-sidebar">
-      <a className="admin-logo" href="/admin/dashboard" onClick={(event) => onNavigate(event, "/admin/dashboard")}>
+      <a className="admin-logo" href="/" onClick={(event) => onNavigate(event, "/")}>
         Nailed
       </a>
       <nav className="admin-nav" aria-label="관리자 메뉴">
