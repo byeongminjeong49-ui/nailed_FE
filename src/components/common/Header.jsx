@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { logout } from "../../api/authApi";
 import { useCategories } from "../../hooks/useCategories";
+import {
+  clearSearchHistory,
+  getSearchHistory,
+  removeSearchHistory,
+  saveSearchHistory,
+} from "../../utils/searchHistory";
 
 const ACCESS_TOKEN_KEY = "accessToken";
 const SESSION_KEY = "nailed_session";
@@ -91,6 +97,8 @@ function Header() {
       ];
   const quickMenuItems = [...menuItems, ...authMenuItems];
   const [activeCategory, setActiveCategory] = useState(null);
+  const [searchHistory, setSearchHistory] = useState(getSearchHistory);
+  const [showHistoryDropdown, setShowHistoryDropdown] = useState(false);
 
   useEffect(() => {
     const syncLoginState = () => {
@@ -135,20 +143,57 @@ function Header() {
     window.dispatchEvent(new PopStateEvent("popstate"));
   };
 
-  const executeSearch = () => {
-    const keyword = searchKeyword.trim();
-    const hasSearchText = /[\p{L}\p{N}]/u.test(keyword);
+  const executeSearch = (keyword = searchKeyword) => {
+    const trimmed = keyword.trim();
+    const hasSearchText = /[\p{L}\p{N}]/u.test(trimmed);
 
-    if (!keyword || !hasSearchText) {
+    if (!trimmed || !hasSearchText) {
       return;
     }
+
+    saveSearchHistory(trimmed);
+    setSearchHistory(getSearchHistory());
+    setShowHistoryDropdown(false);
 
     window.history.pushState(
       {},
       "",
-      `/search?keyword=${encodeURIComponent(keyword)}`,
+      `/search?keyword=${encodeURIComponent(trimmed)}`,
     );
     window.dispatchEvent(new PopStateEvent("popstate"));
+  };
+
+  const handleSearchFocus = () => {
+    const history = getSearchHistory();
+    setSearchHistory(history);
+    if (history.length > 0) {
+      setShowHistoryDropdown(true);
+    }
+  };
+
+  const handleSearchBlur = () => {
+    setTimeout(() => setShowHistoryDropdown(false), 150);
+  };
+
+  const handleHistoryItemClick = (keyword) => {
+    setSearchKeyword(keyword);
+    executeSearch(keyword);
+  };
+
+  const handleRemoveHistory = (event, keyword) => {
+    event.stopPropagation();
+    removeSearchHistory(keyword);
+    const updated = getSearchHistory();
+    setSearchHistory(updated);
+    if (updated.length === 0) {
+      setShowHistoryDropdown(false);
+    }
+  };
+
+  const handleClearHistory = () => {
+    clearSearchHistory();
+    setSearchHistory([]);
+    setShowHistoryDropdown(false);
   };
 
   const handleSearchSubmit = (event) => {
@@ -189,22 +234,52 @@ function Header() {
         <a className="header-logo" href="/" aria-label="Nailed 홈">
           Nailed
         </a>
-        <form className="search-bar" onSubmit={handleSearchSubmit}>
-          <label className="sr-only" htmlFor="home-search">
-            상품명, 브랜드, 키워드 검색
-          </label>
-          <input
-            id="home-search"
-            type="search"
-            placeholder="상품명, 브랜드, 키워드 검색"
-            value={searchKeyword}
-            onChange={(event) => setSearchKeyword(event.target.value)}
-            onKeyDown={handleSearchKeyDown}
-          />
-          <button type="submit" aria-label="검색">
-            ⌕
-          </button>
-        </form>
+        <div className="search-bar-wrapper">
+          <form className="search-bar" onSubmit={handleSearchSubmit}>
+            <label className="sr-only" htmlFor="home-search">
+              상품명, 브랜드, 키워드 검색
+            </label>
+            <input
+              id="home-search"
+              type="search"
+              placeholder="상품명, 브랜드, 키워드 검색"
+              value={searchKeyword}
+              onChange={(event) => setSearchKeyword(event.target.value)}
+              onKeyDown={handleSearchKeyDown}
+              onFocus={handleSearchFocus}
+              onBlur={handleSearchBlur}
+            />
+            <button type="submit" aria-label="검색">
+              ⌕
+            </button>
+          </form>
+          {showHistoryDropdown && searchHistory.length > 0 && (
+            <div className="search-history-dropdown">
+              <div className="search-history-header">
+                <span>최근 검색어</span>
+                <button type="button" onClick={handleClearHistory}>
+                  전체 삭제
+                </button>
+              </div>
+              {searchHistory.map((keyword) => (
+                <div
+                  key={keyword}
+                  className="search-history-item"
+                  onClick={() => handleHistoryItemClick(keyword)}
+                >
+                  <span>{keyword}</span>
+                  <button
+                    type="button"
+                    aria-label={`${keyword} 삭제`}
+                    onClick={(event) => handleRemoveHistory(event, keyword)}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
         <nav className="quick-menu" aria-label="사용자 메뉴">
           {quickMenuItems.map((item) => (
             <a

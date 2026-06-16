@@ -74,6 +74,81 @@
   cursor: pointer;
 }
 
+.search-bar-wrapper {
+  position: relative;
+}
+
+.search-bar-wrapper .search-bar {
+  width: 100%;
+}
+
+.search-history-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #ebebeb;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  z-index: 200;
+  padding: 6px 0;
+}
+
+.search-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 16px 8px;
+  font-size: 12px;
+  color: #999;
+}
+
+.search-history-header button {
+  background: none;
+  border: none;
+  color: #999;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+  width: auto;
+  height: auto;
+}
+
+.search-history-header button:hover {
+  color: #151515;
+}
+
+.search-history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #222;
+}
+
+.search-history-item:hover {
+  background: #f7f7f7;
+}
+
+.search-history-item button {
+  background: none;
+  border: none;
+  color: #ccc;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0 0 0 8px;
+  flex-shrink: 0;
+  width: auto;
+  height: auto;
+}
+
+.search-history-item button:hover {
+  color: #555;
+}
+
 .quick-menu {
   display: flex;
   justify-content: flex-end;
