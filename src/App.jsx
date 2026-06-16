@@ -116,7 +116,7 @@ function getCurrentPath() {
 }
 
 function getErrorStatusCode(pathname) {
-  const match = pathname.match(/^\/error\/(400|401|403|404|500|503)$/);
+  const match = pathname.match(/^\/error\/(401|403|404|500)$/);
   return match ? Number(match[1]) : null;
 }
 

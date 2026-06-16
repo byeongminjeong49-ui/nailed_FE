@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { cancelAdminOrder, getAdminOrders } from "../../api/adminApi";
 import { API_BASE_URL } from "../../api/config";
 
@@ -39,6 +39,24 @@ function formatDate(value) {
 
   return date.toISOString().slice(0, 10);
 }
+
+function formatDateTime(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleString("ko-KR", {
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit",
+  });
+}
+
+const CARRIERS = [
+  { value: "CJ",         label: "CJ대한통운" },
+  { value: "LOGEN",      label: "로젠택배" },
+  { value: "HANJIN",     label: "한진택배" },
+  { value: "KOREA_POST", label: "우체국택배" },
+  { value: "LOTTE",      label: "롯데택배" },
+];
 
 function formatPrice(value) {
   const price = Number(value);
@@ -133,11 +151,19 @@ function AdminOrdersPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [openActionOrderId, setOpenActionOrderId] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [selectedShippingOrder, setSelectedShippingOrder] = useState(null);
   const [selectedCancelOrder, setSelectedCancelOrder] = useState(null);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelMessage, setCancelMessage] = useState("");
   const [cancelSubmitting, setCancelSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const successTimerRef = useRef(null);
+
+  function showSuccessMessage(msg) {
+    if (successTimerRef.current) clearTimeout(successTimerRef.current);
+    setSuccessMessage(msg);
+    successTimerRef.current = setTimeout(() => setSuccessMessage(""), 1000);
+  }
   const [reloadKey, setReloadKey] = useState(0);
 
   const pageNumbers = useMemo(
@@ -238,6 +264,11 @@ function AdminOrdersPage() {
       return;
     }
 
+    if (action === "배송정보") {
+      setSelectedShippingOrder(order);
+      return;
+    }
+
     if (action === "관리자 권한 주문 강제 취소") {
       if (!ADMIN_CANCEL_ALLOWED_STATUSES.includes(order?.orderStatus)) {
         setErrorMessage("배송완료 또는 취소 주문은 관리자 권한으로 강제 취소할 수 없습니다.");
@@ -257,17 +288,19 @@ function AdminOrdersPage() {
     const targetOrderId = updatedOrder?.orderId ?? fallbackOrderId;
     if (!targetOrderId) return;
 
+    const patch = { ...(updatedOrder ?? {}), orderStatus: "CANCELLED" };
+
     setOrders((current) => (
       current.map((order) => (
         order.orderId === targetOrderId
-          ? { ...order, ...updatedOrder }
+          ? { ...order, ...patch }
           : order
       ))
     ));
 
     setSelectedOrder((current) => (
       current?.orderId === targetOrderId
-        ? { ...current, ...updatedOrder }
+        ? { ...current, ...patch }
         : current
     ));
   }
@@ -311,7 +344,7 @@ function AdminOrdersPage() {
       updateCancelledOrder(updatedOrder, selectedCancelOrder.orderId);
       setSelectedCancelOrder(null);
       setCancelReason("");
-      setSuccessMessage("주문 강제 취소가 완료되었습니다.");
+      showSuccessMessage("주문 강제 취소가 완료되었습니다.");
       setReloadKey((current) => current + 1);
     } catch (error) {
       setCancelMessage(error.message || "주문 강제 취소에 실패했습니다.");
@@ -450,7 +483,6 @@ function AdminOrdersPage() {
                             {[
                               { label: "상세보기" },
                               { label: "배송정보" },
-                              { label: "구매자·판매자 정보" },
                               {
                                 label: "관리자 권한 주문 강제 취소",
                                 disabled: !ADMIN_CANCEL_ALLOWED_STATUSES.includes(order.orderStatus),
@@ -543,10 +575,72 @@ function AdminOrdersPage() {
               <DetailItem label="결제일" value={formatDate(selectedOrder.paidAt)} />
               <DetailItem label="주문접수일" value={formatDate(selectedOrder.requestedAt)} />
               <DetailItem label="배송일" value={formatDate(selectedOrder.shippedAt)} />
-              <DetailItem label="완료일" value={formatDate(selectedOrder.completedAt)} />
+              {selectedOrder.orderStatus === "DELIVERED" && (
+                <DetailItem label="완료일" value={formatDate(selectedOrder.completedAt)} />
+              )}
               <DetailItem label="수정일" value={formatDate(selectedOrder.updatedAt)} />
-              <DetailItem label="취소일" value={formatDate(selectedOrder.cancelledAt)} />
-              <DetailItem label="취소사유" value={selectedOrder.cancelReason || selectedOrder.cancelRequestReason} />
+              {selectedOrder.orderStatus === "CANCELLED" && (
+                <>
+                  <DetailItem label="취소일" value={formatDate(selectedOrder.cancelledAt)} />
+                  <DetailItem label="취소사유" value={selectedOrder.cancelReason || selectedOrder.cancelRequestReason} />
+                </>
+              )}
+            </dl>
+          </section>
+        </div>
+      )}
+
+      {selectedShippingOrder && (
+        <div className="admin-detail-modal-backdrop" role="presentation" onClick={() => setSelectedShippingOrder(null)}>
+          <section
+            className="admin-detail-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-shipping-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="admin-detail-modal-head">
+              <h2 id="admin-shipping-title">배송 정보</h2>
+              <button type="button" aria-label="배송 정보 닫기" onClick={() => setSelectedShippingOrder(null)}>
+                ×
+              </button>
+            </div>
+            <div className="admin-detail-media-row">
+              <OrderThumbnail order={selectedShippingOrder} />
+              <div>
+                <strong>{selectedShippingOrder.productTitle || "-"}</strong>
+                <span>주문번호 {selectedShippingOrder.orderId || "-"}</span>
+              </div>
+            </div>
+            <dl className="admin-detail-grid">
+              <DetailItem
+                label="주문 상태"
+                value={ORDER_STATUS_LABELS[selectedShippingOrder.orderStatus] || selectedShippingOrder.orderStatus}
+              />
+              {["REQUESTED", "SHIPPING", "DELIVERED"].includes(selectedShippingOrder.orderStatus) ? (
+                <>
+                  <DetailItem label="접수 시각" value={formatDateTime(selectedShippingOrder.requestedAt)} />
+                  {selectedShippingOrder.carrierCode && (
+                    <DetailItem
+                      label="택배사"
+                      value={CARRIERS.find((c) => c.value === selectedShippingOrder.carrierCode)?.label || selectedShippingOrder.carrierCode}
+                    />
+                  )}
+                  {selectedShippingOrder.trackingNumber && (
+                    <DetailItem label="운송장 번호" value={selectedShippingOrder.trackingNumber} />
+                  )}
+                  {selectedShippingOrder.shippedAt && (
+                    <DetailItem label="배송 출발 시각" value={formatDateTime(selectedShippingOrder.shippedAt)} />
+                  )}
+                  {selectedShippingOrder.orderStatus === "DELIVERED" && selectedShippingOrder.completedAt && (
+                    <DetailItem label="배송완료 시각" value={formatDateTime(selectedShippingOrder.completedAt)} />
+                  )}
+                </>
+              ) : (
+                <div className="admin-detail-item" style={{ gridColumn: "1 / -1" }}>
+                  <dd style={{ color: "#888" }}>등록된 배송 정보가 없습니다.</dd>
+                </div>
+              )}
             </dl>
           </section>
         </div>

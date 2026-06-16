@@ -1,11 +1,11 @@
 import axios from "axios";
 import { authRequest } from "./authApi";
-import { API_BASE_URL } from "./config";
+import { API_BASE_URL, add503Interceptor } from "./config";
 
-const instance = axios.create({
+const instance = add503Interceptor(axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
-});
+}));
 
 async function request(path, params) {
   try {

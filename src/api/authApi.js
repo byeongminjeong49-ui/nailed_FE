@@ -1,5 +1,5 @@
 import axios from "axios";
-import { API_BASE_URL } from "./config";
+import { API_BASE_URL, add503Interceptor } from "./config";
 
 /**
  * authApi.js — 로그인·회원가입·토큰 관리
@@ -40,7 +40,7 @@ let sessionExpiredNotified = false;
 // ── axios 인스턴스 ─────────────────────────────────────────────────
 // withCredentials: true → refreshToken HttpOnly 쿠키가 요청에 자동 포함됨
 // BE의 CORS allowCredentials(true) 와 반드시 쌍으로 설정해야 동작
-const instance = axios.create({ baseURL: API_BASE_URL, withCredentials: true });
+const instance = add503Interceptor(axios.create({ baseURL: API_BASE_URL, withCredentials: true }));
 
 // ── 응답 데이터 추출 ───────────────────────────────────────────────
 // BE 응답 구조: { success: true, data: { ... } } → data 필드만 꺼냄
