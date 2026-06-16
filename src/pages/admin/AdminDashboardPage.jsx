@@ -366,6 +366,7 @@ function AdminDashboardPage() {
   const validOrderCount = numberValue(sales.deliveredOrderCount);
   const transactionAmount = numberValue(sales.transactionAmount);
   const commissionRevenue = numberValue(sales.commissionRevenue);
+  const totalReports = numberValue(reports.totalReports);
   const pendingReports = numberValue(reports.approvedReports);
   const totalInquiries = numberValue(inquiries.totalInquiries);
 
@@ -385,9 +386,9 @@ function AdminDashboardPage() {
       onClick: () => navigateAdmin("/admin/products"),
     },
     {
-      label: "미처리 신고",
-      value: formatNumber(pendingReports),
-      caption: `반려 ${formatNumber(reports.rejectedReports)} / 완료 ${formatNumber(reports.doneReports)}`,
+      label: "신고 건수",
+      value: formatNumber(totalReports),
+      caption: `미처리 ${formatNumber(pendingReports)} / 반려 ${formatNumber(reports.rejectedReports)} / 완료 ${formatNumber(reports.doneReports)}`,
       icon: "alert",
       onClick: () => navigateAdmin("/admin/reports"),
     },
