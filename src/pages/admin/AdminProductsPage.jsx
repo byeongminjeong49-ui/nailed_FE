@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { getAdminProducts, hideAdminProduct } from "../../api/adminApi";
+import { getAdminProducts, getAdminProduct, deleteAdminProduct, restoreAdminProduct } from "../../api/adminApi";
 import { API_BASE_URL } from "../../api/config";
 
 const PRODUCT_STATUS_LABELS = {
@@ -128,10 +128,12 @@ function AdminProductsPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [openActionProductId, setOpenActionProductId] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [selectedProductForHide, setSelectedProductForHide] = useState(null);
-  const [hideReason, setHideReason] = useState("");
-  const [hideMessage, setHideMessage] = useState("");
-  const [hideSubmitting, setHideSubmitting] = useState(false);
+  const [selectedProductForDelete, setSelectedProductForDelete] = useState(null);
+  const [deleteReason, setDeleteReason] = useState("");
+  const [deleteMessage, setDeleteMessage] = useState("");
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+  const [selectedProductForRestore, setSelectedProductForRestore] = useState(null);
+  const [restoreSubmitting, setRestoreSubmitting] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
   const pageNumbers = useMemo(
@@ -220,66 +222,87 @@ function AdminProductsPage() {
     setPage(0);
   }
 
-  function handleActionMenuClick(action, product) {
+  async function handleActionMenuClick(action, product) {
     setOpenActionProductId(null);
     if (action === "상세보기") {
-      setSelectedProduct(product);
+      try {
+        const detail = await getAdminProduct(product.productId);
+        setSelectedProduct(detail);
+      } catch {
+        setSelectedProduct(product);
+      }
       return;
     }
 
-    if (action === "상품숨김") {
-      if (product?.productStatus === "DELETED") {
-        setErrorMessage("이미 숨김 처리된 상품입니다.");
-        return;
-      }
+    if (action === "상품삭제") {
+      setSelectedProductForDelete(product);
+      setDeleteReason("");
+      setDeleteMessage("");
+      return;
+    }
 
-      setSelectedProductForHide(product);
-      setHideReason("");
-      setHideMessage("");
+    if (action === "복구") {
+      setSelectedProductForRestore(product);
       return;
     }
 
     console.log("[admin products action]", action, product?.productId);
   }
 
-  function handleHideModalClose() {
-    if (hideSubmitting) return;
-    setSelectedProductForHide(null);
-    setHideReason("");
-    setHideMessage("");
+  function handleDeleteModalClose() {
+    if (deleteSubmitting) return;
+    setSelectedProductForDelete(null);
+    setDeleteReason("");
+    setDeleteMessage("");
   }
 
-  async function handleHideSubmit(event) {
+  async function handleDeleteSubmit(event) {
     event.preventDefault();
 
-    const reason = hideReason.trim();
+    const reason = deleteReason.trim();
     if (!reason) {
-      setHideMessage("상품숨김 사유를 입력해주세요.");
+      setDeleteMessage("삭제 사유를 입력해주세요.");
       return;
     }
 
     if (reason.length > 500) {
-      setHideMessage("상품숨김 사유는 500자 이내로 입력해주세요.");
+      setDeleteMessage("삭제 사유는 500자 이내로 입력해주세요.");
       return;
     }
 
-    if (!selectedProductForHide?.productId) {
-      setHideMessage("상품 정보를 확인할 수 없습니다.");
+    if (!selectedProductForDelete?.productId) {
+      setDeleteMessage("상품 정보를 확인할 수 없습니다.");
       return;
     }
 
-    setHideSubmitting(true);
-    setHideMessage("");
+    setDeleteSubmitting(true);
+    setDeleteMessage("");
 
     try {
-      await hideAdminProduct(selectedProductForHide.productId, reason);
-      setSelectedProductForHide(null);
-      setHideReason("");
+      await deleteAdminProduct(selectedProductForDelete.productId, reason);
+      setSelectedProductForDelete(null);
+      setDeleteReason("");
       setReloadKey((current) => current + 1);
     } catch (error) {
-      setHideMessage(error.message || "상품숨김 처리에 실패했습니다.");
+      setDeleteMessage(error.message || "상품 삭제에 실패했습니다.");
     } finally {
-      setHideSubmitting(false);
+      setDeleteSubmitting(false);
+    }
+  }
+
+  async function handleRestoreConfirm() {
+    if (!selectedProductForRestore?.productId) return;
+    setRestoreSubmitting(true);
+
+    try {
+      await restoreAdminProduct(selectedProductForRestore.productId);
+      setSelectedProductForRestore(null);
+      setReloadKey((current) => current + 1);
+    } catch (error) {
+      setErrorMessage(error.message || "상품 복구에 실패했습니다.");
+      setSelectedProductForRestore(null);
+    } finally {
+      setRestoreSubmitting(false);
     }
   }
 
@@ -406,16 +429,13 @@ function AdminProductsPage() {
                           <div className="row-action-menu">
                             {[
                               { label: "상세보기" },
-                              {
-                                label: "상품숨김",
-                                disabled: product.productStatus === "DELETED",
-                              },
+                              ...(product.productStatus === "DELETED"
+                                ? (product.deletedReason ? [{ label: "복구" }] : [])
+                                : [{ label: "상품삭제" }]),
                             ].map((action) => (
                               <button
                                 type="button"
                                 key={action.label}
-                                disabled={action.disabled}
-                                title={action.disabled ? "이미 숨김 처리된 상품입니다." : undefined}
                                 onClick={() => handleActionMenuClick(action.label, product)}
                               >
                                 {action.label}
@@ -505,62 +525,111 @@ function AdminProductsPage() {
         </div>
       )}
 
-      {selectedProductForHide && (
-        <div className="admin-detail-modal-backdrop" role="presentation" onClick={handleHideModalClose}>
+      {selectedProductForDelete && (
+        <div className="admin-detail-modal-backdrop" role="presentation" onClick={handleDeleteModalClose}>
           <section
             className="admin-detail-modal admin-hide-product-modal"
             role="dialog"
             aria-modal="true"
-            aria-labelledby="admin-product-hide-title"
+            aria-labelledby="admin-product-delete-title"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="admin-detail-modal-head">
-              <h2 id="admin-product-hide-title">상품숨김</h2>
-              <button type="button" aria-label="상품숨김 닫기" onClick={handleHideModalClose}>
+              <h2 id="admin-product-delete-title">상품 삭제</h2>
+              <button type="button" aria-label="상품 삭제 닫기" onClick={handleDeleteModalClose}>
                 ×
               </button>
             </div>
-            <form className="admin-detail-form" onSubmit={handleHideSubmit}>
+            <form className="admin-detail-form" onSubmit={handleDeleteSubmit}>
               <div className="admin-detail-media-row">
-                <ProductThumbnail product={selectedProductForHide} />
+                <ProductThumbnail product={selectedProductForDelete} />
                 <div>
-                  <strong>{selectedProductForHide.title || "-"}</strong>
-                  <span>상품 ID {selectedProductForHide.productId ?? "-"}</span>
+                  <strong>{selectedProductForDelete.title || "-"}</strong>
+                  <span>상품 ID {selectedProductForDelete.productId ?? "-"}</span>
                 </div>
               </div>
 
-              <label className="admin-detail-field" htmlFor="admin-product-hide-reason">
-                <span>숨김 사유</span>
+              <label className="admin-detail-field" htmlFor="admin-product-delete-reason">
+                <span>삭제 사유</span>
                 <textarea
-                  id="admin-product-hide-reason"
+                  id="admin-product-delete-reason"
                   className="admin-detail-textarea"
-                  value={hideReason}
+                  value={deleteReason}
                   maxLength={500}
-                  placeholder="관리자 상품 숨김 사유를 입력하세요."
-                  disabled={hideSubmitting}
+                  placeholder="관리자 상품 삭제 사유를 입력하세요."
+                  disabled={deleteSubmitting}
                   onChange={(event) => {
-                    setHideReason(event.target.value);
-                    setHideMessage("");
+                    setDeleteReason(event.target.value);
+                    setDeleteMessage("");
                   }}
                 />
               </label>
-              <div className="admin-detail-helper">{hideReason.length}/500</div>
-              {hideMessage && <p className="admin-detail-error">{hideMessage}</p>}
+              <div className="admin-detail-helper">{deleteReason.length}/500</div>
+              {deleteMessage && <p className="admin-detail-error">{deleteMessage}</p>}
 
               <div className="admin-detail-modal-actions">
                 <button
                   className="admin-detail-secondary-button"
                   type="button"
-                  disabled={hideSubmitting}
-                  onClick={handleHideModalClose}
+                  disabled={deleteSubmitting}
+                  onClick={handleDeleteModalClose}
                 >
                   취소
                 </button>
-                <button className="admin-detail-danger-button" type="submit" disabled={hideSubmitting}>
-                  {hideSubmitting ? "처리 중" : "숨김 처리"}
+                <button className="admin-detail-danger-button" type="submit" disabled={deleteSubmitting}>
+                  {deleteSubmitting ? "처리 중" : "삭제"}
                 </button>
               </div>
             </form>
+          </section>
+        </div>
+      )}
+
+      {selectedProductForRestore && (
+        <div className="admin-detail-modal-backdrop" role="presentation" onClick={() => !restoreSubmitting && setSelectedProductForRestore(null)}>
+          <section
+            className="admin-detail-modal admin-hide-product-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-product-restore-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="admin-detail-modal-head">
+              <h2 id="admin-product-restore-title">상품 복구</h2>
+              <button type="button" aria-label="상품 복구 닫기" onClick={() => !restoreSubmitting && setSelectedProductForRestore(null)}>
+                ×
+              </button>
+            </div>
+            <div className="admin-detail-form">
+              <div className="admin-detail-media-row">
+                <ProductThumbnail product={selectedProductForRestore} />
+                <div>
+                  <strong>{selectedProductForRestore.title || "-"}</strong>
+                  <span>상품 ID {selectedProductForRestore.productId ?? "-"}</span>
+                </div>
+              </div>
+              <p style={{ margin: "12px 0", fontSize: 14, color: "var(--admin-muted)" }}>
+                이 상품을 판매중 상태로 복구합니다. 계속하시겠습니까?
+              </p>
+              <div className="admin-detail-modal-actions">
+                <button
+                  className="admin-detail-secondary-button"
+                  type="button"
+                  disabled={restoreSubmitting}
+                  onClick={() => setSelectedProductForRestore(null)}
+                >
+                  취소
+                </button>
+                <button
+                  className="admin-detail-secondary-button"
+                  type="button"
+                  disabled={restoreSubmitting}
+                  onClick={handleRestoreConfirm}
+                >
+                  {restoreSubmitting ? "처리 중" : "복구"}
+                </button>
+              </div>
+            </div>
           </section>
         </div>
       )}

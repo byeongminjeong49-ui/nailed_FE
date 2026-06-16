@@ -172,17 +172,6 @@ function getTargetMemberName(report) {
   return getFirstValue(report, ["targetUserid", "targetUserId", "target_userid", "targetName", "target_name"]);
 }
 
-function getReportedProductId(report) {
-  return getFirstValue(report, [
-    "productId",
-    "targetProductId",
-    "reportedProductId",
-    "product_id",
-    "target_product_id",
-    "reported_product_id",
-  ]);
-}
-
 function getTargetMemberStatus(report) {
   return getFirstValue(report, [
     "targetMemberStatus",
@@ -191,7 +180,7 @@ function getTargetMemberStatus(report) {
     "member_status",
     "targetStatus",
     "target_status",
-  ]);
+  ]) || "";
 }
 
 function getTargetSellerGrade(report) {
@@ -318,7 +307,6 @@ function ReportDetailPanel({ report, products, orders, targetReports, loading, m
           <dl className="report-detail-list">
             <DetailItem label="신고번호" value={report.reportId} />
             <DetailItem label="신고자" value={report.reporterNickname || report.reporterUserid} />
-            <DetailItem label="신고 상품 ID" value={getReportedProductId(report)} />
             <DetailItem label="신고 사유" value={REASON_LABELS[report.reasonCode] || report.reasonCode} />
             <DetailItem label="신고 상태" value={REPORT_STATUS_LABELS[report.status] || report.status} />
             <DetailItem label="신고일" value={formatDate(report.createdAt)} />
@@ -461,7 +449,7 @@ function AdminReportsPage() {
   const [selectedPenalizeReport, setSelectedPenalizeReport] = useState(null);
   const [penaltyType, setPenaltyType] = useState("WARNING");
   const [penaltyReason, setPenaltyReason] = useState("");
-  const [penaltyDays, setPenaltyDays] = useState(7);
+  const [penaltyDays, setPenaltyDays] = useState(3);
   const [penaltyMessage, setPenaltyMessage] = useState("");
   const [penaltySubmitting, setPenaltySubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
@@ -668,7 +656,7 @@ function AdminReportsPage() {
       setSelectedPenalizeReport(report);
       setPenaltyType("WARNING");
       setPenaltyReason("");
-      setPenaltyDays(7);
+      setPenaltyDays(3);
       setPenaltyMessage("");
       return;
     }
@@ -743,7 +731,7 @@ function AdminReportsPage() {
     setSelectedPenalizeReport(null);
     setPenaltyType("WARNING");
     setPenaltyReason("");
-    setPenaltyDays(7);
+    setPenaltyDays(3);
     setPenaltyMessage("");
   }
 
@@ -784,7 +772,7 @@ function AdminReportsPage() {
       setSelectedPenalizeReport(null);
       setPenaltyType("WARNING");
       setPenaltyReason("");
-      setPenaltyDays(7);
+      setPenaltyDays(3);
       setSuccessMessage("신고 제재처리가 완료되었습니다.");
       setReloadKey((current) => current + 1);
     } catch (error) {
@@ -855,8 +843,6 @@ function AdminReportsPage() {
             </h2>
           </div>
 
-          {errorMessage && <p className="admin-inquiry-message">{errorMessage}</p>}
-          {successMessage && <p className="admin-inquiry-message is-success">{successMessage}</p>}
 
           <div className="admin-table-wrap">
             <table className="admin-table admin-report-table">

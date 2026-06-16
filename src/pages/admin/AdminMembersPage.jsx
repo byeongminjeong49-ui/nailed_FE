@@ -3,6 +3,7 @@ import {
   createAdminMemberPenalty,
   fetchAdminMembers,
   getAdminMemberPenalties,
+  unsuspendAdminMember,
 } from "../../api/adminApi";
 
 const ROLE_LABELS = {
@@ -108,6 +109,8 @@ function AdminMembersPage() {
   const [penaltyHistories, setPenaltyHistories] = useState([]);
   const [penaltyHistoryLoading, setPenaltyHistoryLoading] = useState(false);
   const [penaltyHistoryMessage, setPenaltyHistoryMessage] = useState("");
+  const [selectedUnsuspendMember, setSelectedUnsuspendMember] = useState(null);
+  const [unsuspendSubmitting, setUnsuspendSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -230,6 +233,16 @@ function AdminMembersPage() {
       return;
     }
 
+    if (action === "회원복구") {
+      if (member?.status !== "SUSPEND" && member?.status !== "BANNED") {
+        setErrorMessage("정지 또는 영구정지 상태의 회원만 복구할 수 있습니다.");
+        return;
+      }
+
+      setSelectedUnsuspendMember(member);
+      return;
+    }
+
     console.log("[admin members action]", action, member?.memberId);
   }
 
@@ -316,6 +329,23 @@ function AdminMembersPage() {
     setPenaltyHistories([]);
     setPenaltyHistoryMessage("");
     setPenaltyHistoryLoading(false);
+  }
+
+  async function handleUnsuspendConfirm() {
+    if (!selectedUnsuspendMember?.memberId) return;
+    setUnsuspendSubmitting(true);
+
+    try {
+      await unsuspendAdminMember(selectedUnsuspendMember.memberId);
+      setSelectedUnsuspendMember(null);
+      setSuccessMessage("회원이 활동중 상태로 복구되었습니다.");
+      setReloadKey((current) => current + 1);
+    } catch (error) {
+      setErrorMessage(error.message || "회원 복구에 실패했습니다.");
+      setSelectedUnsuspendMember(null);
+    } finally {
+      setUnsuspendSubmitting(false);
+    }
   }
 
   return (
@@ -443,14 +473,20 @@ function AdminMembersPage() {
                               {
                                 label: "제재등록",
                                 disabled: member.status === "WITHDRAWN" || member.status === "BANNED",
+                                title: "탈퇴 또는 영구정지 회원은 제재등록을 할 수 없습니다.",
                               },
                               { label: "제재이력" },
+                              {
+                                label: "회원복구",
+                                disabled: member.status !== "SUSPEND" && member.status !== "BANNED",
+                                title: "정지 또는 영구정지 상태의 회원만 복구할 수 있습니다.",
+                              },
                             ].map((action) => (
                               <button
                                 type="button"
                                 key={action.label}
                                 disabled={action.disabled}
-                                title={action.disabled ? "탈퇴 또는 영구정지 회원은 제재등록을 할 수 없습니다." : undefined}
+                                title={action.disabled ? action.title : undefined}
                                 onClick={() => handleActionMenuClick(action.label, member)}
                               >
                                 {action.label}
@@ -693,6 +729,57 @@ function AdminMembersPage() {
                   </table>
                 </div>
               )}
+            </div>
+          </section>
+        </div>
+      )}
+
+      {selectedUnsuspendMember && (
+        <div className="admin-detail-modal-backdrop" role="presentation" onClick={() => !unsuspendSubmitting && setSelectedUnsuspendMember(null)}>
+          <section
+            className="admin-detail-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-member-unsuspend-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="admin-detail-modal-head">
+              <h2 id="admin-member-unsuspend-title">회원 복구</h2>
+              <button type="button" aria-label="회원 복구 닫기" onClick={() => !unsuspendSubmitting && setSelectedUnsuspendMember(null)}>
+                ×
+              </button>
+            </div>
+            <div className="admin-detail-form">
+              <dl className="admin-detail-grid admin-detail-grid-compact">
+                <DetailItem label="회원 ID" value={selectedUnsuspendMember.memberId} />
+                <DetailItem label="아이디" value={selectedUnsuspendMember.userid} />
+                <DetailItem label="닉네임" value={selectedUnsuspendMember.nickname} />
+                <DetailItem
+                  label="현재 회원 상태"
+                  value={STATUS_LABELS[selectedUnsuspendMember.status] || selectedUnsuspendMember.status}
+                />
+              </dl>
+              <p style={{ margin: "12px 0", fontSize: 14, color: "var(--admin-muted)" }}>
+                이 회원을 활동중(ACTIVE) 상태로 복구합니다. 계속하시겠습니까?
+              </p>
+              <div className="admin-detail-modal-actions">
+                <button
+                  className="admin-detail-secondary-button"
+                  type="button"
+                  disabled={unsuspendSubmitting}
+                  onClick={() => setSelectedUnsuspendMember(null)}
+                >
+                  취소
+                </button>
+                <button
+                  className="admin-detail-secondary-button"
+                  type="button"
+                  disabled={unsuspendSubmitting}
+                  onClick={handleUnsuspendConfirm}
+                >
+                  {unsuspendSubmitting ? "처리 중" : "복구"}
+                </button>
+              </div>
             </div>
           </section>
         </div>

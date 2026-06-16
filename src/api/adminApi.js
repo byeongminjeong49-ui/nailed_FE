@@ -63,10 +63,26 @@ export async function getAdminProducts({
   return authRequest(`/api/admin/products?${params.toString()}`);
 }
 
-export async function hideAdminProduct(productId, reason) {
-  return authRequest(`/api/admin/products/${encodeURIComponent(productId)}/hide`, {
+export async function getAdminProduct(productId) {
+  return authRequest(`/api/admin/products/${encodeURIComponent(productId)}`);
+}
+
+export async function deleteAdminProduct(productId, reason) {
+  return authRequest(`/api/admin/products/${encodeURIComponent(productId)}/delete`, {
     method: "PATCH",
     body: JSON.stringify({ reason }),
+  });
+}
+
+export async function restoreAdminProduct(productId) {
+  return authRequest(`/api/admin/products/${encodeURIComponent(productId)}/restore`, {
+    method: "PATCH",
+  });
+}
+
+export async function unsuspendAdminMember(memberId) {
+  return authRequest(`/api/admin/members/${encodeURIComponent(memberId)}/unsuspend`, {
+    method: "PATCH",
   });
 }
 
