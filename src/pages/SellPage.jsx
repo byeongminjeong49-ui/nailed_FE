@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { registerProduct, uploadImage, getBrands, getProductCategories, getConditions, getSizes, getProductDetail, updateProduct, deleteProduct, changeProductStatus } from "../api/productApi";
+import { registerProduct, uploadImage, getBrands, getProductCategories, getConditions, getSizes, getProductDetail, updateProduct, deleteProduct } from "../api/productApi";
 import { toBrandNameEn } from "../utils/brandName";
 import "../styles/sell.css";
 
@@ -55,7 +55,6 @@ export default function SellPage({ editProductId }) {
   const [price, setPrice]                 = useState("");
   const [shippingFee, setShippingFee]     = useState("");
   const [hashtags, setHashtags]           = useState("");
-  const [productStatus, setProductStatus] = useState("ON_SALE");
   const [brands, setBrands]               = useState([]);
   const [codeToGroupId, setCodeToGroupId] = useState({});
   const [categoryTree, setCategoryTree]   = useState([]);
@@ -105,7 +104,6 @@ export default function SellPage({ editProductId }) {
           setCondition(product.conditionCode);
           setSelectedSize(product.size || "");
           setHashtags(product.hashtags || "");
-          setProductStatus(product.productStatus || "ON_SALE");
 
           const { topCode: tc, groupCode: gc, itemCode: ic } = findCategoryByPath(product.categoryPath, tree);
           setTopCode(tc);
@@ -224,7 +222,6 @@ export default function SellPage({ editProductId }) {
     try {
       if (isEditMode) {
         await updateProduct(editProductId, body);
-        await changeProductStatus(editProductId, productStatus);
       } else {
         await registerProduct(body);
       }
@@ -487,24 +484,6 @@ export default function SellPage({ editProductId }) {
             </div>
           </div>
 
-          {/* 판매 상태 — 수정 모드에서만 표시 */}
-          {isEditMode && (
-            <div className="sell-field">
-              <div className="sell-field-label">판매 상태</div>
-              <div className="sell-status-group">
-                <button type="button"
-                  className={`sell-status-btn${productStatus === "ON_SALE" ? " active" : ""}`}
-                  onClick={() => setProductStatus("ON_SALE")}>
-                  판매중
-                </button>
-                <button type="button"
-                  className={`sell-status-btn${productStatus === "SOLD" ? " active" : ""}`}
-                  onClick={() => setProductStatus("SOLD")}>
-                  판매완료
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* 해시태그 */}
           <div className="sell-field">

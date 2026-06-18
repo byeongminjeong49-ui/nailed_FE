@@ -227,13 +227,6 @@ export async function deleteProduct(productId, reason) {
   });
 }
 
-export async function changeProductStatus(productId, productStatus) {
-  return requestWithAuth(`/api/products/${encodeURIComponent(productId)}/status`, {
-    method: "PATCH",
-    body: JSON.stringify({ productStatus }),
-  });
-}
-
 export function getProducts() {
   return [];
 }

@@ -243,6 +243,7 @@ function Header() {
               id="home-search"
               type="search"
               placeholder="상품명, 브랜드, 키워드 검색"
+              autoComplete="off"
               value={searchKeyword}
               onChange={(event) => setSearchKeyword(event.target.value)}
               onKeyDown={handleSearchKeyDown}
