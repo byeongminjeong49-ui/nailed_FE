@@ -11,7 +11,7 @@ import { categoryCodeToUrl } from "../data/categories";
 import { useCategories } from "../hooks/useCategories";
 import "../styles/product-detail.css";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 const DEFAULT_PROFILE = `${API_BASE_URL}/images/profileImg/default-profile.png`;
 const GRADE = { BRONZE: "브론즈", SILVER: "실버", GOLD: "골드", DIAMOND: "다이아" };
 const STATUS = { ON_SALE: "판매중", SOLD: "판매완료" };
