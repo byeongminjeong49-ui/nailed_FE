@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+
+const genId = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
 import { registerProduct, uploadImage, getBrands, getProductCategories, getConditions, getSizes, getProductDetail, updateProduct, deleteProduct } from "../api/productApi";
 import { toBrandNameEn } from "../utils/brandName";
 import "../styles/sell.css";
@@ -117,7 +119,7 @@ export default function SellPage({ editProductId }) {
 
           if (Array.isArray(product.imageUrls) && product.imageUrls.length > 0) {
             setImages(product.imageUrls.map((url) => ({
-              id: crypto.randomUUID(),
+              id: genId(),
               preview: url,
               url,
               uploading: false,
@@ -164,7 +166,7 @@ export default function SellPage({ editProductId }) {
     if (fileInputRef.current) fileInputRef.current.value = "";
 
     const newImages = filesToAdd.map((f) => ({
-      id: crypto.randomUUID(),
+      id: genId(),
       preview: URL.createObjectURL(f),
       url: null,
       uploading: true,

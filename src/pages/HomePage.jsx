@@ -68,19 +68,10 @@ function normalizeProductList(data) {
     .filter(isVisibleProduct);
 }
 
-function getPopularityScore(product, hasViewCount) {
-  const wishlistCount = Number(product.wishlistCount) || 0;
-  if (!hasViewCount) return wishlistCount;
-
-  return (Number(product.viewCount) || 0) * wishlistCount;
-}
-
 function pickPopularProducts(products) {
-  const hasViewCount = products.some((product) => product.viewCount !== null && product.viewCount !== undefined);
-
-  return [...products]
-    .sort((a, b) => getPopularityScore(b, hasViewCount) - getPopularityScore(a, hasViewCount))
-    .slice(0, SECTION_PRODUCT_COUNT);
+  // 인기 정렬은 백엔드(인기점수 = 조회수 + 찜수×3)에서 처리하므로
+  // 프론트는 백엔드가 내려준 순서를 그대로 사용한다. (이중 정렬 제거)
+  return products.slice(0, SECTION_PRODUCT_COUNT);
 }
 
 function hashString(value) {
