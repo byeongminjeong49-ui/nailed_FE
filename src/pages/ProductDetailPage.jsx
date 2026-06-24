@@ -156,6 +156,24 @@ function getRecentlyViewedIds(excludeId) {
   }
 }
 
+/* ── 조회수 중복 집계 방지 (브라우저 단위, F5/재진입 시 재호출 차단) ── */
+const VIEWED_KEY = "nailed_viewed_products";
+const VIEW_DEDUP_MS = 60 * 60 * 1000; // 같은 상품은 1시간 내 1회만 집계
+
+function shouldCountView(id) {
+  try {
+    const viewed = JSON.parse(localStorage.getItem(VIEWED_KEY) || "{}");
+    const key = String(id);
+    const now = Date.now();
+    if (viewed[key] && now - viewed[key] < VIEW_DEDUP_MS) return false;
+    viewed[key] = now;
+    localStorage.setItem(VIEWED_KEY, JSON.stringify(viewed));
+    return true;
+  } catch {
+    return true; // localStorage 사용 불가 시 기존 동작 유지
+  }
+}
+
 /* ── 상품 미니카드 & 섹션 ── */
 function ProductMiniCard({ product }) {
   const imgUrl = product.thumbnailUrl || getProductImageUrl(product);
@@ -256,7 +274,9 @@ function ProductDetailPage({ productId }) {
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-    incrementViewCount(productId);
+    if (shouldCountView(productId)) {
+      incrementViewCount(productId);
+    }
     return () => clearTimeout(timerRef.current);
   }, [productId]);
 
