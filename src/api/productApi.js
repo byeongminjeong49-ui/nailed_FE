@@ -28,6 +28,7 @@ async function request(path, options = {}) {
     const data = axiosError.response?.data;
     const message = typeof data === "string" ? data : data?.error?.message || data?.message || "요청 처리에 실패했습니다.";
     const error = new Error(message);
+    error.code = (typeof data === "object" && data?.error?.code) || null;
     error.status = axiosError.response?.status;
     throw error;
   }

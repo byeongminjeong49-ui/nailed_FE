@@ -331,7 +331,8 @@ function ProductDetailPage({ productId }) {
           setProduct((p) => ({ ...p, wishlistCount: p.wishlistCount + 1 }));
           showToast("위시리스트에 추가했습니다.");
         } catch (e) {
-          if (e.message && e.message.includes("이미 찜한 상품")) {
+          // W001: 이미 찜한 상품 — 서버와 상태가 어긋난 경우이므로 찜 해제로 동기화
+          if (e.code === "W001") {
             setWishlisted(true);
             await removeWishlist(productId);
             setWishlisted(false);

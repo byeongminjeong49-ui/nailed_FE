@@ -63,8 +63,8 @@ function Footer() {
         <div className="footer-company-info">
           <p>
             (주)네일드컴퍼니 · 대표: 정병민 / 소재지: 경기도 성남시 분당구 분당로 111/
-            <p> </p>
-                   고객센터: 02-1234-5678 / 이메일 문의 Nailed@support.com
+            <br />
+            고객센터: 02-1234-5678 / 이메일 문의 Nailed@support.com
           </p>
         </div>
         <div className="footer-contact">

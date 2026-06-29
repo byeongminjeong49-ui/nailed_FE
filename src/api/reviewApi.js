@@ -18,7 +18,11 @@ async function request(path, params) {
       error.response?.data?.message ||
       error.response?.data ||
       "요청 처리에 실패했습니다.";
-    throw new Error(typeof message === "string" ? message : "요청 처리에 실패했습니다.");
+    // message만 던지던 기존 방식 → code/status까지 실어 호출부에서 코드 분기 가능하게 함
+    const err = new Error(typeof message === "string" ? message : "요청 처리에 실패했습니다.");
+    err.code = error.response?.data?.error?.code || null;
+    err.status = error.response?.status ?? null;
+    throw err;
   }
 }
 

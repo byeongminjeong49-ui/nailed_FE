@@ -1441,7 +1441,12 @@ function UserProfilePage({ memberId, hideFooter = false, onNavigate, pathname = 
       alert("회원 탈퇴가 완료되었습니다.");
       window.location.href = "/";
     } catch (error) {
-      showToast(error.message || "회원 탈퇴에 실패했습니다.");
+      // M015: 진행중 거래(주문접수/결제완료/배송중)가 있어 탈퇴 차단된 경우
+      if (error.code === "M015") {
+        showToast("진행중인 거래가 있어 탈퇴할 수 없습니다. 거래 완료 후 다시 시도해 주세요.");
+      } else {
+        showToast(error.message || "회원 탈퇴에 실패했습니다.");
+      }
     }
   }
 

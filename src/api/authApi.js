@@ -59,6 +59,20 @@ function extractErrorMessage(error, fallback) {
   return typeof message === "string" ? message : fallback;
 }
 
+// BE 에러 코드(예: M015) 추출 — 응답 구조 { error: { code, message } }
+function extractErrorCode(error) {
+  return error.response?.data?.error?.code || null;
+}
+
+// 메시지만 담던 기존 throw를 대체 — code/status까지 실어 호출부에서 분기 가능하게 함
+// (기존 호출부는 err.message만 쓰므로 하위호환 유지)
+function buildApiError(error, fallback) {
+  const err = new Error(extractErrorMessage(error, fallback));
+  err.code = extractErrorCode(error);
+  err.status = error.response?.status ?? null;
+  return err;
+}
+
 // ── 비로그인 공통 요청 ─────────────────────────────────────────────
 // 로그인·회원가입 등 Authorization 헤더 없이 호출하는 요청
 async function request(path, options = {}) {
@@ -72,7 +86,7 @@ async function request(path, options = {}) {
     });
     return extractData(response);
   } catch (error) {
-    throw new Error(extractErrorMessage(error, "요청 처리에 실패했습니다."));
+    throw buildApiError(error, "요청 처리에 실패했습니다.");
   }
 }
 
@@ -263,7 +277,7 @@ export async function authRequest(path, options = {}, retried = false) {
       throw new Error(SESSION_EXPIRED_MESSAGE);
     }
 
-    throw new Error(extractErrorMessage(error, "요청 처리에 실패했습니다."));
+    throw buildApiError(error, "요청 처리에 실패했습니다.");
   }
 }
 
@@ -300,7 +314,7 @@ export async function login({ userId, password }) {
     });
     return saveLoginResult(extractData(response));
   } catch (error) {
-    throw new Error(extractErrorMessage(error, "로그인에 실패했습니다."));
+    throw buildApiError(error, "로그인에 실패했습니다.");
   }
 }
 

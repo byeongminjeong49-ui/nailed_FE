@@ -114,10 +114,10 @@ const finalPrice       = productAmount + shippingFee + commission;
 } catch (error) {
       console.error('주문 처리 중 에러 발생:', error);
 
-      const errorStr = String(error?.response?.data?.message || error?.message || '');
-
-      if (errorStr.includes('판매 완료') || errorStr.includes('결제')) {
-        // 백엔드의 "판매 완료된 상품입니다." 대신 동시성 안내 멘트로 대체
+      // O012(락 획득 실패) / P002(이미 판매완료) → 동시 구매 충돌이므로 동일한 안내로 통일
+      // 메시지 문자열 매칭 대신 백엔드 에러 코드로 분기 (문구가 바뀌어도 안 깨짐)
+      const CONFLICT_CODES = ['O012', 'P002'];
+      if (CONFLICT_CODES.includes(error?.code)) {
         alert('현재 다른 고객님이 결제를 진행 중인 상품입니다.');
       } else {
         alert('주문 요청에 실패했습니다.');
